@@ -1,1 +1,12 @@
-<p>festival-list works!</p>
+<!-- frontend/src/app/components/festival-list/festival-list.html -->
+<div class="festival-list-container">
+    <h1>Liste des Festivals</h1>
+    
+    <div class="festivals-grid">
+      @for (festival of festivals(); track festival.name) {
+        <app-festival-card-component [festival]="festival" />
+      } @empty {
+        <p class="no-festivals">Aucun festival disponible</p>
+      }
+    </div>
+  </div>

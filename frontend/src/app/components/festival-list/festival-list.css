@@ -1,0 +1,31 @@
+.festival-list-container {
+    padding: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  
+  .festival-list-container h1 {
+    margin-bottom: 2rem;
+    color: #1f2937;
+    font-size: 2rem;
+  }
+  
+  .festivals-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+    gap: 1.5rem;
+  }
+  
+  .no-festivals {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 3rem;
+    color: #6b7280;
+    font-size: 1.125rem;
+  }
+  
+  @media (max-width: 768px) {
+    .festivals-grid {
+      grid-template-columns: 1fr;
+    }
+  }
