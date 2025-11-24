@@ -1,0 +1,31 @@
+@if (festival()){
+    <div class="festival-card">
+        <div class="festival-header">
+            <h2>{{ festival()!.name }}</h2>
+            <span class="tables-count">{{ festival()!.nbTables}} tables</span>
+        </div>
+         
+        @if (festival()!.tariffZones && festival()!.tariffZones.length > 0){
+            <div class="zones-section">
+                <h3>Zones tarifaires</h3>
+                <div class="zones-list">
+                    @for (zone of festival()!.tariffZones; track zone.id){
+                        <div class="zone-item">
+                            <div class="zone-name">{{ zone.name }}</div>
+                            <div class="zone-info">
+                                <span>{{ zone.nbTables }} tables</span>
+                                <span>{{ zone.tablePrice }}€/table</span>
+                                <span>{{ zone.squareMeterPrice }}€/m2</span>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+        <!-- A METTRE : BOUTONS MODIFIER ET SUPPRIMER -->
+    </div>
+} @else {
+    <div class="festival-card empty">
+        <p>Aucun festival disponible</p>
+    </div>
+}
