@@ -4,7 +4,7 @@ import { Festival } from '../interfaces/festival';
 @Injectable({
   providedIn: 'root'
 })
-export class FestivalListService {
+export class FestivalService {
   festivalList = signal<Festival[]>([
     {
       name: "Festival-Rose",
