@@ -22,7 +22,15 @@
                 </div>
             </div>
         }
-        <!-- A METTRE : BOUTONS MODIFIER ET SUPPRIMER -->
+        <!-- Bouton pour mettre a jour un festival. -->
+        <div class="card-actions">
+          <button class="btn btn-secondary" (click)="onEdit()">
+            Modifier
+          </button>
+          <button class="btn btn-danger" (click)="onDelete()">
+            Supprimer
+          </button>
+        </div>
     </div>
 } @else {
     <div class="festival-card empty">

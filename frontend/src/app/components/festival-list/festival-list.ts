@@ -3,10 +3,11 @@ import { Component, inject, signal, effect } from '@angular/core';
 import { FestivalCardComponent } from '../festival-card-component/festival-card-component';
 import { Festival } from '../../interfaces/festival';
 import { FestivalService } from '../../services/festival.service';
+import { FestivalFormComponent } from '../festival-form/festival-form';
 
 @Component({
   selector: 'app-festival-list',
-  imports: [FestivalCardComponent],
+  imports: [FestivalCardComponent,FestivalFormComponent],
   templateUrl: './festival-list.html',
   styleUrl: './festival-list.css',
 })
@@ -14,6 +15,9 @@ export class FestivalList {
   readonly svc = inject(FestivalService);
   festivals = this.svc.festivalList;
   lastRemoved = signal<Festival | null>(null);
+  //Signal pour le festival en cours d'édition:
+  festivalToEdit = signal<Festival | null>(null);
+
 
   nbFestivals = effect(() => {
     //Le code prend effet si on SUPPRIME un festival,on AJOUTE un festival,on MODIFIE la liste entière
@@ -21,6 +25,16 @@ export class FestivalList {
     //Le code prend effet si on met à jour lastRemoved dans removeFestival,on réinitialise lastRemoved
     console.log('Dernier supprimé :', this.lastRemoved()?.name);
   });
+
+  //// Méthode appelée quand on clique sur Modifier
+  onEditFestival(festival: Festival) {
+    this.festivalToEdit.set(festival);
+  }
+
+  // Réinitialiser après modification
+  onFormClosed() {
+    this.festivalToEdit.set(null);
+  }
 
   removeFestival(name: string) {
     // 1. Trouver le festival à supprimer

@@ -1,4 +1,4 @@
-import { Component, input} from '@angular/core';
+import { Component, input, output} from '@angular/core';
 import { Festival } from '../../interfaces/festival';
 
 @Component({
@@ -9,5 +9,31 @@ import { Festival } from '../../interfaces/festival';
 })
 export class FestivalCardComponent {
   public festival = input<Festival>();
+
+  //Permet d'ajouter un bouton pour updater les infos d'un festival.
+  editFestival = output<Festival>();
+  // Output pour supprimer
+  deleteFestival = output<string>(); 
+
+  onEdit() {
+    const fest = this.festival();
+    if (fest) {
+      this.editFestival.emit(fest);
+    }
+  }
+
+  onDelete() {
+    const fest = this.festival();
+    if (fest) {
+      // Afficher une confirmation avant suppression
+      const confirmDelete = confirm(
+        `Êtes-vous sûr de vouloir supprimer le festival "${fest.name}" ?\n\nCette action est irréversible.`
+      );
+      
+      if (confirmDelete) {
+        this.deleteFestival.emit(fest.name);
+      }
+    }
+  }
   
 }
