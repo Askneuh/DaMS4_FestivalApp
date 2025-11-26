@@ -9,5 +9,4 @@ import { Festival } from '../../interfaces/festival';
 })
 export class FestivalCardComponent {
   public festival = input<Festival>();
-  
 }

@@ -49,4 +49,5 @@ export class FestivalService {
       festivals.map(f => f.name === name ? updatedFestival : f)
     );
   }
+
 }

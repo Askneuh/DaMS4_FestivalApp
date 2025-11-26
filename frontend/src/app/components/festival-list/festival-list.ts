@@ -2,7 +2,7 @@ import { Component, inject, signal, effect } from '@angular/core';
 //effect:Pour executer du code quand un signal change.
 import { FestivalCardComponent } from '../festival-card-component/festival-card-component';
 import { Festival } from '../../interfaces/festival';
-import { FestivalService } from '../../services/festival.service';
+import { FestivalService } from '../../services/festival-service';
 
 @Component({
   selector: 'app-festival-list',
