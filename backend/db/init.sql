@@ -1,5 +1,12 @@
+CREATE TABLE IF NOT EXISTS users (
+    id SERIAL PRIMARY KEY,
+    login TEXT UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL,
+    role TEXT DEFAULT 'user'
+); 
+
 CREATE TABLE IF NOT EXISTS festival (
-    name TEXT PRIMARY KEY,
+    festivalName TEXT PRIMARY KEY,
     nbTables NUMBER,
     creation_date date,
     begin_date date,

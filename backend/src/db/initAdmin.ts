@@ -4,9 +4,7 @@ import pool from './database.js'
 
 
 export async function ensureAdmin() {
-    const hash = await bcrypt.hash('admin', 10);
-    console.log(hash)
-    
+    const hash = await bcrypt.hash('admin', 10);    
 
     await pool.query(
         `INSERT INTO users (login, password_hash, role)
