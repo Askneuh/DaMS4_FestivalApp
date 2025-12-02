@@ -5,7 +5,7 @@ import { Component, effect, inject, input, output, signal } from '@angular/core'
 //ReactiveFormsModule: Module nécessaire pour les formulaires réactifs
 //Validators: Pour ajouter des règles de validation
 import { FormArray, FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { FestivalService } from '../../services/festival.service';
+import { FestivalService } from '../../services/festival-service';
 import { Festival } from '../../interfaces/festival';
 import { CommonModule } from '@angular/common';
 
