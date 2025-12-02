@@ -1,0 +1,21 @@
+<div>
+    
+    <form  [formGroup]="form" (ngSubmit)='addFestival($event)' class="form">
+        <mat-form-field>
+        <mat-label>
+            Nom
+        </mat-label>
+            <input matInput formControlName="name" type="text" placeholder="Nom" required>
+        </mat-form-field>
+
+        <mat-form-field>
+        <mat-label>
+            Number of tables
+        </mat-label>
+        <input matInput formControlName="nbTables" type="number" placeholder="nbTables" required>
+        </mat-form-field>
+        @if (this.form.valid) {
+            <input type="submit">
+        }
+    </form>
+</div>
