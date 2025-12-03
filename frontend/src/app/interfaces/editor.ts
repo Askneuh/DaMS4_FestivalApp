@@ -6,7 +6,7 @@ export interface Editor {
     name: string
     exposant: boolean // ??
     distributeur: boolean // ??
-    logo: string //lien vers une image
+    logo?: string //lien vers une image
     contacts: Contact[]
-    games: Game[]
+    games: Game[] // A SUPPRIMER
 }
