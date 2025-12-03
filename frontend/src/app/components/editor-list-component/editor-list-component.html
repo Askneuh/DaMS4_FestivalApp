@@ -1,1 +1,22 @@
-<p>editor-list-component works!</p>
+<div class="editors-container">
+  <!-- Header simple -->
+  <div class="header">
+    <h1>Liste des Éditeurs</h1>
+  </div>
+
+  <!-- Liste des éditeurs en grille -->
+  @if (editors().length > 0) {
+    <div class="editors-grid">
+      @for (editor of editors(); track editor.id) {
+        <app-editor-card
+          [editor]="editor"
+          (onDelete)="handleDelete($event)"
+        />
+      }
+    </div>
+  } @else {
+    <div class="empty-state">
+      <p>Aucun éditeur disponible</p>
+    </div>
+  }
+</div>

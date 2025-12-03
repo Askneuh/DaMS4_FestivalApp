@@ -1,2 +1,21 @@
-<app-festival-list />
-<router-outlet />
+<div class="app-container">
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <h1>Festival Manager</h1>
+    </div>
+    <div class="navbar-links">
+      <a routerLink="/festivals" routerLinkActive="active" class="nav-link">
+        Festivals
+      </a>
+      <a routerLink="/editors" routerLinkActive="active" class="nav-link">
+        Éditeurs
+      </a>
+    </div>
+  </nav>
+
+  <!-- Contenu des pages -->
+  <main class="main-content">
+    <router-outlet />
+  </main>
+</div>

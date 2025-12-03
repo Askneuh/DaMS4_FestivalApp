@@ -1,0 +1,43 @@
+@if (editor()) {
+  <div class="editor-card">
+    <!-- En-tête avec nom -->
+    <div class="editor-header">
+      <h3>{{ editor()!.name }}</h3>
+      
+      <!-- Badges exposant/distributeur -->
+      <div class="badges">
+        @if (editor()!.exposant) {
+          <span class="badge exposant">Exposant</span>
+        }
+        @if (editor()!.distributeur) {
+          <span class="badge distributeur">Distributeur</span>
+        }
+      </div>
+    </div>
+
+    <!-- Corps avec stats -->
+    <div class="editor-body">
+      <div class="stats">
+        <div class="stat-item">
+          <span class="stat-value">{{ editor()!.games.length }}</span>
+          <span class="stat-label">Jeux</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-value">{{ editor()!.contacts.length }}</span>
+          <span class="stat-label">Contacts</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="editor-actions">
+      <button class="btn btn-danger" (click)="handleDelete()">
+        Supprimer
+      </button>
+    </div>
+  </div>
+} @else {
+  <div class="editor-card empty">
+    <p>Aucun éditeur</p>
+  </div>
+}
