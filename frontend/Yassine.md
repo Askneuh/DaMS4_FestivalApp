@@ -1,4 +1,4 @@
-Resume de mes fonctionnalités:(FestivalService, FestivalList, FestivalForm)
+---------IIIIIIIIII- Resume de mes fonctionnalités:(FestivalService, FestivalList, FestivalForm)-------------
 
 1️⃣ FestivalService (Le Stockage)
 Un service :Pourquoi ?
@@ -173,3 +173,7 @@ isEditMode() → Vérifie si on modifie ou on crée
 
 7. Carte disparaît automatiquement
    📁 festival-list.html (ligne 11 - @for)
+
+
+
+---------IIIIIIIIII- Resume de mes fonctionnalités:festival-detail.ts,festival-card-component.html,app.routes.ts)-------------

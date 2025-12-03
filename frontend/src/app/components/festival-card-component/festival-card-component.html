@@ -2,7 +2,12 @@
     <div class="festival-card">
         <div class="festival-header">
             <h2>{{ festival()!.name }}</h2>
-            <span class="tables-count">{{ festival()!.nbTables}} tables</span>
+            <div class="tables-info">
+                <span class="tables-count">{{ festival()!.nbTables }} tables</span>
+                <span class="tables-remaining" [class.warning]="tablesRestantes() < 10">
+                    ({{ tablesRestantes() }} restantes)
+                </span>
+            </div>
         </div>
          
         @if (festival()!.tariffZones && festival()!.tariffZones.length > 0){
@@ -24,6 +29,9 @@
         }
         <!-- Bouton pour mettre a jour un festival. -->
         <div class="card-actions">
+          <button class="btn btn-primary" (click)="onViewDetails()">
+            Voir détails
+          </button>
           <button class="btn btn-secondary" (click)="onEdit()">
             Modifier
           </button>

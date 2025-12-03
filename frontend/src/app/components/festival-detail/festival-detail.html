@@ -1,0 +1,87 @@
+<div class="detail-container">
+    @if (festival(); as fest) {
+      <div class="detail-header">
+        <button class="btn-back" (click)="goBack()">← Retour</button>
+        <h1>{{ fest.name }}</h1>
+      </div>
+  
+      <div class="detail-content">
+        <!-- Informations du festival -->
+        <div class="info-card">
+          <h2>Informations</h2>
+          <p><strong>Nombre de tables :</strong> {{ fest.nbTables }}</p>
+          
+          <h3>Zones tarifaires</h3>
+          <div class="zones-grid">
+            @for (zone of fest.tariffZones; track zone.id) {
+              <div class="zone-card">
+                <div class="zone-name">{{ zone.name }}</div>
+                <div class="zone-info">
+                  <span>{{ zone.nbTables }} tables totales</span>
+                  <span class="tables-remaining">
+                    {{ getTablesRestantesZone(zone.name) }} restantes
+                  </span>
+                  <span>{{ zone.tablePrice }}€/table</span>
+                  <span>{{ zone.squareMeterPrice }}€/m²</span>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+  
+        <!-- Formulaire de réservation -->
+        <app-reservation-form 
+          [festival]="fest"
+          (reservationCreated)="onReservationCreated()"
+        />
+  
+        <!-- Liste des réservations -->
+        <div class="reservations-section">
+          <h2>Réservations ({{ reservations().length }})</h2>
+          
+          @if (reservations().length === 0) {
+            <p class="no-reservations">Aucune réservation pour ce festival</p>
+          } @else {
+            <div class="reservations-list">
+              @for (reservation of reservations(); track reservation.id) {
+                <div class="reservation-card">
+                  <div class="reservation-header">
+                    <h3>{{ reservation.editeur }}</h3>
+                    <button 
+                      class="btn-delete"
+                      (click)="deleteReservation(reservation.id)"
+                    >
+                      ✕
+                    </button>
+                  </div>
+  
+                  <div class="reservation-status" [class]="'status-' + reservation.status">
+                    {{ reservation.status }}
+                  </div>
+  
+                  <div class="zones-reserved">
+                    <strong>Zones réservées :</strong>
+                    @for (zr of reservation.zoneReservations; track zr.zoneName) {
+                      <div class="zone-reserved-item">
+                        <span>{{ zr.zoneName }}</span>
+                        <span>{{ zr.nbTables }} tables × {{ zr.prixUnitaire }}€ = {{ zr.sousTotal }}€</span>
+                      </div>
+                    }
+                  </div>
+  
+                  <div class="reservation-total">
+                    <strong>Total : {{ reservation.prixTotal }}€</strong>
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </div>
+    } @else {
+      <div class="not-found">
+        <p>Festival non trouvé</p>
+        <button class="btn-back" (click)="goBack()">← Retour</button>
+      </div>
+    }
+  </div>

@@ -1,0 +1,94 @@
+<div class="form-container">
+    <button class="btn btn-add" (click)="toggleForm()">
+      {{ showForm() ? 'Annuler' : '+ Ajouter une réservation' }}
+    </button>
+  
+    @if (showForm()) {
+      <div class="form-card">
+        <h2>Nouvelle réservation</h2>
+        
+        <form [formGroup]="reservationForm" (ngSubmit)="onSubmit()">
+          
+          <!-- Éditeur -->
+          <div class="form-group">
+            <label for="editeur">Nom de l'éditeur *</label>
+            <input 
+              id="editeur" 
+              type="text" 
+              formControlName="editeur"
+              placeholder="Ex: Asmodée"
+            />
+            @if (reservationForm.get('editeur')?.invalid && reservationForm.get('editeur')?.touched) {
+              <span class="error">Le nom est requis (min 2 caractères)</span>
+            }
+          </div>
+  
+          <!-- Statut -->
+          <div class="form-group">
+            <label for="status">Statut *</label>
+            <select id="status" formControlName="status">
+              @for (status of statusOptions; track status) {
+                <option [value]="status">{{ status }}</option>
+              }
+            </select>
+          </div>
+  
+          <!-- Zones tarifaires -->
+          <div class="form-section">
+            <h3>Zones à réserver</h3>
+            
+            @if (zoneReservations.length === 0) {
+              <p class="info">Sélectionnez une ou plusieurs zones :</p>
+            }
+  
+            @for (zone of festival().tariffZones; track zone.id) {
+              <button 
+                type="button" 
+                class="btn btn-zone"
+                (click)="addZoneReservation(zone.name, zone.tablePrice)"
+                [disabled]="getTablesRestantes(zone.name) === 0"
+              >
+                + {{ zone.name }} ({{ zone.tablePrice }}€/table) 
+                - {{ getTablesRestantes(zone.name) }} tables restantes
+              </button>
+            }
+  
+            <!-- Zones sélectionnées -->
+            <div formArrayName="zoneReservations" class="zones-list">
+              @for (zr of zoneReservations.controls; track $index; let i = $index) {
+                <div [formGroupName]="i" class="zone-item">
+                  <div class="zone-header">
+                    <strong>{{ zr.get('zoneName')?.value }}</strong>
+                    <button type="button" class="btn-remove" (click)="removeZoneReservation(i)">✕</button>
+                  </div>
+                  
+                  <div class="zone-fields">
+                    <label>Nombre de tables</label>
+                    <input type="number" formControlName="nbTables" min="1" />
+                    <span class="price">{{ zr.get('nbTables')?.value * zr.get('prixUnitaire')?.value }}€</span>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+  
+          <!-- Prix total -->
+          @if (zoneReservations.length > 0) {
+            <div class="total">
+              <strong>Prix total : {{ prixTotal() }}€</strong>
+            </div>
+          }
+  
+          <!-- Actions -->
+          <div class="form-actions">
+            <button type="button" class="btn btn-secondary" (click)="toggleForm()">
+              Annuler
+            </button>
+            <button type="submit" class="btn btn-primary" [disabled]="reservationForm.invalid || zoneReservations.length === 0">
+              Créer la réservation
+            </button>
+          </div>
+        </form>
+      </div>
+    }
+  </div>

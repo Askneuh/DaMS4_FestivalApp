@@ -1,5 +1,6 @@
 import { Injectable, signal } from '@angular/core';
 import { Festival } from '../interfaces/festival';
+import { ReservationService } from './reservation-service';
 //Injectable: Permet d'injecter ce service dans d'autres composants ou services
 @Injectable({
   providedIn: 'root'
@@ -52,6 +53,27 @@ export class FestivalService {
     this.festivalList.update(festivals => 
       festivals.map(f => f.name === name ? updatedFestival : f)
     );
+  }
+
+  // Calculer le nombre de tables réservées pour un festival
+  getTablesReservees(festivalName: string, reservationService: ReservationService): number {
+    const reservations = reservationService.reservationList()
+      .filter(r => r.festivalName === festivalName);
+    
+    return reservations.reduce((total, r) => {
+      return total + r.zoneReservations.reduce((sum, zr) => sum + zr.nbTables, 0);
+    }, 0);
+  }
+
+  // Calculer tables réservées par zone
+  getTablesReserveesParZone(festivalName: string, zoneName: string, reservationService: ReservationService): number {
+    const reservations = reservationService.reservationList()
+      .filter(r => r.festivalName === festivalName);
+    
+    return reservations.reduce((total, r) => {
+      const zoneRes = r.zoneReservations.find(zr => zr.zoneName === zoneName);
+      return total + (zoneRes?.nbTables || 0);
+    }, 0);
   }
 
 }
