@@ -12,7 +12,9 @@ import { FestivalFormComponent } from '../festival-form/festival-form';
   styleUrl: './festival-list.css',
 })
 export class FestivalList {
+  //Cette variable ne peut jamais être réassignée après sa création
   readonly svc = inject(FestivalService);
+  //Crée une référence au signal festivalList du service
   festivals = this.svc.festivalList;
   lastRemoved = signal<Festival | null>(null);
   //Signal pour le festival en cours d'édition:
@@ -27,11 +29,12 @@ export class FestivalList {
   });
 
   //// Méthode appelée quand on clique sur Modifier
+  //Prépare le formulaire pour modifier un festival existant
   onEditFestival(festival: Festival) {
     this.festivalToEdit.set(festival);
   }
 
-  // Réinitialiser après modification
+  // Réinitialiser le signal festivalToEdit à null après avoir fermé le formulaire
   onFormClosed() {
     this.festivalToEdit.set(null);
   }

@@ -1,6 +1,6 @@
 import { Injectable, signal } from '@angular/core';
 import { Festival } from '../interfaces/festival';
-
+//Injectable: Permet d'injecter ce service dans d'autres composants ou services
 @Injectable({
   providedIn: 'root'
 })
@@ -32,18 +32,22 @@ export class FestivalService {
     }
   ]);
 
+  //Cherche un festival par son nom
   findByName(name: string): Festival | undefined {
     return this.festivalList().find(f => f.name === name);
   }
 
+  //Supprime un festival par son nom
   removeFestival(name: string) {
     this.festivalList.update(festivals => festivals.filter(f => f.name !== name));
   }
 
+  //Ajoute un nouveau festival
   addFestival(festival: Festival) {
     this.festivalList.update(festivals => [...festivals, festival]);
   }
 
+  //Met à jour un festival existant
   updateFestival(name: string, updatedFestival: Festival) {
     this.festivalList.update(festivals => 
       festivals.map(f => f.name === name ? updatedFestival : f)

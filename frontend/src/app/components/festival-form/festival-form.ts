@@ -101,7 +101,13 @@ export class FestivalFormComponent {
   removeTariffZone(index: number) {
     this.tariffZones.removeAt(index);
   }
-
+  //ONSUBMIT:
+    //Rôle : Valide et envoie les données du formulaire au service
+    //Quand ? Appelée quand l'utilisateur clique sur "Créer le festival" ou "Mettre à jour"
+    //Que fait-elle ? Vérifie si le formulaire est valide
+    //Copie les données + ajoute festivalName aux zones
+    //Appelle addFestival() (création) OU updateFestival() (modification)
+    //Nettoie et ferme le formulaire
   onSubmit() {
     if (this.festivalForm.valid) {
       const formValue = this.festivalForm.value;
