@@ -1,13 +1,47 @@
 <div class="editors-container">
-  <!-- Header simple -->
+  <!-- Header -->
   <div class="header">
     <h1>Liste des Éditeurs</h1>
   </div>
 
-  <!-- Liste des éditeurs en grille -->
-  @if (editors().length > 0) {
+  <!-- Filtres -->
+  <div class="filters">
+    <!-- Barre de recherche -->
+    <div class="search-box">
+      <input
+        type="text"
+        placeholder="Rechercher un éditeur..."
+        [value]="search()"
+        (input)="onSearchChange($event)"
+        class="search-input"
+      />
+    </div>
+
+    <!-- Dropdown de tri -->
+    <div class="sort-box">
+      <label for="sort-select">Trier par : </label>
+      <select
+        id="sort-select"
+        [value]="sortBy()"
+        (change)="onSortChange($event)"
+        class="sort-select"
+      >
+        <option value="name">Nom (A-Z)</option>
+        <option value="gamesCount">Nombre de jeux</option>
+        <option value="contactsCount">Nombre de contacts</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Statistiques -->
+  <div class="stats">
+    <p>{{ filteredEditors().length }} résultat(s) sur {{ editors().length }} éditeur(s)</p>
+  </div>
+
+  <!-- Liste des éditeurs -->
+  @if (filteredEditors().length > 0) {
     <div class="editors-grid">
-      @for (editor of editors(); track editor.id) {
+      @for (editor of filteredEditors(); track editor.id) {
         <app-editor-card
           [editor]="editor"
           (onDelete)="handleDelete($event)"
@@ -16,7 +50,11 @@
     </div>
   } @else {
     <div class="empty-state">
-      <p>Aucun éditeur disponible</p>
+      @if (search()) {
+        <p>Aucun éditeur trouvé pour "{{ search() }}"</p>
+      } @else {
+        <p>Aucun éditeur disponible</p>
+      }
     </div>
   }
 </div>
