@@ -1,0 +1,101 @@
+<div class="form-container">
+    <button class="btn btn-add" (click)="OpenCloseForm()">
+      {{ showForm() ? 'Annuler' : '+ Ajouter un Festival' }}
+    </button>
+  
+    @if (showForm()) {
+      <div class="form-card">
+        
+        <h2>{{ isEditMode() ? 'Modifier le Festival' : 'Nouveau Festival' }}</h2>
+        
+        <form [formGroup]="festivalForm" (ngSubmit)="onSubmit()">
+
+          <div class="form-section">
+            <h3>Informations générales</h3>
+            
+            <div class="form-group">
+              <label for="name">Nom du festival *</label>
+              <input 
+                id="name" 
+                type="text" 
+                formControlName="name"
+                placeholder="Ex: Festival-Rose"
+              />
+              @if (festivalForm.get('name')?.invalid && festivalForm.get('name')?.touched) {
+                <span class="error">Le nom est requis (min 3 caractères)</span>
+              }
+            </div>
+  
+            <div class="form-group">
+              <label for="nbTables">Nombre de tables *</label>
+              <input 
+                id="nbTables" 
+                type="number" 
+                formControlName="nbTables"
+                min="1"
+              />
+              @if (festivalForm.get('nbTables')?.invalid && festivalForm.get('nbTables')?.touched) {
+                <span class="error">Le nombre de tables doit être supérieur à 0</span>
+              }
+            </div>
+          </div>
+  
+          <!-- Zones tarifaires -->
+          <div class="form-section">
+            <div class="section-header">
+              <h3>Zones tarifaires</h3>
+              <button type="button" class="btn btn-secondary" (click)="addTariffZone()">
+                + Ajouter une zone
+              </button>
+            </div>
+  
+            <div formArrayName="tariffZones" class="zones-list">
+              @for (zone of tariffZones.controls; track $index; let i = $index) {
+                <div [formGroupName]="i" class="zone-form">
+                  <div class="zone-header">
+                    <h4>Zone {{ i + 1 }}</h4>
+                    <button type="button" class="btn-remove" (click)="removeTariffZone(i)">
+                      ✕
+                    </button>
+                  </div>
+  
+                  <div class="zone-fields">
+                    <div class="form-group">
+                      <label>Nom de la zone *</label>
+                      <input type="text" formControlName="name" placeholder="Ex: Zone A" />
+                    </div>
+  
+                    <div class="form-group">
+                      <label>Nombre de tables *</label>
+                      <input type="number" formControlName="nbTables" min="1" />
+                    </div>
+  
+                    <div class="form-group">
+                      <label>Prix par table (€) *</label>
+                      <input type="number" formControlName="tablePrice" min="0" />
+                    </div>
+  
+                    <div class="form-group">
+                      <label>Prix par m² (€) *</label>
+                      <input type="number" formControlName="squareMeterPrice" min="0" />
+                    </div>
+                  </div>
+                </div>
+              } @empty {
+                <p class="no-zones">Aucune zone tarifaire. Cliquez sur "Ajouter une zone" pour commencer.</p>
+              }
+            </div>
+          </div>
+  
+          <div class="form-actions">
+            <button type="button" class="btn btn-secondary" (click)="OpenCloseForm()">
+              Annuler
+            </button>
+            <button type="submit" class="btn btn-primary" [disabled]="festivalForm.invalid">
+              {{ isEditMode() ? 'Mettre à jour' : 'Créer le festival' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    }
+</div>

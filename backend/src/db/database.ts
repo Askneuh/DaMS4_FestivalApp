@@ -4,6 +4,6 @@ const { Pool } = pkg
 const pool = new Pool({
  connectionString:
  process.env['DATABASE_URL'] ||
- 'postgres://secureapp:secureapp@localhost:5433/secureapp'
+ 'postgres://festivalapp:festivalapp@localhost:5439/festivalapp'
 });
 export default pool

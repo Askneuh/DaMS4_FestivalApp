@@ -12,12 +12,17 @@ const router = Router()
 router.get('/:userId', async (req, res) => {
     const userId = req.params.userId
     console.log("userid", userId)
-    const { rows } = await pool.query('SELECT id, login, role FROM users WHERE id = $1', [userId])
-    res.json(rows)
+    try {
+        const { rows } = await pool.query('SELECT id, login, role FROM users WHERE id = $1', [userId])
+        res.json(rows)
+    }
+    catch (err: any) {
+        console.error(err)
+        res.status(500).json({ error: 'Erreur serveur' })
+    }
 })
 // Création d'un utilisateur
 router.post('/', async (req, res) => {
-    console.log("ici")
     const { login, password } = req.body
     if (!login || !password) {
         return res.status(400).json({ error: 'Login et mot de passe requis' })
