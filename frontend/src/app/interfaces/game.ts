@@ -12,7 +12,7 @@ export interface Game {
     gameType: GameType 
     minimumAge: number
     prototype: boolean //0 pas un prototype 1 prototype sur le csv
-    duration: number
+    duration: number // A voir
     theme: string
     description: string
     gameImage: string //pour l'instant lien vers une image 

@@ -10,8 +10,13 @@ const router = Router()
 //Route pour récupérer les données d'un festival dont le nom (unique) est passé en paramètre.
 router.post('/:festivalName', async (req,res) => {
     const festivaName = req.params.festivalName;
-    const { rows } = await pool.query('SELECT * FROM festival WHERE festivalName = $1', [festivaName])
-    res.json(rows)
+    try {
+        const { rows } = await pool.query('SELECT * FROM festival WHERE festivalName = $1', [festivaName])
+        res.json(rows)
+    } catch (err: any) {
+        console.error(err);
+        return res.status(500).json({ error: 'Erreur serveur' })
+    }
 });
 //Route pour cla création d'un festival
 router.post('/', async (req, res) => {
@@ -50,11 +55,14 @@ router.post('/update/:festivalName', async (req, res) => {
     const  festivalName = req.params.festivalName;
     const {nbTables, begin_date, end_date} = req.body;
     try {
-        await pool.query(
+        const {rowCount} = await pool.query(
             'UPDATE TABLE festival SET nbTables = $1, begin_date = $2, end_date = $3',
             [nbTables, begin_date, end_date]
             
         )
+        if (rowCount === 0) {
+            return res.status(404).json({ error: "Festival non trouvé" })
+        }
         return res.status(201).json({ message: 'Festival mis a jour' })
     }
     catch(err: any) {
