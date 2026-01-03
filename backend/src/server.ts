@@ -55,6 +55,18 @@ await ensureAdmin()
 app.use('/api/public', publicRouter)
 app.use('/api/auth', authRouter);
 app.use('/api/users', verifyToken, usersRouter); // protégé
+app.use('/api/contact', verifyToken, usersRouter); // protégé 
+app.use('/api/editeurs', verifyToken, usersRouter); // protégé 
+app.use('/api/festivals', verifyToken, usersRouter); // protégé 
+app.use('/api/game', verifyToken, usersRouter); // protégé 
+app.use('/api/gameType', verifyToken, usersRouter); // protégé 
+app.use('/api/mechanism', verifyToken, usersRouter); // protégé 
+app.use('/api/planArea', verifyToken, usersRouter); // protégé 
+app.use('/api/reservation', verifyToken, usersRouter); // protégé 
+app.use('/api/suiviReservation', verifyToken, usersRouter); // protégé 
+app.use('/api/tariffZone', verifyToken, usersRouter); // protégé 
+
+
 app.use('/api/admin', verifyToken, requireAdmin, (_, res) => {
  res.json({ message: 'Bienvenue admin' });
 })
