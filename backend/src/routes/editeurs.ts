@@ -4,8 +4,8 @@ import { requireAdmin } from '../middleware/auth-admin.js'
 
 const router = Router()
 
-router.get('/:editeurId', async (req, res) => {
-    const idE = req.params.editeurId
+router.get('/:editorId', async (req, res) => {
+    const idE = req.params.editorId
     try {
         const { rows } = await pool.query('SELECT * FROM editor WHERE idEditor = $1', [idE])
         res.json(rows)
@@ -39,8 +39,8 @@ router.post('/', async (req, res) => {
     }
 })
 
-router.post('/update/:editeurId', async (req, res) => {
-    const editeurId = req.params.editeurId;
+router.post('/update/:editorId', async (req, res) => {
+    const editeurId = req.params.editorId;
     const { name, exposant, distributeur, logo } = req.body;
     try {
         const { rowCount } = await pool.query(
