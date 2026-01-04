@@ -1,2 +1,15 @@
-<app-festival-list />
+<nav class="navbar">
+  <div class="nav-logo">FestivalApp</div>
+  <div class="nav-links">
+    <a routerLink="" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">Accueil</a>
+    <a routerLink="festival_list" routerLinkActive="active">Festivals</a>
+    @if (!this.auth_svc.isLoggedIn()) {
+    <a routerLink="login" class="login-btn" routerLinkActive="active">Connexion</a>
+    }
+    @if (this.auth_svc.isLoggedIn()) {
+        <button class="logout-btn" (click)="logout()">Déconnexion</button>
+    }
+  </div>
+</nav>
+
 <router-outlet />

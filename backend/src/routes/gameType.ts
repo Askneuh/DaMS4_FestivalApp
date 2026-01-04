@@ -57,3 +57,4 @@ router.post('/update/:gameTypeId', requireAdmin, async (req, res) => {
     }
 })
 
+export default router

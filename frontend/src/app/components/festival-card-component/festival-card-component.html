@@ -5,11 +5,11 @@
             <span class="tables-count">{{ festival()!.nbTables}} tables</span>
         </div>
          
-        @if (festival()!.tariffZones && festival()!.tariffZones.length > 0){
+        @if (festival()!.tariffZones && festival()!.tariffZones!.length > 0){
             <div class="zones-section">
                 <h3>Zones tarifaires</h3>
                 <div class="zones-list">
-                    @for (zone of festival()!.tariffZones; track zone.id){
+                    @for (zone of festival()!.tariffZones; track zone.idTZ){
                         <div class="zone-item">
                             <div class="zone-name">{{ zone.name }}</div>
                             <div class="zone-info">

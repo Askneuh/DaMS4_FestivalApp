@@ -25,12 +25,12 @@ CREATE TABLE IF NOT EXISTS users (
     role TEXT DEFAULT 'user'
 );
 
-CREATE TABLE IF NOT EXISTS festival (
-    name TEXT PRIMARY KEY,
-    nbTables INTEGER NOT NULL,
-    creation_date DATE,
-    begin_date DATE,
-    end_date DATE
+CREATE TABLE IF NOT EXISTS "festival" (
+    "name" TEXT PRIMARY KEY,
+    "nbTables" INTEGER NOT NULL,
+    "creation_date" DATE,
+    "begin_date" DATE,
+    "end_date" DATE
 );
 
 CREATE TABLE IF NOT EXISTS mechanism (
@@ -55,13 +55,13 @@ CREATE TABLE IF NOT EXISTS editor (
 
 
 
-CREATE TABLE IF NOT EXISTS tariffZone (
-    idTZ SERIAL PRIMARY KEY,
-    name TEXT,
-    nbTables INTEGER,
-    tablePrice NUMERIC,
-    squareMeterPrice NUMERIC,
-    festivalName TEXT REFERENCES festival(name) NOT NULL
+CREATE TABLE IF NOT EXISTS "tariffZone" (
+    "idTZ" SERIAL PRIMARY KEY,
+    "name" TEXT,
+    "nbTables" INTEGER,
+    "tablePrice" NUMERIC,
+    "squareMeterPrice" NUMERIC,
+    "festivalName" TEXT REFERENCES "festival"("name") NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS game (

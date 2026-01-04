@@ -76,3 +76,4 @@ router.post('/update/:suiviId', requireAdmin, async (req, res) => {
     }
 })
 
+export default router

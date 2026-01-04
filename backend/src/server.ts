@@ -15,7 +15,17 @@ import cookieParser from 'cookie-parser'
 import publicRouter from './routes/public.js'  // Notez le .js !
 import { ensureAdmin } from './db/initAdmin.js'
 import usersRouter from './routes/users.js'
+import festivalsRouter from './routes/festivals.js'
+import contactRouter from './routes/contact.js'
+import editeursRouter from './routes/editeurs.js'
+import gameRouter from './routes/game.js'
+import gameTypeRouter from './routes/gameType.js'
+import mechanismRouter from './routes/mechanism.js'
+import planAreaRouter from './routes/planArea.js'
 import authRouter from './routes/auth.js'
+import reservationsRouter from './routes/reservations.js'
+import suiviReservationRouter from './routes/suiviReservation.js'
+import tariffZoneRouter from './routes/tariffZone.js'
 import { verifyToken } from './middleware/token-management.js'
 import { requireAdmin } from './middleware/auth-admin.js'
 
@@ -43,7 +53,7 @@ app.use(cookieParser())
 
 // Configuration CORS : autoriser le front Angular en HTTPS local
 app.use(cors({
- origin: 'https://localhost:8080',
+ origin: 'https://localhost:4200',
  credentials: true,
  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
  allowedHeaders: ['Content-Type', 'Authorization']
@@ -55,16 +65,16 @@ await ensureAdmin()
 app.use('/api/public', publicRouter)
 app.use('/api/auth', authRouter);
 app.use('/api/users', verifyToken, usersRouter); // protégé
-app.use('/api/contact', verifyToken, usersRouter); // protégé 
-app.use('/api/editeurs', verifyToken, usersRouter); // protégé 
-app.use('/api/festivals', verifyToken, usersRouter); // protégé 
-app.use('/api/game', verifyToken, usersRouter); // protégé 
-app.use('/api/gameType', verifyToken, usersRouter); // protégé 
-app.use('/api/mechanism', verifyToken, usersRouter); // protégé 
-app.use('/api/planArea', verifyToken, usersRouter); // protégé 
-app.use('/api/reservation', verifyToken, usersRouter); // protégé 
-app.use('/api/suiviReservation', verifyToken, usersRouter); // protégé 
-app.use('/api/tariffZone', verifyToken, usersRouter); // protégé 
+app.use('/api/contact', verifyToken, contactRouter); // protégé 
+app.use('/api/editeurs', verifyToken, editeursRouter); // protégé 
+app.use('/api/festivals', verifyToken, festivalsRouter); // protégé 
+app.use('/api/game', verifyToken, gameRouter); // protégé 
+app.use('/api/gameType', verifyToken, gameTypeRouter); // protégé 
+app.use('/api/mechanism', verifyToken, mechanismRouter); // protégé 
+app.use('/api/planArea', verifyToken, planAreaRouter); // protégé 
+app.use('/api/reservation', verifyToken, reservationsRouter); // protégé 
+app.use('/api/suiviReservation', verifyToken, suiviReservationRouter); // protégé 
+app.use('/api/tariffZone', verifyToken, tariffZoneRouter); // protégé 
 
 
 app.use('/api/admin', verifyToken, requireAdmin, (_, res) => {

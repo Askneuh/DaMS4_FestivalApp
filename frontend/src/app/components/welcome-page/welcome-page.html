@@ -1,0 +1,6 @@
+@if (this.auth_svc.isLoggedIn()) {
+    <p>Utilisateur connecté : {{this.auth_svc.currentUser()?.login}}</p>
+}
+@else {
+    <p>Utilisateur non connecté</p>
+}

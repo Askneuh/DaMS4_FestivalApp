@@ -57,3 +57,20 @@ router.post('/update/:tzId', requireAdmin, async (req, res) => {
         return res.status(500).json({ error: 'Erreur serveur' })
     }
 })
+
+//Route de récupéeration de toutes les zones tarifaires d'un festival
+router.get('/festival/:festivalName', async (req, res) => {
+    const festivalName = req.params.festivalName;
+    try {
+        const { rows } = await pool.query('SELECT * FROM tariffZone WHERE festivalName = $1', [festivalName]);
+        if (rows.length === 0) {
+            return res.status(404).json({ error: "Aucune zone tarifaire trouvée pour ce festival" });
+        }
+        res.json(rows);
+    } catch (err: any) {
+        console.error(err);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
+export default router

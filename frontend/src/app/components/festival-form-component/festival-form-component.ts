@@ -1,8 +1,9 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { MatFormField, MatLabel } from '@angular/material/form-field';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatInputModule } from '@angular/material/input';
 import { Festival } from '../../interfaces/festival';
+import { FestivalService } from '../../services/festival-service';
 
 
 
@@ -13,6 +14,7 @@ import { Festival } from '../../interfaces/festival';
   styleUrl: './festival-form-component.css',
 })
 export class FestivalFormComponent {
+  readonly svc = inject(FestivalService)
   readonly form = new FormGroup({
     name: new FormControl<string>(''),
     nbTables: new FormControl<number>(0)
@@ -32,6 +34,7 @@ export class FestivalFormComponent {
         nbTables: nbTables,
         tariffZones: []
       }
+      this.svc.addFestivalBD(festival)
     }
   }
 }

@@ -1,0 +1,75 @@
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 5%;
+  background-color: #ffffff;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  font-family: 'Segoe UI', sans-serif;
+}
+
+.nav-logo {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #2c3e50;
+}
+
+.nav-links {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+}
+
+.nav-links a {
+  text-decoration: none;
+  color: #5d6d7e;
+  font-weight: 500;
+  transition: color 0.3s ease;
+  padding: 5px 10px;
+}
+
+.nav-links a:hover {
+  color: #3498db;
+}
+
+/* Style pour le lien actif (Angular routerLinkActive) */
+.active {
+  color: #3498db !important;
+  border-bottom: 2px solid #3498db;
+}
+
+/* Style spécial pour le bouton de connexion */
+.login-btn {
+  background-color: #3498db;
+  color: white !important;
+  border-radius: 5px;
+  padding: 8px 18px !important;
+}
+
+.login-btn:hover {
+  background-color: #2980b9;
+}
+
+/* Bouton de déconnexion spécifique */
+.logout-btn {
+  background-color: transparent;
+  color: #e74c3c; /* Rouge pour indiquer une action de sortie */
+  border: 1.5px solid #e74c3c;
+  border-radius: 5px;
+  padding: 7px 15px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: inherit; /* Pour garder la même police que la nav */
+}
+
+.logout-btn:hover {
+  background-color: #e74c3c;
+  color: white;
+}
+
+/* Optionnel : Ajout d'une marge à gauche pour séparer Connexion et Déconnexion */
+.nav-links button, .nav-links .login-btn {
+  margin-left: 5px;
+}
