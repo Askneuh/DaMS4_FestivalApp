@@ -38,12 +38,10 @@ export class FestivalList {
 
   removeFestival(name: string) {
     // 1. Trouver le festival à supprimer
-    const lastRemTemp = this.svc.findByName(name);
-    // 2. Si trouvé, le sauvegarder
-    if (lastRemTemp) {
-      this.lastRemoved.set(lastRemTemp);
-    }
-    // 3. Supprimer du service
-    this.svc.removeFestival(name);
+    const lastRemTemp = this.svc.findByNameBD(name).subscribe(festival => {
+      this.lastRemoved.set(festival);
+    });
+    // 2. Supprimer du service
+    this.svc.removeFestivalBD(name);
   }
 }

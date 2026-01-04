@@ -57,3 +57,4 @@ router.post('/update/:reservationId', requireAdmin, async (req, res) => {
     }
 })
 
+export default router

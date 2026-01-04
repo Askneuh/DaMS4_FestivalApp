@@ -53,6 +53,8 @@ export class FestivalFormComponent {
   
   // Charge les données d'un festival dans le formulaire
   loadFestivalData(festival: Festival) {
+    console.log('Festival reçu:', festival);
+    console.log('Zones tarifaires:', festival.tariffZones);
     // Vider d'abord les zones existantes
     this.tariffZones.clear();
     
@@ -63,17 +65,19 @@ export class FestivalFormComponent {
     });
     
     // Ajouter chaque zone tarifaire
-    festival.tariffZones.forEach(zone => {
-      const zoneForm = this.fb.group({
-        id: [zone.id],
-        name: [zone.name, Validators.required],
-        nbTables: [zone.nbTables, [Validators.required, Validators.min(1)]],
-        tablePrice: [zone.tablePrice, [Validators.required, Validators.min(0)]],
-        squareMeterPrice: [zone.squareMeterPrice, [Validators.required, Validators.min(0)]],
-        festivalName: [zone.festivalName]
+    if (festival.tariffZones && festival.tariffZones.length > 0) {
+      festival.tariffZones!.forEach(zone => {
+        const zoneForm = this.fb.group({
+          idTZ: [zone.idTZ],
+          name: [zone.name, Validators.required],
+          nbTables: [zone.nbTables, [Validators.required, Validators.min(1)]],
+          tablePrice: [zone.tablePrice, [Validators.required, Validators.min(0)]],
+          squareMeterPrice: [zone.squareMeterPrice, [Validators.required, Validators.min(0)]],
+          festivalName: [zone.festivalName]
+        });
+        this.tariffZones.push(zoneForm);
       });
-      this.tariffZones.push(zoneForm);
-    });
+    }
   }
 
 
@@ -117,11 +121,14 @@ export class FestivalFormComponent {
       // MODE ÉDITION : Si on a un festival à éditer
       if (this.festivalToEdit()) {
         const originalName = this.festivalToEdit()!.name;
-        this.festivalService.updateFestival(originalName, festival);
+        //this.festivalService.updateFestival(originalName, festival);
+        //On ne prend pas le nom car il est clé primaire et non modifiable, on prend les zones tarifaires en compte
+        this.festivalService.updateFestivalBD(originalName, festival);
       } 
       // MODE CRÉATION : Nouveau festival
       else {
-        this.festivalService.addFestival(festival);
+        //this.festivalService.addFestival(festival);
+        this.festivalService.addFestivalBD(festival);
       }
       
       this.resetForm();

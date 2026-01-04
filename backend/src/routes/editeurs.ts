@@ -26,7 +26,7 @@ router.post('/', async (req, res) => {
             'INSERT INTO editor (name, exposant, distributeur, logo) VALUES ($1, $2, $3, $4) RETURNING idEditor',
             [name, exposant || false, distributeur || false, logo]
         )
-        return res.status(201).json({ message: 'Éditeur créé'})
+        return res.status(201).json(rows[0]);
     } 
     catch (err: any) {
         //Catch les erreurs d'unicité, ici de la clé primaire 
@@ -42,17 +42,30 @@ router.post('/', async (req, res) => {
 router.post('/update/:editorId', async (req, res) => {
     const editeurId = req.params.editorId;
     const { name, exposant, distributeur, logo } = req.body;
+
     try {
-        const { rowCount } = await pool.query(
-            'UPDATE editor SET name = $1, exposant = $2, distributeur = $3, logo = $4 WHERE idEditor = $5',
+        // Utilisation de COALESCE pour garder l'ancienne valeur si la nouvelle est undefined/null
+        const { rows, rowCount } = await pool.query(
+            `UPDATE editor 
+             SET name = COALESCE($1, name), 
+                 exposant = COALESCE($2, exposant), 
+                 distributeur = COALESCE($3, distributeur), 
+                 logo = COALESCE($4, logo) 
+             WHERE idEditor = $5 
+             RETURNING *`,
             [name, exposant, distributeur, logo, editeurId]
-        )
+        );
+
         if (rowCount === 0) {
-            return res.status(404).json({ error: "Éditeur non trouvé" })
+            return res.status(404).json({ error: "Éditeur non trouvé" });
         }
-        return res.status(200).json({ message: 'Éditeur mis à jour' })
+
+        // On renvoie l'objet complet mis à jour
+        return res.status(200).json(rows[0]);
     } catch (err: any) {
-        console.error(err)
-        return res.status(500).json({ error: 'Erreur serveur' })
+        console.error(err);
+        return res.status(500).json({ error: 'Erreur serveur' });
     }
-})
+});
+
+export default router

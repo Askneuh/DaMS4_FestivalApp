@@ -58,3 +58,4 @@ router.post('/update/:contactId', requireAdmin, async (req, res) => {
     }
 })
 
+export default router

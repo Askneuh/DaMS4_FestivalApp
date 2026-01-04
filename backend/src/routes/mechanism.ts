@@ -57,3 +57,5 @@ router.post('/update/:mechanismId', requireAdmin, async (req, res) => {
         return res.status(500).json({ error: 'Erreur serveur' })
     }
 })
+
+export default router

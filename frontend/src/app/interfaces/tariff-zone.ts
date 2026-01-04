@@ -1,5 +1,5 @@
 export interface TariffZone {
-    id: number
+    idTZ: number
     name: string
     nbTables: number
     tablePrice: number

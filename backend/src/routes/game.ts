@@ -58,3 +58,4 @@ router.post('/update/:gameId', requireAdmin, async (req, res) => {
     }
 })
 
+export default router

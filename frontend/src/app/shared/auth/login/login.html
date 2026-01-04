@@ -1,0 +1,30 @@
+<div>
+    <form  [formGroup]="formulaire" (ngSubmit)='login($event)' class="form">
+
+        <mat-form-field>
+        <mat-label>
+            Login
+        </mat-label>
+        <input matInput formControlName="login" type="text" placeholder="login" required>
+        </mat-form-field>
+
+        <mat-form-field>
+        <mat-label>
+            Password
+        </mat-label>
+            <input matInput formControlName="password" type="text" placeholder="password" required> 
+        </mat-form-field>
+        @if (this.formulaire.valid) {
+            <input type="submit">
+        }
+    </form>
+    @if (this.auth_svc.isLoading()) {
+        <p>Loading...</p>
+    }
+    @if (this.auth_svc.error != null) {
+        <p>{{this.auth_svc.error()}}</p>
+    }
+    @if (this.auth_svc.isLoggedIn()) {
+        <p>Connected</p>
+    }
+</div>

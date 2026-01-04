@@ -21,7 +21,7 @@ export function verifyToken(req: Express.Request, res: Response, next:NextFuncti
     const token = req.cookies?.['access_token']
     if (!token) { return res.status(401).json({ error: 'Token manquant' }) }
     try {
-        const decoded = jwt.verify(token, process.env['JWT_SECRET']!) as TokenPayload
+        const decoded = jwt.verify(token, JWT_SECRET) as TokenPayload
         req.user = decoded
         return next()
     } catch {
