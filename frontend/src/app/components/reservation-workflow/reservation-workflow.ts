@@ -111,9 +111,15 @@ export class ReservationWorkflow implements OnInit {
     const v = this.reservationForm.value;
     this.isEditing.set(false);
 
-    const updatedReservation = {
-      idReservation: this.reservation?.idReservation,
-      idEditor: this.reservation?.idEditor,
+    // Ensure reservation exists and has required IDs
+    if (!this.reservation?.idReservation || !this.reservation?.idEditor) {
+      console.error('❌ Impossible de mettre à jour: réservation invalide');
+      return;
+    }
+
+    const updatedReservation: Reservation = {
+      idReservation: this.reservation.idReservation,
+      idEditor: this.reservation.idEditor,
       status: v.status,
       listeDemandee: v.listeDemandee,
       listeRecue: v.listeRecue,
@@ -121,15 +127,15 @@ export class ReservationWorkflow implements OnInit {
       nbSmallTables: v.nbPetitesTables,
       nbLargeTables: v.nbGrandesTables,
       nbCityHallTables: v.nbTablesMairie,
-      remise: this.reservation?.remise,
+      remise: this.reservation.remise,
       typeAnimateur: v.typeAnimateur === 'editeur' ? 1 : 0,
-      festivalName: this.reservation?.festivalName
+      festivalName: this.reservation.festivalName
     };
 
-    this.reservation_svc.updateReservation(this.reservation?.idReservation, updatedReservation).subscribe({
+    this.reservation_svc.updateReservation(this.reservation.idReservation, updatedReservation).subscribe({
       next: () => {
         // Update local reservation object
-        this.reservation = { ...this.reservation, ...updatedReservation };
+        this.reservation = updatedReservation;
         console.log('✅ Réservation mise à jour avec succès');
       },
       error: (err) => {
