@@ -53,10 +53,10 @@ app.use(cookieParser())
 
 // Configuration CORS : autoriser le front Angular en HTTPS local
 app.use(cors({
- origin: 'https://localhost:4200',
- credentials: true,
- methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
- allowedHeaders: ['Content-Type', 'Authorization']
+    origin: 'https://localhost:4200',
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
 }))
 
 await ensureAdmin()
@@ -78,7 +78,7 @@ app.use('/api/tariffZone', verifyToken, tariffZoneRouter); // protégé
 
 
 app.use('/api/admin', verifyToken, requireAdmin, (_, res) => {
- res.json({ message: 'Bienvenue admin' });
+    res.json({ message: 'Bienvenue admin' });
 })
 
 // Chargement du certificat et clé générés par mkcert (étape 0)
@@ -90,5 +90,5 @@ const cert = fs.readFileSync('./certs/localhost.pem')
 
 // Lancement du serveur HTTPS
 https.createServer({ key, cert }, app).listen(4000, () => {
- console.log('� Serveur API démarré sur https://localhost:4000')
+    console.log('� Serveur API démarré sur https://localhost:4000')
 })
