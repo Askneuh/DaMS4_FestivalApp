@@ -8,7 +8,7 @@ const router = Router()
 router.get('/:planAreaId', async (req, res) => {
     const planAreaId = req.params.planAreaId
     try {
-        const { rows } = await pool.query('SELECT * FROM planArea WHERE idPA = $1', [planAreaId])
+        const { rows } = await pool.query('SELECT * FROM planArea WHERE id = $1', [planAreaId])
         res.json(rows)
     } catch (err: any) {
         console.error(err)
@@ -24,10 +24,10 @@ router.post('/', requireAdmin, async (req, res) => {
     }
     try {
         const { rows } = await pool.query(
-            'INSERT INTO planArea (name, nbTables, festivalName) VALUES ($1, $2, $3) RETURNING idPA',
+            'INSERT INTO planArea (name, nbTables, festivalName) VALUES ($1, $2, $3) RETURNING id',
             [name, nbTables, festivalName]
         )
-        return res.status(201).json({ message: 'Zone de plan créée', id: rows[0].idpa })
+        return res.status(201).json({ message: 'Zone de plan créée', id: rows[0].id })
     } catch (err: any) {
         //Catch les erreurs d'unicité, ici de la clé primaire 
         if (err.code === '23505') {
@@ -45,7 +45,7 @@ router.post('/update/:planAreaId', requireAdmin, async (req, res) => {
     const { name, nbTables, festivalName } = req.body
     try {
         const { rowCount } = await pool.query(
-            'UPDATE planArea SET name = $1, nbTables = $2, festivalName = $3 WHERE idPA = $4',
+            'UPDATE planArea SET name = $1, nbTables = $2, festivalName = $3 WHERE id = $4',
             [name, nbTables, festivalName, planAreaId]
         )
         if (rowCount === 0) {

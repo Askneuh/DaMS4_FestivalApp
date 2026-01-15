@@ -1,10 +1,10 @@
 import { Editor } from './editor';
 
-export interface Reservation {
-    idReservation?: number;
+export interface ReservationDAO {
+    idReservation: number;
     idEditor: number;
     status: string;
-    editor?: Editor;
+    editor: Editor;
     nbSmallTables: number;
     nbLargeTables: number;
     nbCityHallTables: number;
