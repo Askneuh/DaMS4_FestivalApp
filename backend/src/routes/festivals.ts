@@ -8,24 +8,24 @@ import { requireAdmin } from '../middleware/auth-admin.js'
 
 const router = Router()
 //Route pour récupérer les données d'un festival dont le nom (unique) est passé en paramètre.
-router.post('/:festivalName', async (req,res) => {
+router.post('/:festivalName', async (req, res) => {
     const festivalName = req.params.festivalName;
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
         const { rows } = await client.query(
-            'SELECT * FROM "festival" WHERE "name" = $1', 
+            'SELECT * FROM "festival" WHERE "name" = $1',
             [festivalName]
         );
         const { rows: tzRows } = await client.query(
-            'SELECT * FROM "tariffZone" WHERE "festivalName" = $1', 
+            'SELECT * FROM "tariffZone" WHERE "festivalName" = $1',
             [festivalName]
-        ); 
+        );
         const festivalWithZones = {
             ...rows[0],
             tariffZones: tzRows
         };
-        res.json(festivalWithZones);        
+        res.json(festivalWithZones);
         await client.query('COMMIT');
 
     } catch (err: any) {
@@ -38,7 +38,7 @@ router.post('/:festivalName', async (req,res) => {
 });
 //Route pour la création d'un festival
 router.post('/', async (req, res) => {
-    const {name, nbTables, begin_date, end_date} = req.body;
+    const { name, nbSmallTables, nbLargeTables, nbCityHallTables, begin_date, end_date } = req.body;
     const dateActuelle: Date = new Date();
     //Gérer le fuseau horaire et formate pour le type Date de postgres
     const decalageFuseauHoraire_ms: number = dateActuelle.getTimezoneOffset() * 60 * 1000;
@@ -50,26 +50,23 @@ router.post('/', async (req, res) => {
     const client = await pool.connect();
     if (!name) {
         console.error("Nom du festival manquant lors de la création");
-        return res.status(400).json({error: "Nom du festival obligatoire pour la création"})
+        return res.status(400).json({ error: "Nom du festival obligatoire pour la création" })
     }
-    
+
     else {
         try {
-        await client.query('BEGIN');
-        const festivalRes = await client.query(
-            'INSERT INTO "festival" ("name", "nbTables", "creation_date", "begin_date", "end_date") VALUES ($1, $2, CURRENT_DATE, $3, $4) RETURNING *',
-            [name, nbTables || 0, begin_date || null, end_date || null]
-        );
-        if (tariffZones && tariffZones.length > 0) {
-            for (const zone of tariffZones) {
-                await client.query(
-                    'INSERT INTO "tariffZone" ("name", "nbTables", "tablePrice", "squareMeterPrice", "festivalName") VALUES ($1, $2, $3, $4, $5)',
-                    [zone.name, zone.nbTables, zone.tablePrice, zone.squareMeterPrice, name]
-                );
-            }
-        }
-        await client.query('COMMIT');
-        return res.status(201).json(festivalRes.rows[0]);
+            await client.query('BEGIN');
+            const smallTables = nbSmallTables || 0;
+            const largeTables = nbLargeTables || 0;
+            const cityHallTables = nbCityHallTables || 0;
+
+            const festivalRes = await client.query(
+                'INSERT INTO "festival" ("name", "nbSmallTables", "nbLargeTables", "nbCityHallTables", "remainingSmallTables", "remainingLargeTables", "remainingCityHallTables", "creation_date", "begin_date", "end_date") VALUES ($1, $2, $3, $4, $5, $6, $7, CURRENT_DATE, $8, $9) RETURNING *',
+                [name, smallTables, largeTables, cityHallTables, smallTables, largeTables, cityHallTables, begin_date || null, end_date || null]
+            );
+            
+            await client.query('COMMIT');
+            return res.status(201).json(festivalRes.rows[0]);
         }
         catch (err: any) {
             //Catch les erreurs d'unicité, ici de la clé primaire 
@@ -89,51 +86,41 @@ router.post('/', async (req, res) => {
 
 router.post('/update/:festivalName', async (req, res) => {
     const festivalNameParam = req.params.festivalName;
-    const { nbTables, begin_date, end_date, tariffZones } = req.body;
+    const { nbSmallTables, nbLargeTables, nbCityHallTables, remainingSmallTables, remainingLargeTables, remainingCityHallTables, begin_date, end_date } = req.body;
     const client = await pool.connect();
-    
+
     try {
         await client.query('BEGIN');
         const updateFestivalQuery = `
             UPDATE "festival" 
-            SET "nbTables" = COALESCE($1, "nbTables"), 
-                "begin_date" = COALESCE($2, "begin_date"), 
-                "end_date" = COALESCE($3, "end_date") 
-            WHERE "name" = $4 
+            SET "nbSmallTables" = COALESCE($1, "nbSmallTables"), 
+                "nbLargeTables" = COALESCE($2, "nbLargeTables"),
+                "nbCityHallTables" = COALESCE($3, "nbCityHallTables"),
+                "remainingSmallTables" = COALESCE($4, "remainingSmallTables"),
+                "remainingLargeTables" = COALESCE($5, "remainingLargeTables"),
+                "remainingCityHallTables" = COALESCE($6, "remainingCityHallTables"),
+                "begin_date" = COALESCE($7, "begin_date"), 
+                "end_date" = COALESCE($8, "end_date") 
+            WHERE "name" = $9 
             RETURNING *`;
-        const { rowCount, rows } = await client.query(updateFestivalQuery, [nbTables, begin_date, end_date, festivalNameParam]);
+        const { rowCount, rows } = await client.query(updateFestivalQuery, [nbSmallTables, nbLargeTables, nbCityHallTables, remainingSmallTables, remainingLargeTables, remainingCityHallTables, begin_date, end_date, festivalNameParam]);
 
         if (rowCount === 0) {
             await client.query('ROLLBACK');
             return res.status(404).json({ error: "Festival non trouvé" });
         }
 
-        if (tariffZones) {
-            await client.query('DELETE FROM "tariffZone" WHERE "festivalName" = $1', [festivalNameParam]);
-
-            for (const zone of tariffZones) {
-                await client.query(
-                    'INSERT INTO "tariffZone" ("name", "nbTables", "tablePrice", "squareMeterPrice", "festivalName") VALUES ($1, $2, $3, $4, $5)',
-                    [zone.name, zone.nbTables, zone.tablePrice, zone.squareMeterPrice, festivalNameParam]
-                );
-            }
-        }
         const { rows: tzRows } = await client.query(
-            'SELECT * FROM "tariffZone" WHERE "festivalName" = $1', 
+            'SELECT * FROM "tariffZone" WHERE "festivalName" = $1',
             [festivalNameParam]
         );
 
         await client.query('COMMIT');
+
         
-        // ✅ Retourner le festival AVEC ses zones
-        const festivalWithZones = {
-            ...rows[0],
-            tariffZones: tzRows
-        };
-        
-        res.status(200).json(festivalWithZones);
+        res.status(200).json(rows[0]);
     }
-    catch(err: any) {
+    catch (err: any) {
         await client.query('ROLLBACK');
         console.error(err);
         return res.status(500).json({ error: 'Erreur serveur' });
@@ -174,7 +161,7 @@ router.delete('/:festivalName', requireAdmin, async (req, res) => {
         if (rowCount === 0) {
             await client.query('ROLLBACK');
             return res.status(404).json({ error: "Festival non trouvé" });
-        }   
+        }
         await client.query('COMMIT');
         res.status(200).json({ message: 'Festival supprimé' });
     } catch (err: any) {

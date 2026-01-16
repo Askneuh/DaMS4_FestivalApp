@@ -18,14 +18,18 @@ router.get('/:tzId', async (req, res) => {
 
 // Route de création d'une zone tarifaire
 router.post('/', requireAdmin, async (req, res) => {
-    const { name, nbTables, tablePrice, squareMeterPrice, festivalName } = req.body
+    const { name, nbSmallTables, nbLargeTables, nbCityHallTables, smallTablePrice, largeTablePrice, cityHallTablePrice, squareMeterPrice, festivalName } = req.body
     if (!festivalName) {
         return res.status(400).json({ error: "Nom du festival obligatoire pour la création de zone tarifaire" })
     }
     try {
+        const smallTables = nbSmallTables || 0;
+        const largeTables = nbLargeTables || 0;
+        const cityHallTables = nbCityHallTables || 0;
+
         const { rows } = await pool.query(
-            'INSERT INTO tariffZone (name, nbTables, tablePrice, squareMeterPrice, festivalName) VALUES ($1, $2, $3, $4, $5) RETURNING idTZ',
-            [name, nbTables, tablePrice, squareMeterPrice, festivalName]
+            'INSERT INTO tariffZone (name, nbSmallTables, nbLargeTables, nbCityHallTables, remainingSmallTables, remainingLargeTables, remainingCityHallTables, smallTablePrice, largeTablePrice, cityHallTablePrice, squareMeterPrice, festivalName) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING idTZ',
+            [name, smallTables, largeTables, cityHallTables, smallTables, largeTables, cityHallTables, smallTablePrice, largeTablePrice, cityHallTablePrice, squareMeterPrice, festivalName]
         )
         return res.status(201).json({ message: 'Zone tarifaire créée', id: rows[0].idtz })
     } catch (err: any) {
@@ -42,11 +46,11 @@ router.post('/', requireAdmin, async (req, res) => {
 // Route de mise à jour d'une zone tarifaire
 router.post('/update/:tzId', requireAdmin, async (req, res) => {
     const tzId = req.params.tzId
-    const { name, nbTables, tablePrice, squareMeterPrice } = req.body
+    const { name, nbSmallTables, nbLargeTables, nbCityHallTables, remainingSmallTables, remainingLargeTables, remainingCityHallTables, smallTablePrice, largeTablePrice, cityHallTablePrice, squareMeterPrice } = req.body
     try {
         const { rowCount } = await pool.query(
-            'UPDATE tariffZone SET name = $1, nbTables = $2, tablePrice = $3, squareMeterPrice = $4 WHERE idTZ = $5',
-            [name, nbTables, tablePrice, squareMeterPrice, tzId]
+            'UPDATE tariffZone SET name = COALESCE($1, name), nbSmallTables = COALESCE($2, nbSmallTables), nbLargeTables = COALESCE($3, nbLargeTables), nbCityHallTables = COALESCE($4, nbCityHallTables), remainingSmallTables = COALESCE($5, remainingSmallTables), remainingLargeTables = COALESCE($6, remainingLargeTables), remainingCityHallTables = COALESCE($7, remainingCityHallTables), smallTablePrice = COALESCE($8, smallTablePrice), largeTablePrice = COALESCE($9, largeTablePrice), cityHallTablePrice = COALESCE($10, cityHallTablePrice), squareMeterPrice = COALESCE($11, squareMeterPrice) WHERE idTZ = $12',
+            [name, nbSmallTables, nbLargeTables, nbCityHallTables, remainingSmallTables, remainingLargeTables, remainingCityHallTables, smallTablePrice, largeTablePrice, cityHallTablePrice, squareMeterPrice, tzId]
         )
         if (rowCount === 0) {
             return res.status(404).json({ error: "Zone tarifaire non trouvée" })
@@ -70,6 +74,21 @@ router.get('/festival/:festivalName', async (req, res) => {
     } catch (err: any) {
         console.error(err);
         res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
+// Route de suppression d'une zone tarifaire par ID
+router.delete('/:tzId', requireAdmin, async (req, res) => {
+    const tzId = req.params.tzId;
+    try {
+        const { rowCount } = await pool.query('DELETE FROM tariffZone WHERE idTZ = $1', [tzId]);
+        if (rowCount === 0) {
+            return res.status(404).json({ error: "Zone tarifaire non trouvée" });
+        }
+        return res.status(200).json({ message: 'Zone tarifaire supprimée' });
+    } catch (err: any) {
+        console.error(err);
+        return res.status(500).json({ error: 'Erreur serveur' });
     }
 });
 

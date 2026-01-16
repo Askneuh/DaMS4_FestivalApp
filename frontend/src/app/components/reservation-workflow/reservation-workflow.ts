@@ -129,7 +129,8 @@ export class ReservationWorkflow implements OnInit {
       nbCityHallTables: v.nbTablesMairie,
       remise: this.reservation.remise,
       typeAnimateur: v.typeAnimateur === 'editeur' ? 1 : 0,
-      festivalName: this.reservation.festivalName
+      festivalName: this.reservation.festivalName,
+      idTZ: this.reservation.idTZ
     };
 
     this.reservation_svc.updateReservation(this.reservation.idReservation, updatedReservation).subscribe({

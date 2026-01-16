@@ -14,4 +14,5 @@ export interface Reservation {
     listeRecue: boolean;
     jeuxRecus: boolean;
     festivalName: string;
+    idTZ: number;
 }

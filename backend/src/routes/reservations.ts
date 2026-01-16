@@ -42,6 +42,7 @@ router.get('/:reservationId', requireAdmin, async (req, res) => {
             listeRecue: row.listerecue,
             jeuxRecus: row.jeuxrecus,
             festivalName: row.festivalname,
+            idTZ: row.idtz,
             editor: {
                 id: row.editor_id,
                 name: row.editor_name,
@@ -61,14 +62,14 @@ router.get('/:reservationId', requireAdmin, async (req, res) => {
 
 // Route de création d'une réservation
 router.post('/', requireAdmin, async (req, res) => {
-    const { idEditor, status, nbSmallTables, nbLargeTables, nbCityHallTables, remise, typeAnimateur, listeDemandee, listeRecue, jeuxRecus, festivalName } = req.body
-    if (!idEditor) {
-        return res.status(400).json({ error: "ID de l'éditeur obligatoire pour la création de réservation" })
+    const { idEditor, status, nbSmallTables, nbLargeTables, nbCityHallTables, remise, typeAnimateur, listeDemandee, listeRecue, jeuxRecus, festivalName, idTZ } = req.body
+    if (!idEditor || !idTZ) {
+        return res.status(400).json({ error: "ID de l'éditeur et ID de la zone tarifaire obligatoires pour la création de réservation" })
     }
     try {
         const { rows } = await pool.query(
-            'INSERT INTO reservation (idEditor, status, nbSmallTables, nbLargeTables, nbCityHallTables, remise, typeAnimateur, listeDemandee, listeRecue, jeuxRecus, festivalName) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING idReservation',
-            [idEditor, status, nbSmallTables, nbLargeTables, nbCityHallTables, remise, typeAnimateur, listeDemandee, listeRecue, jeuxRecus, festivalName]
+            'INSERT INTO reservation (idEditor, status, nbSmallTables, nbLargeTables, nbCityHallTables, remise, typeAnimateur, listeDemandee, listeRecue, jeuxRecus, festivalName, idTZ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING idReservation',
+            [idEditor, status, nbSmallTables, nbLargeTables, nbCityHallTables, remise, typeAnimateur, listeDemandee, listeRecue, jeuxRecus, festivalName, idTZ]
         )
         return res.status(201).json({ message: 'Réservation créée', id: rows[0].idReservation })
     } catch (err: any) {
@@ -85,11 +86,11 @@ router.post('/', requireAdmin, async (req, res) => {
 // Route de mise à jour d'une réservation
 router.post('/update/:reservationId', requireAdmin, async (req, res) => {
     const reservationId = req.params.reservationId
-    const { status, nbSmallTables, nbLargeTables, nbCityHallTables, remise, typeAnimateur, listeDemandee, listeRecue, jeuxRecus } = req.body
+    const { status, nbSmallTables, nbLargeTables, nbCityHallTables, remise, typeAnimateur, listeDemandee, listeRecue, jeuxRecus, idTZ } = req.body
     try {
         const { rowCount } = await pool.query(
-            'UPDATE reservation SET status = $1, nbSmallTables = $2, nbLargeTables = $3, nbCityHallTables = $4, remise = $5, typeAnimateur = $6, listeDemandee = $7, listeRecue = $8, jeuxRecus = $9 WHERE idReservation = $10',
-            [status, nbSmallTables, nbLargeTables, nbCityHallTables, remise, typeAnimateur, listeDemandee, listeRecue, jeuxRecus, reservationId]
+            'UPDATE reservation SET status = $1, nbSmallTables = $2, nbLargeTables = $3, nbCityHallTables = $4, remise = $5, typeAnimateur = $6, listeDemandee = $7, listeRecue = $8, jeuxRecus = $9, idTZ = $10 WHERE idReservation = $11',
+            [status, nbSmallTables, nbLargeTables, nbCityHallTables, remise, typeAnimateur, listeDemandee, listeRecue, jeuxRecus, idTZ, reservationId]
         )
         if (rowCount === 0) {
             return res.status(404).json({ error: "Réservation non trouvée" })
@@ -133,6 +134,7 @@ router.get('/byEditor/:idEditor', requireAdmin, async (req, res) => {
             listeRecue: row.listerecue,
             jeuxRecus: row.jeuxrecus,
             festivalName: row.festivalname,
+            idTZ: row.idtz,
             editor: {
                 id: row.editor_id,
                 name: row.editor_name,
@@ -182,6 +184,7 @@ router.get('/byFestival/:festivalName', requireAdmin, async (req, res) => {
             listeRecue: row.listerecue,
             jeuxRecus: row.jeuxrecus,
             festivalName: row.festivalname,
+            idTZ: row.idtz,
             editor: {
                 id: row.editor_id,
                 name: row.editor_name,

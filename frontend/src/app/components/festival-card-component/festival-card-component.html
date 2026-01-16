@@ -2,7 +2,7 @@
     <div class="festival-card">
         <div class="festival-header">
             <h2>{{ festival()!.name }}</h2>
-            <span class="tables-count">{{ festival()!.nbTables}} tables</span>
+            <span class="tables-count">{{ festival()!.nbSmallTables + festival()!.nbLargeTables + festival()!.nbCityHallTables}} tables</span>
         </div>
          
         @if (festival()!.tariffZones && festival()!.tariffZones!.length > 0){
@@ -13,8 +13,10 @@
                         <div class="zone-item">
                             <div class="zone-name">{{ zone.name }}</div>
                             <div class="zone-info">
-                                <span>{{ zone.nbTables }} tables</span>
-                                <span>{{ zone.tablePrice }}€/table</span>
+                                <span>{{ zone.nbSmallTables + zone.nbLargeTables + zone.nbCityHallTables }} tables</span>
+                                <span>{{ zone.smallTablePrice }}€/table</span>
+                                <span>{{ zone.largeTablePrice }}€/table</span>
+                                <span>{{ zone.cityHallTablePrice }}€/table</span>
                                 <span>{{ zone.squareMeterPrice }}€/m2</span>
                             </div>
                         </div>

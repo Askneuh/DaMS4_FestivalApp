@@ -1,4 +1,5 @@
 import { Editor } from './editor';
+import { TariffZone } from './tariff-zone';
 
 export interface ReservationDAO {
     idReservation: number;
@@ -14,4 +15,6 @@ export interface ReservationDAO {
     listeRecue: boolean;
     jeuxRecus: boolean;
     festivalName: string;
+    idTZ: number;
+    tariffZone?: TariffZone;
 }

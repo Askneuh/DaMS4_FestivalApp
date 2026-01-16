@@ -13,6 +13,7 @@ import { FestivalFormComponent } from '../festival-form/festival-form';
 })
 export class FestivalList {
   readonly svc = inject(FestivalService);
+  readonly a = this.svc.loadFestivalsFromBD();
   festivals = this.svc.festivalList;
   lastRemoved = signal<Festival | null>(null);
   //Signal pour le festival en cours d'édition:
@@ -38,10 +39,10 @@ export class FestivalList {
 
   removeFestival(name: string) {
     // 1. Trouver le festival à supprimer
-    const lastRemTemp = this.svc.findByNameBD(name).subscribe(festival => {
+    const lastRemTemp = this.svc.findByName(name).subscribe(festival => {
       this.lastRemoved.set(festival);
     });
     // 2. Supprimer du service
-    this.svc.removeFestivalBD(name);
+    this.svc.removeFestivalByName(name);
   }
 }

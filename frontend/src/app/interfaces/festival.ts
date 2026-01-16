@@ -2,6 +2,11 @@ import { TariffZone } from "./tariff-zone"
 
 export interface Festival {
     name: string
-    nbTables: number
-    tariffZones: TariffZone[]
+    nbSmallTables: number
+    nbLargeTables: number
+    nbCityHallTables: number
+    remainingSmallTables: number
+    remainingLargeTables: number
+    remainingCityHallTables: number
+    tariffZones?: TariffZone[]
 }
