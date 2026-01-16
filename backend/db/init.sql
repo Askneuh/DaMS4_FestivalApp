@@ -27,7 +27,12 @@ CREATE TABLE IF NOT EXISTS users (
 
 CREATE TABLE IF NOT EXISTS "festival" (
     "name" TEXT PRIMARY KEY,
-    "nbTables" INTEGER NOT NULL,
+    "nbSmallTables" INTEGER NOT NULL,
+    "nbLargeTables" INTEGER NOT NULL,
+    "nbCityHallTables" INTEGER NOT NULL,
+    "remainingSmallTables" INTEGER NOT NULL,
+    "remainingLargeTables" INTEGER NOT NULL,
+    "remainingCityHallTables" INTEGER NOT NULL,
     "creation_date" DATE,
     "begin_date" DATE,
     "end_date" DATE
@@ -35,8 +40,7 @@ CREATE TABLE IF NOT EXISTS "festival" (
 
 CREATE TABLE IF NOT EXISTS "mechanism" (
     "id" SERIAL PRIMARY KEY,
-    "name" TEXT NOT NULL,
-    "description" TEXT
+    "name" TEXT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS gameType (
@@ -58,8 +62,15 @@ CREATE TABLE IF NOT EXISTS editor (
 CREATE TABLE IF NOT EXISTS "tariffZone" (
     "idTZ" SERIAL PRIMARY KEY,
     "name" TEXT,
-    "nbTables" INTEGER,
-    "tablePrice" NUMERIC,
+    "nbSmallTables" INTEGER,
+    "nbLargeTables" INTEGER,
+    "nbCityHallTables" INTEGER,
+    "remainingSmallTables" INTEGER,
+    "remainingLargeTables" INTEGER,
+    "remainingCityHallTables" INTEGER,
+    "smallTablePrice" NUMERIC,
+    "largeTablePrice" NUMERIC,
+    "cityHallTablePrice" NUMERIC,
     "squareMeterPrice" NUMERIC,
     "festivalName" TEXT REFERENCES "festival"("name") NOT NULL
 );
@@ -95,7 +106,8 @@ CREATE TABLE IF NOT EXISTS reservation (
     listeDemandee BOOLEAN,
     listeRecue BOOLEAN,
     jeuxRecus BOOLEAN,
-    festivalName TEXT REFERENCES festival(name) NOT NULL
+    festivalName TEXT REFERENCES festival(name) NOT NULL,
+    idTZ INTEGER REFERENCES "tariffZone"("idTZ") NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS planArea (
@@ -125,6 +137,7 @@ CREATE TABLE IF NOT EXISTS suiviReservation (
 
 
 CREATE TABLE IF NOT EXISTS game_mechanism (
+    id SERIAL PRIMARY KEY,
     idGame INTEGER REFERENCES game("id"),
     idMechanism INTEGER REFERENCES mechanism("id"),
     PRIMARY KEY(idGame, idMechanism)
@@ -175,10 +188,26 @@ CREATE TABLE IF NOT EXISTS game_festival (
 -- DONNÉES DE TEST / SEED DATA
 -- ============================================
 
--- Insérer un festival de test
-INSERT INTO festival (name, "nbTables", creation_date, begin_date, end_date)
-VALUES ('Festival 2025', 100, '2024-01-01', '2025-06-01', '2025-06-03')
+-- Insérer les festivals de test
+INSERT INTO festival ("name", "nbSmallTables", "nbLargeTables", "nbCityHallTables", "remainingSmallTables", "remainingLargeTables", "remainingCityHallTables", "creation_date", "begin_date", "end_date") VALUES
+('Festival 2025', 50, 30, 20, 50, 30, 20, '2024-01-01', '2025-06-01', '2025-06-03'),
+('Festival-Rose', 30, 15, 5, 30, 15, 5, CURRENT_DATE, '2026-05-15', '2026-05-17'),
+('Festival-Batman', 60, 30, 10, 60, 30, 10, CURRENT_DATE, '2026-07-10', '2026-07-12'),
+('Festival-Nouveau', 40, 20, 10, 40, 20, 10, CURRENT_DATE, '2026-09-20', '2026-09-22')
 ON CONFLICT (name) DO NOTHING;
+
+-- Insérer les zones tarifaires pour chaque festival
+INSERT INTO "tariffZone" ("name", "nbSmallTables", "nbLargeTables", "nbCityHallTables", "remainingSmallTables", "remainingLargeTables", "remainingCityHallTables", "smallTablePrice", "largeTablePrice", "cityHallTablePrice", "squareMeterPrice", "festivalName") VALUES
+-- Zones pour Festival-Rose
+('Zone A', 12, 6, 2, 12, 6, 2, 80, 120, 150, 50, 'Festival-Rose'),
+('Zone B', 18, 9, 3, 18, 9, 3, 100, 150, 200, 75, 'Festival-Rose'),
+-- Zones pour Festival-Batman
+('Zone C', 30, 15, 5, 30, 15, 5, 150, 200, 250, 100, 'Festival-Batman'),
+('Zone D', 30, 15, 5, 30, 15, 5, 180, 250, 300, 125, 'Festival-Batman'),
+-- Zones pour Festival-Nouveau
+('Zone E', 20, 10, 5, 20, 10, 5, 200, 300, 400, 150, 'Festival-Nouveau'),
+('Zone F', 20, 10, 5, 20, 10, 5, 250, 350, 450, 175, 'Festival-Nouveau')
+ON CONFLICT DO NOTHING;
 
 -- Insérer les types de jeux
 INSERT INTO gameType ("id", "gameTypeLabel", "idZone") VALUES
@@ -225,12 +254,12 @@ INSERT INTO game ("id", "name", "author", "nbMinPlayer", "nbMaxPlayer", "gameNot
 ON CONFLICT ("id") DO NOTHING;
 
 -- Insérer des réservations d'exemple
-INSERT INTO reservation (idReservation, idEditor, status, nbSmallTables, nbLargeTables, nbCityHallTables, remise, typeAnimateur, listeDemandee, listeRecue, jeuxRecus, festivalName) VALUES
-(1, 1, 'Confirmée', 3, 2, 0, 10.0, 0, true, true, true, 'Festival 2025'),
-(2, 2, 'En attente', 2, 1, 1, 5.0, 1, true, false, false, 'Festival 2025'),
-(3, 3, 'Confirmée', 4, 0, 0, 0.0, 0, true, true, false, 'Festival 2025'),
-(4, 4, 'Discussion', 1, 1, 0, 15.0, 1, false, false, false, 'Festival 2025'),
-(5, 5, 'Confirmée', 2, 2, 1, 0.0, 0, true, true, true, 'Festival 2025')
+INSERT INTO reservation (idReservation, idEditor, status, nbSmallTables, nbLargeTables, nbCityHallTables, remise, typeAnimateur, listeDemandee, listeRecue, jeuxRecus, festivalName, idTZ) VALUES
+(1, 1, 'Confirmée', 3, 2, 0, 10.0, 0, true, true, true, 'Festival 2025', 1),
+(2, 2, 'En attente', 2, 1, 1, 5.0, 1, true, false, false, 'Festival 2025', 2),
+(3, 3, 'Confirmée', 4, 0, 0, 0.0, 0, true, true, false, 'Festival 2025', 1),
+(4, 4, 'Discussion', 1, 1, 0, 15.0, 1, false, false, false, 'Festival 2025', 2),
+(5, 5, 'Confirmée', 2, 2, 1, 0.0, 0, true, true, true, 'Festival 2025', 1)
 ON CONFLICT (idReservation) DO NOTHING;
 
 -- Réinitialiser les séquences pour éviter les conflits d'ID

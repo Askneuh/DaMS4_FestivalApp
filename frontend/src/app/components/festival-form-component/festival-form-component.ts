@@ -31,10 +31,15 @@ export class FestivalFormComponent {
       const nbTables = this.form.get(['nbTables'])?.value
       const festival: Festival = {
         name: name,
-        nbTables: nbTables,
+        nbSmallTables: 0,
+        nbLargeTables: 0,
+        nbCityHallTables: 0,
+        remainingSmallTables: 0,
+        remainingLargeTables: 0,
+        remainingCityHallTables: 0,
         tariffZones: []
       }
-      this.svc.addFestivalBD(festival)
+      this.svc.addFestival(festival)
     }
   }
 }

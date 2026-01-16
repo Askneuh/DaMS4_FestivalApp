@@ -4,6 +4,18 @@ import { requireAdmin } from '../middleware/auth-admin.js'
 
 const router = Router()
 
+// Route pour récupérer tous les jeux
+router.get('/', async (req, res) => {
+    try {
+        const { rows } = await pool.query('SELECT * FROM game ORDER BY name');
+        res.json(rows);
+    } catch (err: any) {
+        console.error(err);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
+// Route pour récupérer un jeu par son ID
 router.get('/:gameId', async (req, res) => {
     const gameId = req.params.gameId
     try {
@@ -29,6 +41,56 @@ router.get('/byEditor/:idEditor', async (req, res) => {
         res.status(500).json({ error: 'Erreur serveur' })
     }
 })
+
+// Route pour récupérer les jeux qu'un éditeur N'A PAS
+router.get('/notByEditor/:idEditor', async (req, res) => {
+    const idEditor = req.params.idEditor;
+    try {
+        const { rows } = await pool.query(
+            'SELECT * FROM game WHERE "idEditor" != $1 ORDER BY name',
+            [idEditor]
+        );
+        res.json(rows);
+    } catch (err: any) {
+        console.error(err);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
+// Route pour récupérer les mécanismes d'un jeu
+router.get('/:gameId/mechanisms', async (req, res) => {
+    const gameId = req.params.gameId;
+    try {
+        const { rows } = await pool.query(
+            `SELECT m.* FROM mechanism m
+             INNER JOIN game_mechanism gm ON m.id = gm."idMechanism"
+             WHERE gm."idGame" = $1`,
+            [gameId]
+        );
+        res.json(rows);
+    } catch (err: any) {
+        console.error(err);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
+// Route pour récupérer le libellé du type de jeu
+router.get('/gameType/:idGameType/label', async (req, res) => {
+    const idGameType = req.params.idGameType;
+    try {
+        const { rows } = await pool.query(
+            'SELECT "gameTypeLabel" FROM gameType WHERE id = $1',
+            [idGameType]
+        );
+        if (rows.length === 0) {
+            return res.status(404).json({ error: 'Type de jeu non trouvé' });
+        }
+        res.json({ gameTypeLabel: rows[0].gameTypeLabel });
+    } catch (err: any) {
+        console.error(err);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
 
 // Route de création d'un jeu
 router.post('/', requireAdmin, async (req, res) => {

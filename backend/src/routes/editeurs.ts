@@ -4,6 +4,28 @@ import { requireAdmin } from '../middleware/auth-admin.js'
 
 const router = Router()
 
+// Route pour récupérer tous les éditeurs
+router.get('/', async (req, res) => {
+    try {
+        const { rows } = await pool.query('SELECT * FROM editor ORDER BY name');
+
+        // Map PostgreSQL lowercase column names to camelCase
+        const editors = rows.map(row => ({
+            id: row.id,
+            name: row.name,
+            exposant: row.exposant,
+            distributeur: row.distributeur,
+            logo: row.logo
+        }));
+
+        res.json(editors);
+    } catch (err: any) {
+        console.error(err);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
+// Route pour récupérer un éditeur par son ID
 router.get('/:editorId', async (req, res) => {
     const idE = req.params.editorId
     try {
@@ -78,6 +100,21 @@ router.post('/update/:editorId', async (req, res) => {
 
         // On renvoie l'objet complet mis à jour
         return res.status(200).json(rows[0]);
+    } catch (err: any) {
+        console.error(err);
+        return res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
+// Route de suppression d'un éditeur par ID
+router.delete('/:editorId', requireAdmin, async (req, res) => {
+    const editorId = req.params.editorId;
+    try {
+        const { rowCount } = await pool.query('DELETE FROM editor WHERE "id" = $1', [editorId]);
+        if (rowCount === 0) {
+            return res.status(404).json({ error: "Éditeur non trouvé" });
+        }
+        return res.status(200).json({ message: 'Éditeur supprimé avec succès' });
     } catch (err: any) {
         console.error(err);
         return res.status(500).json({ error: 'Erreur serveur' });
