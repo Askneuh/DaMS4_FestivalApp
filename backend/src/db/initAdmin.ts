@@ -12,5 +12,5 @@ export async function ensureAdmin() {
         ON CONFLICT (login) DO NOTHING`,
         [hash]
     )
-    console.log('� Compte admin vérifié ou créé');
+    console.log(' Compte admin vérifié ou créé');
 } 

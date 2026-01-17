@@ -19,7 +19,7 @@ export class AuthService {
     // --- État exposé (readonly, computed) ---
     readonly currentUser = this._currentUser.asReadonly()
     readonly isLoggedIn = computed(() => this._currentUser() != null)
-    readonly isAdmin = computed(() => this.currentUser()?.role === 'admin')
+    readonly isAdmin = computed(() => this.currentUser()?.role === 'super_organizer')
     readonly isLoading = this._isLoading.asReadonly()
     readonly error = this._error.asReadonly()
 

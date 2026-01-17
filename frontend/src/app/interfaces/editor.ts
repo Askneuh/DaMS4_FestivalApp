@@ -7,5 +7,5 @@ export interface Editor {
     exposant: boolean // vient lui même présenter ses jeux + les jeux de ses distributeurs (a un stand)
     distributeur: boolean // délègue la présentation de ses jeux à un exposant (n'a pas de stand)
     logo: string //lien vers une image
-    contacts?: Contact[]
+    contacts?: Contact[] // appeler getContactsByEditor(idEditor: number)
 }

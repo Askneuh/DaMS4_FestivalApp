@@ -1,4 +1,5 @@
 import { Editor } from './editor';
+import { TariffZone } from './tariff-zone';
 
 export interface Reservation {
     idReservation?: number;
@@ -14,5 +15,6 @@ export interface Reservation {
     listeRecue: boolean;
     jeuxRecus: boolean;
     festivalName: string;
+    tariffZone?: TariffZone // appeler findById(idTZ: number)
     idTZ: number;
 }

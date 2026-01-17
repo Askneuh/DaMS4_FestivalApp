@@ -26,6 +26,7 @@ import authRouter from './routes/auth.js'
 import reservationsRouter from './routes/reservations.js'
 import suiviReservationRouter from './routes/suiviReservation.js'
 import tariffZoneRouter from './routes/tariffZone.js'
+import festivalGameRouter from './routes/festivalGame.js'
 import { verifyToken } from './middleware/token-management.js'
 import { requireAdmin } from './middleware/auth-admin.js'
 
@@ -75,6 +76,8 @@ app.use('/api/planArea', verifyToken, planAreaRouter); // protégé
 app.use('/api/reservation', verifyToken, reservationsRouter); // protégé 
 app.use('/api/suiviReservation', verifyToken, suiviReservationRouter); // protégé 
 app.use('/api/tariffZones', verifyToken, tariffZoneRouter); // protégé 
+app.use('/api/festivalGame', verifyToken, festivalGameRouter); // protégé 
+
 
 
 app.use('/api/admin', verifyToken, requireAdmin, (_, res) => {

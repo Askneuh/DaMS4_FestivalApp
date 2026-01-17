@@ -29,6 +29,12 @@
         <button [class.active]="activeSection() === 'tariffzones'" (click)="setActiveSection('tariffzones')">
             💰 Zones Tarifaires
         </button>
+        <button [class.active]="activeSection() === 'festivalgames'" (click)="setActiveSection('festivalgames')">
+            🎮 Jeux Festival
+        </button>
+        <button [class.active]="activeSection() === 'contacts'" (click)="setActiveSection('contacts')">
+            📞 Contacts
+        </button>
     </nav>
 
     <div class="content-wrapper">
@@ -240,6 +246,100 @@
                         <input type="text" [(ngModel)]="festivalNameInput" placeholder="Festival-Rose">
                     </div>
                     <button class="btn-test" (click)="testLoadTariffZonesByFestival()" [disabled]="isLoading()">
+                        {{ isLoading() ? '⏳ Test en cours...' : '▶️ Tester' }}
+                    </button>
+                </div>
+            </section>
+            }
+
+            <!-- FESTIVAL GAMES SECTION -->
+            @if (activeSection() === 'festivalgames') {
+            <section class="test-section">
+                <h2>🎮 Tests FestivalGameService</h2>
+
+                <div class="test-method">
+                    <h3>getGamesByFestival(festivalName: string)</h3>
+                    <p class="description">Récupère tous les jeux présentés lors d'un festival</p>
+                    <div class="input-group">
+                        <label>Nom du festival:</label>
+                        <input type="text" [(ngModel)]="festivalNameInput" placeholder="Festival 2025">
+                    </div>
+                    <button class="btn-test" (click)="testGetGamesByFestival()" [disabled]="isLoading()">
+                        {{ isLoading() ? '⏳ Test en cours...' : '▶️ Tester' }}
+                    </button>
+                </div>
+
+                <div class="test-method">
+                    <h3>getGamesByReservation(reservationId: number)</h3>
+                    <p class="description">Récupère tous les jeux d'une réservation</p>
+                    <div class="input-group">
+                        <label>ID de la réservation:</label>
+                        <input type="number" [(ngModel)]="reservationIdInput" placeholder="1">
+                    </div>
+                    <button class="btn-test" (click)="testGetGamesByReservation()" [disabled]="isLoading()">
+                        {{ isLoading() ? '⏳ Test en cours...' : '▶️ Tester' }}
+                    </button>
+                </div>
+
+                <div class="test-method">
+                    <h3>addGameToReservation(reservationId: number, gameId: number)</h3>
+                    <p class="description">Ajoute un jeu à une réservation</p>
+                    <div class="input-group">
+                        <label>ID de la réservation:</label>
+                        <input type="number" [(ngModel)]="reservationIdInput" placeholder="1">
+                    </div>
+                    <div class="input-group">
+                        <label>ID du jeu:</label>
+                        <input type="number" [(ngModel)]="gameIdInput" placeholder="1">
+                    </div>
+                    <button class="btn-test" (click)="testAddGameToReservation()" [disabled]="isLoading()">
+                        {{ isLoading() ? '⏳ Test en cours...' : '▶️ Tester' }}
+                    </button>
+                </div>
+
+                <div class="test-method">
+                    <h3>removeGameFromReservation(reservationId: number, gameId: number)</h3>
+                    <p class="description">Retire un jeu d'une réservation</p>
+                    <div class="input-group">
+                        <label>ID de la réservation:</label>
+                        <input type="number" [(ngModel)]="reservationIdInput" placeholder="1">
+                    </div>
+                    <div class="input-group">
+                        <label>ID du jeu:</label>
+                        <input type="number" [(ngModel)]="gameIdInput" placeholder="1">
+                    </div>
+                    <button class="btn-test" (click)="testRemoveGameFromReservation()" [disabled]="isLoading()">
+                        {{ isLoading() ? '⏳ Test en cours...' : '▶️ Tester' }}
+                    </button>
+                </div>
+            </section>
+            }
+
+            <!-- CONTACTS SECTION -->
+            @if (activeSection() === 'contacts') {
+            <section class="test-section">
+                <h2>📞 Tests ContactService</h2>
+
+                <div class="test-method">
+                    <h3>getContactsByEditor(idEditor: number)</h3>
+                    <p class="description">Récupère tous les contacts d'un éditeur</p>
+                    <div class="input-group">
+                        <label>ID de l'éditeur:</label>
+                        <input type="number" [(ngModel)]="editorIdInput" placeholder="1">
+                    </div>
+                    <button class="btn-test" (click)="testGetContactsByEditor()" [disabled]="isLoading()">
+                        {{ isLoading() ? '⏳ Test en cours...' : '▶️ Tester' }}
+                    </button>
+                </div>
+
+                <div class="test-method">
+                    <h3>getPriorityContact(idEditor: number)</h3>
+                    <p class="description">Récupère le contact prioritaire d'un éditeur (role = "prioritaire")</p>
+                    <div class="input-group">
+                        <label>ID de l'éditeur:</label>
+                        <input type="number" [(ngModel)]="editorIdInput" placeholder="1">
+                    </div>
+                    <button class="btn-test" (click)="testGetPriorityContact()" [disabled]="isLoading()">
                         {{ isLoading() ? '⏳ Test en cours...' : '▶️ Tester' }}
                     </button>
                 </div>

@@ -1,4 +1,6 @@
 import { TariffZone } from "./tariff-zone"
+import { Reservation } from "./reservation"
+import { Game } from "./game"
 
 export interface Festival {
     name: string
@@ -8,5 +10,7 @@ export interface Festival {
     remainingSmallTables: number
     remainingLargeTables: number
     remainingCityHallTables: number
-    tariffZones?: TariffZone[]
+    tariffZones?: TariffZone[] // appeler findByFestivalName(festivalName: string)
+    reservations?: Reservation[] // appeler getReservationsByFestival(festivalName: string)
+    games?: Game[] // appeler getGamesByFestival(festivalName: string)
 }

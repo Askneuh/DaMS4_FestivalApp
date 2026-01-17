@@ -6,6 +6,8 @@ import { GameService } from '../../services/game-service';
 import { ReservationService } from '../../services/reservation-service';
 import { EditorService } from '../../services/editor-service';
 import { TariffZoneService } from '../../services/tariff-zone-service';
+import { FestivalGameService } from '../../services/festival-game-service';
+import { ContactService } from '../../services/contact-service';
 import { Festival } from '../../interfaces/festival';
 import { Game } from '../../interfaces/game';
 import { ReservationDAO } from '../../interfaces/reservationDAO';
@@ -38,6 +40,8 @@ export class TestService {
     private reservationService = inject(ReservationService);
     private editorService = inject(EditorService);
     private tariffZoneService = inject(TariffZoneService);
+    private festivalGameService = inject(FestivalGameService);
+    private contactService = inject(ContactService);
 
     // Test results and logs
     testResults = signal<TestResult[]>([]);
@@ -383,6 +387,118 @@ export class TestService {
             const data = this.tariffZoneService.tariffZoneList();
             const duration = Date.now() - startTime;
             this.logTestResult('TariffZoneService', 'loadTariffZonesByFestival', true, data, undefined, duration);
+            this.isLoading.set(false);
+        }, 500);
+    }
+
+    // ==================== FESTIVAL GAME SERVICE TESTS ====================
+
+    testGetGamesByFestival() {
+        const festivalName = this.festivalNameInput();
+        this.isLoading.set(true);
+        const startTime = Date.now();
+
+        this.festivalGameService.getGamesByFestival(festivalName).subscribe({
+            next: (data) => {
+                const duration = Date.now() - startTime;
+                this.logTestResult('FestivalGameService', 'getGamesByFestival', true, data, undefined, duration);
+                this.isLoading.set(false);
+            },
+            error: (err) => {
+                const duration = Date.now() - startTime;
+                this.logTestResult('FestivalGameService', 'getGamesByFestival', false, undefined, err.message, duration);
+                this.isLoading.set(false);
+            }
+        });
+    }
+
+    testGetGamesByReservation() {
+        const reservationId = this.reservationIdInput();
+        this.isLoading.set(true);
+        const startTime = Date.now();
+
+        this.festivalGameService.getGamesByReservation(reservationId).subscribe({
+            next: (data) => {
+                const duration = Date.now() - startTime;
+                this.logTestResult('FestivalGameService', 'getGamesByReservation', true, data, undefined, duration);
+                this.isLoading.set(false);
+            },
+            error: (err) => {
+                const duration = Date.now() - startTime;
+                this.logTestResult('FestivalGameService', 'getGamesByReservation', false, undefined, err.message, duration);
+                this.isLoading.set(false);
+            }
+        });
+    }
+
+    testAddGameToReservation() {
+        const reservationId = this.reservationIdInput();
+        const gameId = this.gameIdInput();
+        this.isLoading.set(true);
+        const startTime = Date.now();
+
+        this.festivalGameService.addGameToReservation(reservationId, gameId).subscribe({
+            next: (data) => {
+                const duration = Date.now() - startTime;
+                this.logTestResult('FestivalGameService', 'addGameToReservation', true, data, undefined, duration);
+                this.isLoading.set(false);
+            },
+            error: (err) => {
+                const duration = Date.now() - startTime;
+                this.logTestResult('FestivalGameService', 'addGameToReservation', false, undefined, err.message, duration);
+                this.isLoading.set(false);
+            }
+        });
+    }
+
+    testRemoveGameFromReservation() {
+        const reservationId = this.reservationIdInput();
+        const gameId = this.gameIdInput();
+        this.isLoading.set(true);
+        const startTime = Date.now();
+
+        this.festivalGameService.removeGameFromReservation(reservationId, gameId).subscribe({
+            next: (data) => {
+                const duration = Date.now() - startTime;
+                this.logTestResult('FestivalGameService', 'removeGameFromReservation', true, data, undefined, duration);
+                this.isLoading.set(false);
+            },
+            error: (err) => {
+                const duration = Date.now() - startTime;
+                this.logTestResult('FestivalGameService', 'removeGameFromReservation', false, undefined, err.message, duration);
+                this.isLoading.set(false);
+            }
+        });
+    }
+
+    // ==================== CONTACT SERVICE TESTS ====================
+
+    testGetContactsByEditor() {
+        const idEditor = this.editorIdInput();
+        this.isLoading.set(true);
+        const startTime = Date.now();
+
+        this.contactService.getContactsByEditor(idEditor);
+
+        setTimeout(() => {
+            const data = this.contactService.contacts();
+            const duration = Date.now() - startTime;
+            this.logTestResult('ContactService', 'getContactsByEditor', true, data, undefined, duration);
+            this.isLoading.set(false);
+        }, 500);
+    }
+
+    testGetPriorityContact() {
+        const idEditor = this.editorIdInput();
+        this.isLoading.set(true);
+        const startTime = Date.now();
+
+        this.contactService.getPriorityContact(idEditor);
+
+        setTimeout(() => {
+            const data = this.contactService.priorityContact();
+            const duration = Date.now() - startTime;
+            this.logTestResult('ContactService', 'getPriorityContact', true, data, undefined, duration);
             this.isLoading.set(false);
         }, 500);
     }
