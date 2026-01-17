@@ -68,13 +68,13 @@ app.use('/api/users', verifyToken, usersRouter); // protégé
 app.use('/api/contact', verifyToken, contactRouter); // protégé 
 app.use('/api/editeurs', verifyToken, editeursRouter); // protégé 
 app.use('/api/festivals', verifyToken, festivalsRouter); // protégé 
-app.use('/api/game', verifyToken, gameRouter); // protégé 
+app.use('/api/games', verifyToken, gameRouter); // protégé 
 app.use('/api/gameType', verifyToken, gameTypeRouter); // protégé 
 app.use('/api/mechanism', verifyToken, mechanismRouter); // protégé 
 app.use('/api/planArea', verifyToken, planAreaRouter); // protégé 
 app.use('/api/reservation', verifyToken, reservationsRouter); // protégé 
 app.use('/api/suiviReservation', verifyToken, suiviReservationRouter); // protégé 
-app.use('/api/tariffZone', verifyToken, tariffZoneRouter); // protégé 
+app.use('/api/tariffZones', verifyToken, tariffZoneRouter); // protégé 
 
 
 app.use('/api/admin', verifyToken, requireAdmin, (_, res) => {

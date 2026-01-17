@@ -19,7 +19,7 @@ export class TariffZoneService {
    * @returns Observable<TariffZone>
    */
   findById(idTZ: number): Observable<TariffZone> {
-    return this.http.get<TariffZone>(`${this.apiUrl}/tariffZones/${idTZ}`);
+    return this.http.get<TariffZone>(`${this.apiUrl}/tariffZones/${idTZ}`, { withCredentials: true });
   }
 
   /**
@@ -28,7 +28,7 @@ export class TariffZoneService {
    * @returns Observable<TariffZone[]>
    */
   findByFestivalName(festivalName: string): Observable<TariffZone[]> {
-    return this.http.get<TariffZone[]>(`${this.apiUrl}/tariffZones/festival/${festivalName}`);
+    return this.http.get<TariffZone[]>(`${this.apiUrl}/tariffZones/festival/${festivalName}`, { withCredentials: true });
   }
 
   /**

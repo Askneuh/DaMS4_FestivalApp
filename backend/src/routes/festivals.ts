@@ -8,7 +8,7 @@ import { requireAdmin } from '../middleware/auth-admin.js'
 
 const router = Router()
 //Route pour récupérer les données d'un festival dont le nom (unique) est passé en paramètre.
-router.post('/:festivalName', async (req, res) => {
+router.get('/:festivalName', async (req, res) => {
     const festivalName = req.params.festivalName;
     const client = await pool.connect();
     try {
@@ -64,7 +64,7 @@ router.post('/', async (req, res) => {
                 'INSERT INTO "festival" ("name", "nbSmallTables", "nbLargeTables", "nbCityHallTables", "remainingSmallTables", "remainingLargeTables", "remainingCityHallTables", "creation_date", "begin_date", "end_date") VALUES ($1, $2, $3, $4, $5, $6, $7, CURRENT_DATE, $8, $9) RETURNING *',
                 [name, smallTables, largeTables, cityHallTables, smallTables, largeTables, cityHallTables, begin_date || null, end_date || null]
             );
-            
+
             await client.query('COMMIT');
             return res.status(201).json(festivalRes.rows[0]);
         }
@@ -117,7 +117,7 @@ router.post('/update/:festivalName', async (req, res) => {
 
         await client.query('COMMIT');
 
-        
+
         res.status(200).json(rows[0]);
     }
     catch (err: any) {
