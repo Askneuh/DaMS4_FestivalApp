@@ -148,11 +148,6 @@ CREATE TABLE IF NOT EXISTS festival_tariffZone (
     PRIMARY KEY(festivalName, idTZ)
 );
 
-CREATE TABLE IF NOT EXISTS reservation_tariffZone (
-    idReservation INTEGER REFERENCES reservation(idReservation),
-    idTZ INTEGER REFERENCES "tariffZone"("idTZ"),
-    PRIMARY KEY(idReservation, idTZ)
-);
 
 CREATE TABLE IF NOT EXISTS reservation_game (
     idReservation INTEGER REFERENCES reservation(idReservation),
@@ -227,13 +222,14 @@ ON CONFLICT ("id") DO NOTHING;
 
 -- Insérer les contacts
 INSERT INTO contact ("id", "name", "email", "phone", "role", "idEditor") VALUES
-(1, 'Marie Dupont', 'marie.dupont@asmodee.com', '+33 1 23 45 67 89', 'Responsable Commercial', 1),
+(1, 'Marie Dupont', 'marie.dupont@asmodee.com', '+33 1 23 45 67 89', 'prioritaire', 1),
 (2, 'Pierre Martin', 'pierre.martin@asmodee.com', '+33 1 23 45 67 90', 'Directeur Marketing', 1),
-(3, 'Sophie Bernard', 'sophie.bernard@daysofwonder.com', '+33 1 34 56 78 90', 'CEO', 2),
-(4, 'Laurent Petit', 'laurent.petit@gigamic.com', '+33 1 45 67 89 01', 'Responsable Festivals', 3),
+(3, 'Sophie Bernard', 'sophie.bernard@daysofwonder.com', '+33 1 34 56 78 90', 'prioritaire', 2),
+(4, 'Laurent Petit', 'laurent.petit@gigamic.com', '+33 1 45 67 89 01', 'prioritaire', 3),
 (5, 'Julie Moreau', 'julie.moreau@gigamic.com', NULL, 'Assistante Commercial', 3),
-(6, 'Thomas Lefebvre', 'thomas.lefebvre@iello.fr', '+33 1 56 78 90 12', 'Directeur des Ventes', 4),
-(7, 'Alexandre Noir', 'alexandre.noir@blackrockgames.fr', NULL, 'Fondateur', 5)
+(6, 'Thomas Lefebvre', 'thomas.lefebvre@iello.fr', '+33 1 56 78 90 12', 'prioritaire', 4),
+(7, 'Alexandre Noir', 'alexandre.noir@blackrockgames.fr', NULL, 'prioritaire', 5),
+(8, 'Camille Rousseau', 'camille.rousseau@blackrockgames.fr', '+33 1 67 89 01 23', 'Responsable Communication', 5)
 ON CONFLICT ("id") DO NOTHING;
 
 -- Insérer les jeux
@@ -260,6 +256,28 @@ INSERT INTO reservation (idReservation, idEditor, status, nbSmallTables, nbLarge
 (4, 4, 'Discussion', 1, 1, 0, 15.0, 1, false, false, false, 'Festival 2025', 2),
 (5, 5, 'Confirmée', 2, 2, 1, 0.0, 0, true, true, true, 'Festival 2025', 1)
 ON CONFLICT (idReservation) DO NOTHING;
+
+-- Insérer des jeux dans les réservations (reservation_game)
+INSERT INTO reservation_game (idReservation, idGame) VALUES
+-- Réservation 1 (Asmodee) présente 3 jeux
+(1, 1),  -- Dobble
+(1, 2),  -- Dixit
+(1, 3),  -- Splendor
+-- Réservation 2 (Days of Wonder) présente 2 jeux
+(2, 4),  -- Les Aventuriers du Rail
+(2, 5),  -- Small World
+-- Réservation 3 (Gigamic) présente 4 jeux
+(3, 6),  -- Quarto
+(3, 7),  -- Quoridor
+(3, 8),  -- Pylos
+(3, 9),  -- Katamino
+-- Réservation 4 (Iello) présente 2 jeux
+(4, 10), -- King of Tokyo
+(4, 11), -- Biblios
+-- Réservation 5 (Blackrock Games) présente 1 jeu
+(5, 12)  -- Kingdomino
+ON CONFLICT (idReservation, idGame) DO NOTHING;
+
 
 -- Réinitialiser les séquences pour éviter les conflits d'ID
 SELECT setval('editor_id_seq', (SELECT MAX("id") FROM editor));

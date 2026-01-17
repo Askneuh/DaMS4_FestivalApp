@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<div class="admin-container">
+    <h1>Gestion des Utilisateurs</h1>
+
+    <!-- Messages de feedback -->
+    @if (successMessage()) {
+    <div class="alert alert-success">{{ successMessage() }}</div>
+    }
+    @if (errorMessage()) {
+    <div class="alert alert-error">{{ errorMessage() }}</div>
+    }
+
+    <!-- Section: Créer un utilisateur -->
+    <section class="create-user-section">
+        <h2>Créer un Utilisateur</h2>
+        <form (submit)="onCreateUser($event)" class="user-form">
+            <div class="form-group">
+                <label for="login">Login:</label>
+                <input type="text" id="login" name="login" [(ngModel)]="newUser.login" required
+                    placeholder="Nom d'utilisateur" />
+            </div>
+
+            <div class="form-group">
+                <label for="password">Mot de passe:</label>
+                <input type="password" id="password" name="password" [(ngModel)]="newUser.password" required
+                    placeholder="Mot de passe" />
+            </div>
+
+            <div class="form-group">
+                <label for="role">Rôle:</label>
+                <select id="role" name="role" [(ngModel)]="newUser.role">
+                    @for (role of availableRoles; track role.value) {
+                    <option [value]="role.value">{{ role.label }}</option>
+                    }
+                </select>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Créer l'utilisateur</button>
+        </form>
+    </section>
+
+    <!-- Section: Liste des utilisateurs -->
+    <section class="users-list-section">
+        <h2>Liste des Utilisateurs</h2>
+
+        @if (userService.users().length === 0) {
+        <p class="no-users">Aucun utilisateur trouvé.</p>
+        } @else {
+        <table class="users-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Login</th>
+                    <th>Rôle</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @for (user of userService.users(); track user.id) {
+                <tr>
+                    <td>{{ user.id }}</td>
+                    <td>{{ user.login }}</td>
+                    <td>
+                        @if (editingUserId() === user.id) {
+                        <select [(ngModel)]="editingRole" (change)="onRoleChange(user.id)" class="role-select">
+                            @for (role of availableRoles; track role.value) {
+                            <option [value]="role.value">{{ role.label }}</option>
+                            }
+                        </select>
+                        } @else {
+                        <span class="role-badge" [attr.data-role]="user.role">
+                            {{ getRoleLabel(user.role) }}
+                        </span>
+                        }
+                    </td>
+                    <td>
+                        @if (editingUserId() === user.id) {
+                        <button (click)="cancelEdit()" class="btn btn-secondary btn-sm">
+                            Annuler
+                        </button>
+                        } @else {
+                        <button (click)="startEdit(user.id, user.role)" class="btn btn-primary btn-sm">
+                            Modifier
+                        </button>
+                        }
+                    </td>
+                </tr>
+                }
+            </tbody>
+        </table>
+        }
+    </section>
+</div>

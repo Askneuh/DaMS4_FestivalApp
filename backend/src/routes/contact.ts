@@ -58,4 +58,37 @@ router.post('/update/:contactId', requireAdmin, async (req, res) => {
     }
 })
 
+// Route pour récupérer tous les contacts d'un éditeur
+router.get('/editor/:editorId', requireAdmin, async (req, res) => {
+    const editorId = req.params.editorId
+    try {
+        const { rows } = await pool.query(
+            'SELECT id, name, email, phone, role, "idEditor" FROM contact WHERE "idEditor" = $1 ORDER BY id',
+            [editorId]
+        )
+        res.json(rows)
+    } catch (err: any) {
+        console.error(err)
+        res.status(500).json({ error: 'Erreur serveur' })
+    }
+})
+
+// Route pour récupérer le contact prioritaire d'un éditeur
+router.get('/editor/:editorId/priority', requireAdmin, async (req, res) => {
+    const editorId = req.params.editorId
+    try {
+        const { rows } = await pool.query(
+            'SELECT id, name, email, phone, role, "idEditor" FROM contact WHERE "idEditor" = $1 AND role = $2',
+            [editorId, 'prioritaire']
+        )
+        if (rows.length === 0) {
+            return res.status(404).json({ error: 'Aucun contact prioritaire trouvé pour cet éditeur' })
+        }
+        res.json(rows[0])
+    } catch (err: any) {
+        console.error(err)
+        res.status(500).json({ error: 'Erreur serveur' })
+    }
+})
+
 export default router
