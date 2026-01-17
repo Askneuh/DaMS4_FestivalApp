@@ -62,7 +62,7 @@ export class FestivalService {
   //Renvoie le festival trouvé par son nom, mais sans les tariffZones
   //Pour load les zones tarifaires d'un festival : voir service tariffZone
   findByName(name: string): Observable<Festival> {
-    return this.http.get<Festival>(`${this.apiUrl}/festivals/${name}`)
+    return this.http.get<Festival>(`${this.apiUrl}/festivals/${name}`, { withCredentials: true })
   }
 
 

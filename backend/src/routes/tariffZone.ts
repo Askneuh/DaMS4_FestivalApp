@@ -4,11 +4,27 @@ import { requireAdmin } from '../middleware/auth-admin.js'
 
 const router = Router()
 
+// Route de récupération de toutes les zones tarifaires d'un festival
+// IMPORTANT: Cette route doit être AVANT /:tzId pour éviter les conflits de matching
+router.get('/festival/:festivalName', async (req, res) => {
+    const festivalName = req.params.festivalName;
+    try {
+        const { rows } = await pool.query('SELECT * FROM "tariffZone" WHERE "festivalName" = $1', [festivalName]);
+        if (rows.length === 0) {
+            return res.status(404).json({ error: "Aucune zone tarifaire trouvée pour ce festival" });
+        }
+        res.json(rows);
+    } catch (err: any) {
+        console.error(err);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
 // Route pour récupérer une zone tarifaire par son ID
 router.get('/:tzId', async (req, res) => {
     const tzId = req.params.tzId
     try {
-        const { rows } = await pool.query('SELECT * FROM tariffZone WHERE idTZ = $1', [tzId])
+        const { rows } = await pool.query('SELECT * FROM "tariffZone" WHERE "idTZ" = $1', [tzId])
         res.json(rows)
     } catch (err: any) {
         console.error(err)
@@ -28,7 +44,7 @@ router.post('/', requireAdmin, async (req, res) => {
         const cityHallTables = nbCityHallTables || 0;
 
         const { rows } = await pool.query(
-            'INSERT INTO tariffZone (name, nbSmallTables, nbLargeTables, nbCityHallTables, remainingSmallTables, remainingLargeTables, remainingCityHallTables, smallTablePrice, largeTablePrice, cityHallTablePrice, squareMeterPrice, festivalName) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING idTZ',
+            'INSERT INTO "tariffZone" ("name", "nbSmallTables", "nbLargeTables", "nbCityHallTables", "remainingSmallTables", "remainingLargeTables", "remainingCityHallTables", "smallTablePrice", "largeTablePrice", "cityHallTablePrice", "squareMeterPrice", "festivalName") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING "idTZ"',
             [name, smallTables, largeTables, cityHallTables, smallTables, largeTables, cityHallTables, smallTablePrice, largeTablePrice, cityHallTablePrice, squareMeterPrice, festivalName]
         )
         return res.status(201).json({ message: 'Zone tarifaire créée', id: rows[0].idtz })
@@ -49,7 +65,7 @@ router.post('/update/:tzId', requireAdmin, async (req, res) => {
     const { name, nbSmallTables, nbLargeTables, nbCityHallTables, remainingSmallTables, remainingLargeTables, remainingCityHallTables, smallTablePrice, largeTablePrice, cityHallTablePrice, squareMeterPrice } = req.body
     try {
         const { rowCount } = await pool.query(
-            'UPDATE tariffZone SET name = COALESCE($1, name), nbSmallTables = COALESCE($2, nbSmallTables), nbLargeTables = COALESCE($3, nbLargeTables), nbCityHallTables = COALESCE($4, nbCityHallTables), remainingSmallTables = COALESCE($5, remainingSmallTables), remainingLargeTables = COALESCE($6, remainingLargeTables), remainingCityHallTables = COALESCE($7, remainingCityHallTables), smallTablePrice = COALESCE($8, smallTablePrice), largeTablePrice = COALESCE($9, largeTablePrice), cityHallTablePrice = COALESCE($10, cityHallTablePrice), squareMeterPrice = COALESCE($11, squareMeterPrice) WHERE idTZ = $12',
+            'UPDATE "tariffZone" SET "name" = COALESCE($1, "name"), "nbSmallTables" = COALESCE($2, "nbSmallTables"), "nbLargeTables" = COALESCE($3, "nbLargeTables"), "nbCityHallTables" = COALESCE($4, "nbCityHallTables"), "remainingSmallTables" = COALESCE($5, "remainingSmallTables"), "remainingLargeTables" = COALESCE($6, "remainingLargeTables"), "remainingCityHallTables" = COALESCE($7, "remainingCityHallTables"), "smallTablePrice" = COALESCE($8, "smallTablePrice"), "largeTablePrice" = COALESCE($9, "largeTablePrice"), "cityHallTablePrice" = COALESCE($10, "cityHallTablePrice"), "squareMeterPrice" = COALESCE($11, "squareMeterPrice") WHERE "idTZ" = $12',
             [name, nbSmallTables, nbLargeTables, nbCityHallTables, remainingSmallTables, remainingLargeTables, remainingCityHallTables, smallTablePrice, largeTablePrice, cityHallTablePrice, squareMeterPrice, tzId]
         )
         if (rowCount === 0) {
@@ -62,26 +78,11 @@ router.post('/update/:tzId', requireAdmin, async (req, res) => {
     }
 })
 
-//Route de récupéeration de toutes les zones tarifaires d'un festival
-router.get('/festival/:festivalName', async (req, res) => {
-    const festivalName = req.params.festivalName;
-    try {
-        const { rows } = await pool.query('SELECT * FROM tariffZone WHERE festivalName = $1', [festivalName]);
-        if (rows.length === 0) {
-            return res.status(404).json({ error: "Aucune zone tarifaire trouvée pour ce festival" });
-        }
-        res.json(rows);
-    } catch (err: any) {
-        console.error(err);
-        res.status(500).json({ error: 'Erreur serveur' });
-    }
-});
-
 // Route de suppression d'une zone tarifaire par ID
 router.delete('/:tzId', requireAdmin, async (req, res) => {
     const tzId = req.params.tzId;
     try {
-        const { rowCount } = await pool.query('DELETE FROM tariffZone WHERE idTZ = $1', [tzId]);
+        const { rowCount } = await pool.query('DELETE FROM "tariffZone" WHERE "idTZ" = $1', [tzId]);
         if (rowCount === 0) {
             return res.status(404).json({ error: "Zone tarifaire non trouvée" });
         }

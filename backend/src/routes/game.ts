@@ -15,22 +15,8 @@ router.get('/', async (req, res) => {
     }
 });
 
-// Route pour récupérer un jeu par son ID
-router.get('/:gameId', async (req, res) => {
-    const gameId = req.params.gameId
-    try {
-        const { rows } = await pool.query('SELECT * FROM game WHERE "id" = $1', [gameId])
-        if (rows.length === 0) {
-            return res.status(404).json({ error: "Jeu non trouvé" });
-        }
-        res.json(rows[0])
-    } catch (err: any) {
-        console.error(err)
-        res.status(500).json({ error: 'Erreur serveur' })
-    }
-})
-
 // Route pour récupérer les jeux d'un éditeur
+// IMPORTANT: Routes spécifiques AVANT la route générique /:gameId
 router.get('/byEditor/:idEditor', async (req, res) => {
     const idEditor = req.params.idEditor
     try {
@@ -57,23 +43,6 @@ router.get('/notByEditor/:idEditor', async (req, res) => {
     }
 });
 
-// Route pour récupérer les mécanismes d'un jeu
-router.get('/:gameId/mechanisms', async (req, res) => {
-    const gameId = req.params.gameId;
-    try {
-        const { rows } = await pool.query(
-            `SELECT m.* FROM mechanism m
-             INNER JOIN game_mechanism gm ON m.id = gm."idMechanism"
-             WHERE gm."idGame" = $1`,
-            [gameId]
-        );
-        res.json(rows);
-    } catch (err: any) {
-        console.error(err);
-        res.status(500).json({ error: 'Erreur serveur' });
-    }
-});
-
 // Route pour récupérer le libellé du type de jeu
 router.get('/gameType/:idGameType/label', async (req, res) => {
     const idGameType = req.params.idGameType;
@@ -91,6 +60,40 @@ router.get('/gameType/:idGameType/label', async (req, res) => {
         res.status(500).json({ error: 'Erreur serveur' });
     }
 });
+
+// Route pour récupérer les mécanismes d'un jeu
+// IMPORTANT: Cette route doit être AVANT /:gameId
+router.get('/:gameId/mechanisms', async (req, res) => {
+    const gameId = req.params.gameId;
+    try {
+        const { rows } = await pool.query(
+            `SELECT m.* FROM mechanism m
+             INNER JOIN game_mechanism gm ON m.id = gm."idMechanism"
+             WHERE gm."idGame" = $1`,
+            [gameId]
+        );
+        res.json(rows);
+    } catch (err: any) {
+        console.error(err);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
+// Route pour récupérer un jeu par son ID
+// IMPORTANT: Cette route générique doit être APRÈS les routes spécifiques
+router.get('/:gameId', async (req, res) => {
+    const gameId = req.params.gameId
+    try {
+        const { rows } = await pool.query('SELECT * FROM game WHERE "id" = $1', [gameId])
+        if (rows.length === 0) {
+            return res.status(404).json({ error: "Jeu non trouvé" });
+        }
+        res.json(rows[0])
+    } catch (err: any) {
+        console.error(err)
+        res.status(500).json({ error: 'Erreur serveur' })
+    }
+})
 
 // Route de création d'un jeu
 router.post('/', requireAdmin, async (req, res) => {

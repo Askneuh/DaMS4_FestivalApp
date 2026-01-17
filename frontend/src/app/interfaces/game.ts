@@ -9,7 +9,7 @@ export interface Game {
     nbMinPlayer: number
     nbMaxPlayer: number
     gameNotice: string
-    gameType: GameType
+    idGameType: number
     minimumAge: number
     prototype: boolean //0 pas un prototype 1 prototype sur le csv
     duration: number // A voir

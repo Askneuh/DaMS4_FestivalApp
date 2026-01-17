@@ -40,7 +40,8 @@ CREATE TABLE IF NOT EXISTS "festival" (
 
 CREATE TABLE IF NOT EXISTS "mechanism" (
     "id" SERIAL PRIMARY KEY,
-    "name" TEXT NOT NULL
+    "name" TEXT NOT NULL,
+    "description" TEXT
 );
 
 CREATE TABLE IF NOT EXISTS gameType (
@@ -135,12 +136,10 @@ CREATE TABLE IF NOT EXISTS suiviReservation (
 );
 
 
-
-CREATE TABLE IF NOT EXISTS game_mechanism (
-    id SERIAL PRIMARY KEY,
-    idGame INTEGER REFERENCES game("id"),
-    idMechanism INTEGER REFERENCES mechanism("id"),
-    PRIMARY KEY(idGame, idMechanism)
+CREATE TABLE IF NOT EXISTS "game_mechanism" (
+    "id" SERIAL PRIMARY KEY,
+    "idGame" INTEGER REFERENCES game("id"),
+    "idMechanism" INTEGER REFERENCES mechanism("id")
 );
 
 CREATE TABLE IF NOT EXISTS festival_tariffZone (

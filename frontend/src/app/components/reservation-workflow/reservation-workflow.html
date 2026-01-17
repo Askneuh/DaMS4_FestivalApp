@@ -98,7 +98,7 @@
                     @for(game of games; track game.id) {
                     <li>
                         <span class="game-name">{{ game.name }}</span>
-                        <span class="game-type-badge">{{ game.gameType.gameTypeLabel }}</span>
+                        <span class="game-type-badge">Type: {{ game.idGameType }}</span>
                     </li>
                     } @empty {
                     <p class="info-item">Aucun jeu renseigné</p>
