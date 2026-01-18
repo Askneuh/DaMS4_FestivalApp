@@ -151,7 +151,7 @@ Dans un **nouveau terminal** :
 
 ```bash
 cd frontend
-npm start
+ng serve
 ```
 
 Le frontend démarre sur **https://localhost:4200**

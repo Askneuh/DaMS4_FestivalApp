@@ -1,0 +1,27 @@
+<div class="editor-list-container">
+  <div class="header">
+    <h1>Liste des Éditeurs</h1>
+  </div>
+
+  <app-editor-form 
+    [editorToEdit]="editorToEdit()" 
+    (formClosed)="onFormClosed()"
+  />
+
+  @if (editors().length === 0) {
+    <div class="empty-state">
+      <p>Aucun éditeur pour le moment</p>
+    </div>
+  } @else {
+    <div class="editors-grid">
+      @for (editor of editors(); track editor.id) {
+        <app-editor-card
+          [editor]="editor"
+          (editEditor)="onEditEditor($event)"
+          (deleteEditor)="removeEditor($event)"
+          (viewGames)="viewGames($event)"
+        />
+      }
+    </div>
+  }
+</div>

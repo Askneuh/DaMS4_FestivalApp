@@ -3,6 +3,7 @@
   <div class="nav-links">
     <a routerLink="" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">Accueil</a>
     <a routerLink="festival_list" routerLinkActive="active">Festivals</a>
+    <a routerLink="editor-list" routerLinkActive="active">Éditeurs</a>
     <a routerLink="reservation_workflow" routerLinkActive="active">Réservation</a>
     <a routerLink="test-service" routerLinkActive="active">Test des services</a>
     @if (this.auth_svc.isLoggedIn() && this.auth_svc.currentUser()?.role == 'admin') {

@@ -1,0 +1,56 @@
+import { Component, inject, signal } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
+import { GameService } from '../../services/game-service';
+import { EditorService } from '../../services/editor-service';
+import { Game } from '../../interfaces/game';
+import { Editor } from '../../interfaces/editor';
+
+@Component({
+  selector: 'app-editor-games',
+  imports: [],
+  templateUrl: './editor-games.html',
+  styleUrl: './editor-games.css',
+})
+export class EditorGamesComponent {
+  private route = inject(ActivatedRoute);
+  private router = inject(Router);
+  private gameService = inject(GameService);
+  private editorService = inject(EditorService);
+
+  games = signal<Game[]>([]);
+  editor = signal<Editor | null>(null);
+  loading = signal(true);
+
+  constructor() {
+    const idParam = this.route.snapshot.paramMap.get('id');
+    if (idParam) {
+      const editorId = parseInt(idParam, 10);
+      this.loadEditor(editorId);
+      this.loadGames(editorId);
+    }
+  }
+
+  loadEditor(id: number) {
+    this.editorService.findById(id).subscribe({
+      next: (editor) => this.editor.set(editor),
+      error: (err) => console.error('Erreur chargement éditeur:', err)
+    });
+  }
+
+  loadGames(editorId: number) {
+    this.gameService.getGamesByEditor(editorId).subscribe({
+      next: (games) => {
+        this.games.set(games);
+        this.loading.set(false);
+      },
+      error: (err) => {
+        console.error('Erreur chargement jeux:', err);
+        this.loading.set(false);
+      }
+    });
+  }
+
+  goBack() {
+    this.router.navigate(['/editor-list']);
+  }
+}
