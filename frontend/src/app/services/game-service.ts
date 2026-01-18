@@ -42,6 +42,10 @@ export class GameService {
     return this.http.get<Game[]>(`${this.apiUrl}/games/notByEditor/${idEditor}`, { withCredentials: true });
   }
 
+  getGamesOfDistributeurs(): Observable<Game[]> {
+    return this.http.get<Game[]>(`${this.apiUrl}/games/byDistributeurs`, { withCredentials: true });
+  }
+
   getMechanismsByGame(idGame: number): Observable<Mechanism[]> {
     return this.http.get<Mechanism[]>(`${this.apiUrl}/games/${idGame}/mechanisms`, { withCredentials: true });
   }

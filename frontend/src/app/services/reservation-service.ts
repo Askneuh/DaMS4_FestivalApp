@@ -5,6 +5,8 @@ import { HttpClient } from '@angular/common/http';
 import { ReservationDAO } from '../interfaces/reservationDAO';
 import { Observable } from 'rxjs';
 
+import { ReservationGame } from '../interfaces/reservation-game';
+
 @Injectable({
   providedIn: 'root',
 })
@@ -32,6 +34,10 @@ export class ReservationService {
 
   updateReservation(idReservation: number, reservation: Reservation): Observable<any> {
     return this.http.post<any>(`${this.API_URL}/reservation/update/${idReservation}`, reservation, { withCredentials: true });
+  }
+
+  getReservationGames(idReservation: number): Observable<ReservationGame[]> {
+    return this.http.get<ReservationGame[]>(`${this.API_URL}/reservation/${idReservation}/games`, { withCredentials: true });
   }
 
   //addContactEntry(idReservation: number, entry: Contact) {

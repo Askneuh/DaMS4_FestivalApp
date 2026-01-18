@@ -18,6 +18,22 @@ router.get('/', verifyToken, async (req, res) => {
 
 // Route pour récupérer les jeux d'un éditeur
 // IMPORTANT: Routes spécifiques AVANT la route générique /:gameId
+router.get('/byDistributeurs', verifyToken, async (req, res) => {
+    try {
+        const { rows } = await pool.query(
+            `SELECT g.* 
+             FROM game g
+             INNER JOIN editor e ON g."idEditor" = e.id
+             WHERE e.distributeur = TRUE
+             ORDER BY g.name`
+        )
+        res.json(rows)
+    } catch (err: any) {
+        console.error(err)
+        res.status(500).json({ error: 'Erreur serveur' })
+    }
+})
+
 router.get('/byEditor/:idEditor', verifyToken, async (req, res) => {
     const idEditor = req.params.idEditor
     try {

@@ -167,6 +167,7 @@ CREATE TABLE IF NOT EXISTS reservation_game (
     idReservation INTEGER REFERENCES reservation(idReservation),
     idGame INTEGER REFERENCES game("id"),
     isGamePlaced BOOLEAN DEFAULT FALSE,
+    quantity INTEGER DEFAULT 1,
     PRIMARY KEY(idReservation, idGame)
 );
 
