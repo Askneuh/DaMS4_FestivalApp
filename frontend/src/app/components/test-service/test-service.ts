@@ -488,7 +488,7 @@ export class TestService {
         }, 500);
     }
 
-    testGetPriorityContact() {
+/*     testGetPriorityContact() {
         const idEditor = this.editorIdInput();
         this.isLoading.set(true);
         const startTime = Date.now();
@@ -505,5 +505,5 @@ export class TestService {
                 this.isLoading.set(false);
             }
         });
-    }
+    } */
 }
