@@ -15,8 +15,18 @@
       <p>Aucun jeu pour cet éditeur</p>
     </div>
   } @else {
+    <div class="sort-bar">
+      <label>Trier par :</label>
+      <select [value]="sortBy()" (change)="sortBy.set($any($event.target).value)">
+        <option value="name">Nom</option>
+        <option value="author">Auteur</option>
+        <option value="duration">Durée</option>
+        <option value="players">Nombre de joueurs</option>
+      </select>
+    </div>
+
     <div class="games-grid">
-      @for (game of games(); track game.id) {
+      @for (game of sortedGames(); track game.id) {
         <div class="game-card">
           @if (game.gameImage) {
             <img [src]="game.gameImage" [alt]="game.name" class="game-image">

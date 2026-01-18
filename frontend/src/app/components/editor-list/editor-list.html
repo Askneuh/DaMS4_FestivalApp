@@ -8,13 +8,49 @@
     (formClosed)="onFormClosed()"
   />
 
-  @if (editors().length === 0) {
+  <div class="search-filter-bar">
+    <input 
+      type="text" 
+      class="search-input"
+      placeholder="Rechercher un éditeur..."
+      [value]="searchTerm()"
+      (input)="searchTerm.set($any($event.target).value)"
+    >
+    <div class="filter-buttons">
+      <button 
+        class="filter-btn" 
+        [class.active]="filterType() === 'all'"
+        (click)="filterType.set('all')">
+        Tous
+      </button>
+      <button 
+        class="filter-btn" 
+        [class.active]="filterType() === 'exposant'"
+        (click)="filterType.set('exposant')">
+        Exposants
+      </button>
+      <button 
+        class="filter-btn" 
+        [class.active]="filterType() === 'distributeur'"
+        (click)="filterType.set('distributeur')">
+        Distributeurs
+      </button>
+      <button 
+        class="filter-btn" 
+        [class.active]="filterType() === 'both'"
+        (click)="filterType.set('both')">
+        Les deux
+      </button>
+    </div>
+  </div>
+
+  @if (filteredEditors().length === 0) {
     <div class="empty-state">
-      <p>Aucun éditeur pour le moment</p>
+      <p>Aucun éditeur trouvé</p>
     </div>
   } @else {
     <div class="editors-grid">
-      @for (editor of editors(); track editor.id) {
+      @for (editor of filteredEditors(); track editor.id) {
         <app-editor-card
           [editor]="editor"
           (editEditor)="onEditEditor($event)"

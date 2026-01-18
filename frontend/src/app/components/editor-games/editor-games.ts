@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { GameService } from '../../services/game-service';
 import { EditorService } from '../../services/editor-service';
@@ -20,6 +20,24 @@ export class EditorGamesComponent {
   games = signal<Game[]>([]);
   editor = signal<Editor | null>(null);
   loading = signal(true);
+
+  sortBy = signal<'name' | 'author' | 'duration' | 'players'>('name');
+
+  sortedGames = computed(() => {
+    const result = [...this.games()];
+    const sort = this.sortBy();
+    
+    if (sort === 'name') {
+      return result.sort((a, b) => a.name.localeCompare(b.name));
+    } else if (sort === 'author') {
+      return result.sort((a, b) => a.author.localeCompare(b.author));
+    } else if (sort === 'duration') {
+      return result.sort((a, b) => a.duration - b.duration);
+    } else if (sort === 'players') {
+      return result.sort((a, b) => a.nbMinPlayer - b.nbMinPlayer);
+    }
+    return result;
+  });
 
   constructor() {
     const idParam = this.route.snapshot.paramMap.get('id');

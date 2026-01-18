@@ -41,6 +41,10 @@
           <span class="hint">Délègue la présentation à un exposant</span>
         </div>
 
+        @if (hasCheckboxError()) {
+          <span class="error">Veuillez sélectionner au moins Exposant ou Distributeur</span>
+        }
+
         <div class="form-group">
           <label for="logo">Logo (URL)</label>
           <input 

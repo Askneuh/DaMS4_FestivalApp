@@ -24,7 +24,7 @@ export class EditorCardComponent {
     const ed = this.editor();
     if (ed) {
       const confirmDelete = confirm(
-        `Etes-vous sur de vouloir supprimer l'editeur "${ed.name}" ?`
+        `Etes-vous sur de vouloir supprimer l'editeur "${ed.name}" ? \n\nCela supprimera également tous les jeux associés.`
       );
       if (confirmDelete) {
         this.deleteEditor.emit(ed.id);

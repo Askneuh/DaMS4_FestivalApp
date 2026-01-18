@@ -109,3 +109,27 @@
   color: #7b1fa2;
   font-style: italic;
 }
+
+.sort-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.sort-bar label {
+  color: #666;
+}
+
+.sort-bar select {
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.sort-bar select:focus {
+  outline: none;
+  border-color: #667eea;
+}
