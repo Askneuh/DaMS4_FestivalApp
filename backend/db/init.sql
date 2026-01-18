@@ -132,6 +132,7 @@ CREATE TABLE IF NOT EXISTS contact (
     "email" TEXT NOT NULL CHECK ("email" ~ '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'),
     "phone" TEXT, -- phone dans Contact.ts est optionnel ???
     "role" TEXT, -- role dans Contact.ts est optionnel ???
+    "priority" BOOLEAN,
     "idEditor" INTEGER REFERENCES editor("id") NOT NULL
 );
 

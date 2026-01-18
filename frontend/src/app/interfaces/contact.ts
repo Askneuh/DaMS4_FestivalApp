@@ -4,5 +4,6 @@ export interface Contact {
     email: string
     phone?: string
     role?: string // ex: "contact principal", "contact technique", etc.
+    priority: boolean
     idEditor: number
 }

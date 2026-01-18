@@ -9,7 +9,7 @@ const router = Router()
 router.get('/', verifyToken, requireAdmin, async (req, res) => {
     try {
         const { rows } = await pool.query(
-            'SELECT id, name, email, phone, role, "idEditor" FROM contact ORDER BY name'
+            'SELECT id, name, email, phone, role, "idEditor", priority FROM contact ORDER BY name'
         );
         res.json(rows);
     } catch (err: any) {
@@ -32,14 +32,14 @@ router.get('/:contactId', verifyToken, requireAdmin, async (req, res) => {
 
 // Route de création d'un contact
 router.post('/', verifyToken, requireAdmin, async (req, res) => {
-    const { name, email, phone, role, idEditor } = req.body
+    const { name, email, phone, role, idEditor, priority } = req.body
     if (!name || !email || !idEditor) {
         return res.status(400).json({ error: "Nom, email et ID éditeur obligatoires pour la création de contact" })
     }
     try {
         const { rows } = await pool.query(
-            'INSERT INTO contact (name, email, phone, role, idEditor) VALUES ($1, $2, $3, $4, $5) RETURNING id',
-            [name, email, phone, role, idEditor]
+            'INSERT INTO contact (name, email, phone, role, "idEditor", priority) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id',
+            [name, email, phone, role, idEditor, priority || false]
         )
         return res.status(201).json({ message: 'Contact créé', id: rows[0].id })
     } catch (err: any) {
@@ -56,7 +56,7 @@ router.post('/', verifyToken, requireAdmin, async (req, res) => {
 // Route de mise à jour d'un contact
 router.post('/update/:contactId', verifyToken, requireAdmin, async (req, res) => {
     const contactId = req.params.contactId
-    const { name, email, phone, role, idEditor } = req.body
+    const { name, email, phone, role, idEditor, priority } = req.body
     try {
         const { rowCount } = await pool.query(
             `UPDATE contact SET 
@@ -64,9 +64,10 @@ router.post('/update/:contactId', verifyToken, requireAdmin, async (req, res) =>
                 email = COALESCE($2, email), 
                 phone = $3, 
                 role = $4, 
-                idEditor = COALESCE($5, idEditor) 
-            WHERE id = $6`,
-            [name, email, phone, role, idEditor, contactId]
+                "idEditor" = COALESCE($5, "idEditor"),
+                priority = COALESCE($6, priority)
+            WHERE id = $7`,
+            [name, email, phone, role, idEditor, priority, contactId]
         )
         if (rowCount === 0) {
             return res.status(404).json({ error: "Contact non trouvé" })
@@ -83,7 +84,7 @@ router.get('/editor/:editorId', verifyToken, requireAdmin, async (req, res) => {
     const editorId = req.params.editorId
     try {
         const { rows } = await pool.query(
-            'SELECT id, name, email, phone, role, "idEditor" FROM contact WHERE "idEditor" = $1 ORDER BY id',
+            'SELECT id, name, email, phone, role, "idEditor", priority FROM contact WHERE "idEditor" = $1 ORDER BY id',
             [editorId]
         )
         res.json(rows)
@@ -93,23 +94,7 @@ router.get('/editor/:editorId', verifyToken, requireAdmin, async (req, res) => {
     }
 })
 
-// Route pour récupérer le contact prioritaire d'un éditeur
-router.get('/editor/:editorId/priority', verifyToken, requireAdmin, async (req, res) => {
-    const editorId = req.params.editorId
-    try {
-        const { rows } = await pool.query(
-            'SELECT id, name, email, phone, role, "idEditor" FROM contact WHERE "idEditor" = $1 AND role = $2',
-            [editorId, 'prioritaire']
-        )
-        if (rows.length === 0) {
-            return res.status(404).json({ error: 'Aucun contact prioritaire trouvé pour cet éditeur' })
-        }
-        res.json(rows[0])
-    } catch (err: any) {
-        console.error(err)
-        res.status(500).json({ error: 'Erreur serveur' })
-    }
-})
+
 
 // Route de suppression d'un contact
 router.delete('/:contactId', verifyToken, requireAdmin, async (req, res) => {
