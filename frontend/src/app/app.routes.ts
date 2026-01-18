@@ -9,9 +9,11 @@ import { TestService } from './components/test-service/test-service';
 import { Admin } from './components/admin/admin';
 import { adminGuard } from './shared/admin/admin-guard';
 import { EditorList } from './components/editor-list/editor-list';
+import { EditorGamesComponent } from './components/editor-games/editor-games';
 
 export const routes: Routes = [
     { path: 'editor-list', component: EditorList, canActivate: [authGuardInterceptor] },
+    { path: 'editor-games/:id', component: EditorGamesComponent, canActivate: [authGuardInterceptor] },
     { path: 'home', component: WelcomePage, canActivate: [authGuardInterceptor] },
     { path: 'login', component: Login },
     { path: 'festival_list', component: FestivalList, canActivate: [authGuardInterceptor] },

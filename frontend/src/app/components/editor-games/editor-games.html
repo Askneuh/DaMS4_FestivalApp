@@ -1,0 +1,42 @@
+<div class="editor-games-container">
+  <div class="header">
+    <button class="btn btn-back" (click)="goBack()">← Retour</button>
+    @if (editor()) {
+      <h1>Jeux de {{ editor()!.name }}</h1>
+    }
+  </div>
+
+  @if (loading()) {
+    <div class="loading">
+      <p>Chargement des jeux...</p>
+    </div>
+  } @else if (games().length === 0) {
+    <div class="empty-state">
+      <p>Aucun jeu pour cet éditeur</p>
+    </div>
+  } @else {
+    <div class="games-grid">
+      @for (game of games(); track game.id) {
+        <div class="game-card">
+          @if (game.gameImage) {
+            <img [src]="game.gameImage" [alt]="game.name" class="game-image">
+          } @else {
+            <div class="game-image-placeholder">🎲</div>
+          }
+          <div class="game-info">
+            <h3>{{ game.name }}</h3>
+            <p class="author">{{ game.author }}</p>
+            <div class="game-details">
+              <span>{{ game.nbMinPlayer }} - {{ game.nbMaxPlayer }} joueurs</span>
+              <span>{{ game.duration }} min</span>
+              <span>{{ game.minimumAge }}+ ans</span>
+            </div>
+            @if (game.theme) {
+              <p class="theme">{{ game.theme }}</p>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  }
+</div>
