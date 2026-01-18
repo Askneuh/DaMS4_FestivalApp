@@ -45,4 +45,15 @@ export class FestivalList {
     // 2. Supprimer du service
     this.svc.removeFestivalByName(name);
   }
+
+  onMakeCurrent(festivalName: string) {
+    this.svc.setCurrentFestival(festivalName).subscribe({
+      next: () => {
+        console.log(`Festival "${festivalName}" défini comme courant`);
+      },
+      error: (err) => {
+        console.error('Erreur lors de la définition du festival courant:', err);
+      }
+    });
+  }
 }

@@ -10,10 +10,14 @@ import { Festival } from '../../interfaces/festival';
 export class FestivalCardComponent {
   public festival = input<Festival>();
 
+  // Contrôler l'affichage du bouton
+  showMakeCurrentButton = input<boolean>(false);
   //Permet d'ajouter un bouton pour updater les infos d'un festival.
   editFestival = output<Festival>();
   // Output pour supprimer
   deleteFestival = output<string>(); 
+  // Émet le nom du festival
+  makeCurrent = output<string>();
 
   onEdit() {
     const fest = this.festival();
@@ -33,6 +37,13 @@ export class FestivalCardComponent {
       if (confirmDelete) {
         this.deleteFestival.emit(fest.name);
       }
+    }
+  }
+
+  onMakeCurrent() {
+    const fest = this.festival();
+    if (fest) {
+      this.makeCurrent.emit(fest.name);
     }
   }
   
