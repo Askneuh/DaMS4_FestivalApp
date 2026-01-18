@@ -10,7 +10,7 @@ router.get('/byFestival/:festivalName', verifyToken, async (req, res) => {
     const festivalName = req.params.festivalName
     try {
         const query = `
-            SELECT DISTINCT g.*
+            SELECT DISTINCT g.*, rg.isGamePlaced
             FROM game g
             INNER JOIN reservation_game rg ON g."id" = rg.idGame
             INNER JOIN reservation r ON rg.idReservation = r.idReservation
@@ -36,7 +36,8 @@ router.get('/byFestival/:festivalName', verifyToken, async (req, res) => {
             gameImage: row.gameimage,
             rulesTutorial: row.rulestutorial,
             edition: row.edition,
-            idEditor: row.ideditor
+            idEditor: row.ideditor,
+            isGamePlaced: row.isgameplaced
         }));
 
         res.json(games)
@@ -51,7 +52,7 @@ router.get('/byReservation/:reservationId', verifyToken, async (req, res) => {
     const reservationId = req.params.reservationId
     try {
         const query = `
-            SELECT g.*
+            SELECT g.*, rg.isGamePlaced
             FROM game g
             INNER JOIN reservation_game rg ON g."id" = rg.idGame
             WHERE rg.idReservation = $1
@@ -76,7 +77,8 @@ router.get('/byReservation/:reservationId', verifyToken, async (req, res) => {
             gameImage: row.gameimage,
             rulesTutorial: row.rulestutorial,
             edition: row.edition,
-            idEditor: row.ideditor
+            idEditor: row.ideditor,
+            isGamePlaced: row.isgameplaced
         }));
 
         res.json(games)
@@ -88,14 +90,14 @@ router.get('/byReservation/:reservationId', verifyToken, async (req, res) => {
 
 // Route pour ajouter un jeu à une réservation
 router.post('/add', verifyToken, requireOrganizer, async (req, res) => {
-    const { idReservation, idGame } = req.body
+    const { idReservation, idGame, isGamePlaced } = req.body
     if (!idReservation || !idGame) {
         return res.status(400).json({ error: 'ID de réservation et ID de jeu obligatoires' })
     }
     try {
         await pool.query(
-            'INSERT INTO reservation_game (idReservation, idGame) VALUES ($1, $2)',
-            [idReservation, idGame]
+            'INSERT INTO reservation_game (idReservation, idGame, isGamePlaced) VALUES ($1, $2, $3)',
+            [idReservation, idGame, isGamePlaced || false]
         )
         return res.status(201).json({ message: 'Jeu ajouté à la réservation' })
     } catch (err: any) {
@@ -124,6 +126,27 @@ router.delete('/remove/:reservationId/:gameId', verifyToken, requireOrganizer, a
             return res.status(404).json({ error: 'Association réservation-jeu non trouvée' })
         }
         return res.status(200).json({ message: 'Jeu retiré de la réservation' })
+    } catch (err: any) {
+        console.error(err)
+        return res.status(500).json({ error: 'Erreur serveur' })
+    }
+})
+
+// Route pour mettre à jour le statut de placement d'un jeu
+router.post('/updatePlacement', verifyToken, requireOrganizer, async (req, res) => {
+    const { idReservation, idGame, isGamePlaced } = req.body
+    if (!idReservation || !idGame || isGamePlaced === undefined) {
+        return res.status(400).json({ error: 'ID de réservation, ID de jeu et statut de placement obligatoires' })
+    }
+    try {
+        const { rowCount } = await pool.query(
+            'UPDATE reservation_game SET isGamePlaced = $1 WHERE idReservation = $2 AND idGame = $3',
+            [isGamePlaced, idReservation, idGame]
+        )
+        if (rowCount === 0) {
+            return res.status(404).json({ error: 'Association réservation-jeu non trouvée' })
+        }
+        return res.status(200).json({ message: 'Statut de placement mis à jour' })
     } catch (err: any) {
         console.error(err)
         return res.status(500).json({ error: 'Erreur serveur' })

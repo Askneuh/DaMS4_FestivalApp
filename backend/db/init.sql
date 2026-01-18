@@ -119,8 +119,11 @@ CREATE TABLE IF NOT EXISTS reservation (
 CREATE TABLE IF NOT EXISTS planArea (
     "id" SERIAL PRIMARY KEY,
     "name" TEXT NOT NULL,
-    "nbTables" INTEGER NOT NULL,
-    "festivalName" TEXT REFERENCES festival("name") NOT NULL
+    "nbSmallTables" INTEGER NOT NULL,
+    "nbLargeTables" INTEGER NOT NULL,
+    "nbCityHallTables" INTEGER NOT NULL,
+    "festivalName" TEXT REFERENCES festival("name") NOT NULL,
+    "idTZ" INTEGER REFERENCES "tariffZone"("idTZ")
 );
 
 CREATE TABLE IF NOT EXISTS contact (
@@ -163,6 +166,7 @@ CREATE TABLE IF NOT EXISTS festival_tariffZone (
 CREATE TABLE IF NOT EXISTS reservation_game (
     idReservation INTEGER REFERENCES reservation(idReservation),
     idGame INTEGER REFERENCES game("id"),
+    isGamePlaced BOOLEAN DEFAULT FALSE,
     PRIMARY KEY(idReservation, idGame)
 );
 
@@ -186,6 +190,7 @@ CREATE TABLE IF NOT EXISTS game_festival (
     festivalName TEXT REFERENCES festival("name"),
     idReservation INTEGER REFERENCES reservation(idReservation),
     idPA INTEGER REFERENCES planArea("id"),
+    isGamePlaced BOOLEAN DEFAULT FALSE,
     PRIMARY KEY(idGame, festivalName, idReservation, idPA)
 );
 
