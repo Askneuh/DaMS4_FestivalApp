@@ -316,6 +316,31 @@ router.post('/:reservationId/games', verifyToken, requireOrganizer, async (req, 
     }
 })
 
+// Route pour mettre à jour un jeu dans une réservation (quantité, placement)
+router.put('/:reservationId/games/:gameId', verifyToken, requireOrganizer, async (req, res) => {
+    const { reservationId, gameId } = req.params
+    const { quantity, isGamePlaced } = req.body
+
+    try {
+        const { rowCount } = await pool.query(
+            `UPDATE reservation_game 
+             SET quantity = COALESCE($1, quantity), 
+                 isGamePlaced = COALESCE($2, isGamePlaced)
+             WHERE idReservation = $3 AND idGame = $4`,
+            [quantity, isGamePlaced, reservationId, gameId]
+        )
+
+        if (rowCount === 0) {
+            return res.status(404).json({ error: "Jeu non trouvé dans cette réservation" })
+        }
+
+        return res.status(200).json({ message: 'Jeu mis à jour dans la réservation' })
+    } catch (err: any) {
+        console.error(err)
+        return res.status(500).json({ error: 'Erreur serveur' })
+    }
+})
+
 // Route pour retirer un jeu d'une réservation
 router.delete('/:reservationId/games/:gameId', verifyToken, requireOrganizer, async (req, res) => {
     const { reservationId, gameId } = req.params
