@@ -87,6 +87,125 @@ router.get('/festival/:festivalName', verifyToken, async (req, res) => {
     }
 })
 
+// Route pour récupérer les jeux d'une zone de plan
+router.get('/:planAreaId/games', verifyToken, async (req, res) => {
+    const planAreaId = req.params.planAreaId
+    try {
+        const query = `
+            SELECT g.*, gpa.quantity
+            FROM game g
+            JOIN game_planArea gpa ON g.id = gpa.idGame
+            WHERE gpa.idPA = $1
+            ORDER BY g.name
+        `
+        const { rows } = await pool.query(query, [planAreaId])
+
+        const games = rows.map(row => ({
+            id: row.id,
+            name: row.name,
+            author: row.author,
+            nbMinPlayer: row.nbminplayer,
+            nbMaxPlayer: row.nbmaxplayer,
+            gameNotice: row.gamenotice,
+            idGameType: row.idgametype,
+            minimumAge: row.minimumage,
+            prototype: row.prototype,
+            duration: row.duration,
+            theme: row.theme,
+            description: row.description,
+            gameImage: row.gameimage,
+            rulesTutorial: row.rulestutorial,
+            edition: row.edition,
+            idEditor: row.ideditor,
+            quantity: row.quantity
+        }))
+
+        res.json(games)
+    } catch (err: any) {
+        console.error(err)
+        res.status(500).json({ error: 'Erreur serveur' })
+    }
+})
+
+// Route pour ajouter un jeu à une zone de plan
+router.post('/:planAreaId/games', verifyToken, requireAdmin, async (req, res) => {
+    const planAreaId = req.params.planAreaId
+    const { idGame, quantity } = req.body
+
+    if (!idGame) {
+        return res.status(400).json({ error: "ID du jeu obligatoire" })
+    }
+
+    try {
+        await pool.query(
+            'INSERT INTO game_planArea ("idGame", "idPA", "quantity") VALUES ($1, $2, $3)',
+            [idGame, planAreaId, quantity || 1]
+        )
+        return res.status(201).json({ message: 'Jeu ajouté à la zone' })
+    } catch (err: any) {
+        if (err.code === '23505') {
+            return res.status(409).json({ error: 'Ce jeu est déjà présent dans cette zone' })
+        }
+        console.error(err)
+        return res.status(500).json({ error: 'Erreur serveur' })
+    }
+})
+
+
+// Route pour récupérer les éditeurs d'une zone de plan
+router.get('/:planAreaId/editors', verifyToken, async (req, res) => {
+    const planAreaId = req.params.planAreaId
+    try {
+        const query = `
+            SELECT e.*
+            FROM editor e
+            JOIN editor_planArea epa ON e.id = epa.idEditor
+            WHERE epa.idPA = $1
+            ORDER BY e.name
+        `
+        const { rows } = await pool.query(query, [planAreaId])
+
+        // Map lowercase columns if necessary (though editor table is simple)
+        // Adjust based on typical editor response structure
+        const editors = rows.map(row => ({
+            id: row.id,
+            name: row.name,
+            exposant: row.exposant,
+            distributeur: row.distributeur,
+            logo: row.logo
+        }))
+
+        res.json(editors)
+    } catch (err: any) {
+        console.error(err)
+        res.status(500).json({ error: 'Erreur serveur' })
+    }
+})
+
+// Route pour ajouter un éditeur à une zone de plan
+router.post('/:planAreaId/editors', verifyToken, requireAdmin, async (req, res) => {
+    const planAreaId = req.params.planAreaId
+    const { idEditor } = req.body
+
+    if (!idEditor) {
+        return res.status(400).json({ error: "ID de l'éditeur obligatoire" })
+    }
+
+    try {
+        await pool.query(
+            'INSERT INTO editor_planArea ("idEditor", "idPA") VALUES ($1, $2)',
+            [idEditor, planAreaId]
+        )
+        return res.status(201).json({ message: 'Éditeur ajouté à la zone' })
+    } catch (err: any) {
+        if (err.code === '23505') {
+            return res.status(409).json({ error: 'Cet éditeur est déjà présent dans cette zone' })
+        }
+        console.error(err)
+        return res.status(500).json({ error: 'Erreur serveur' })
+    }
+})
+
 // Route de suppression d'une zone de plan
 router.delete('/:planAreaId', verifyToken, requireAdmin, async (req, res) => {
     const planAreaId = req.params.planAreaId

@@ -4,8 +4,9 @@ import { Component, effect, inject, input, output, signal } from '@angular/core'
 //FormGroup: Représente un groupe de champs de formulaire
 //ReactiveFormsModule: Module nécessaire pour les formulaires réactifs
 //Validators: Pour ajouter des règles de validation
-import { FormArray, FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { AbstractControl, FormArray, FormBuilder, FormGroup, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { FestivalService } from '../../services/festival-service';
+import { TariffZoneService } from '../../services/tariff-zone-service';
 import { Festival } from '../../interfaces/festival';
 import { CommonModule } from '@angular/common';
 
@@ -19,6 +20,7 @@ export class FestivalFormComponent {
   //fb: Service pour construire nos formulaires facilement
   private fb = inject(FormBuilder);
   private festivalService = inject(FestivalService);
+  private tariffZoneService = inject(TariffZoneService);
   festivalToEdit = input<Festival | null>(null);
   formClosed = output<void>();
 
@@ -35,7 +37,7 @@ export class FestivalFormComponent {
     nbCityHallTables: [0, [Validators.required, Validators.min(0)]],
     //FormArray vide au départ et on y ajoutera dynamiquement des zones tarifaires
     tariffZones: this.fb.array([])
-  });
+  }, { validators: this.tableAllocationValidator }); // Ajout du validateur ici
 
   // Effect: Pré-remplit le formulaire quand on reçoit un festival à éditer
   constructor() {
@@ -69,8 +71,11 @@ export class FestivalFormComponent {
     });
 
     // Ajouter chaque zone tarifaire
-    if (festival.tariffZones && festival.tariffZones.length > 0) {
-      festival.tariffZones!.forEach(zone => {
+    // On utilise le service pour charger les zones à jour au cas où
+    this.tariffZoneService.findByFestivalName(festival.name).subscribe(zones => {
+      // Nettoyer encore au cas ou
+      this.tariffZones.clear();
+      zones.forEach(zone => {
         const zoneForm = this.fb.group({
           idTZ: [zone.idTZ],
           name: [zone.name, Validators.required],
@@ -85,7 +90,7 @@ export class FestivalFormComponent {
         });
         this.tariffZones.push(zoneForm);
       });
-    }
+    });
   }
 
 
@@ -115,7 +120,25 @@ export class FestivalFormComponent {
   }
 
   removeTariffZone(index: number) {
-    this.tariffZones.removeAt(index);
+    const zoneGroup = this.tariffZones.at(index) as FormGroup;
+    const idTZ = zoneGroup.get('idTZ')?.value;
+
+    if (idTZ && idTZ > 0) {
+      if (confirm("Voulez-vous vraiment supprimer cette zone tarifaire ? Cela est immédiat.")) {
+        this.tariffZoneService.deleteTariffZoneById(idTZ).subscribe({
+          next: () => {
+            this.tariffZones.removeAt(index);
+          },
+          error: (err) => {
+            console.error("Erreur suppression zone", err);
+            const errorMessage = err.error?.error || "Une erreur est survenue lors de la suppression.";
+            alert(errorMessage);
+          }
+        });
+      }
+    } else {
+      this.tariffZones.removeAt(index);
+    }
   }
 
   onSubmit() {
@@ -129,8 +152,8 @@ export class FestivalFormComponent {
         nbCityHallTables: formValue.nbCityHallTables,
         remainingSmallTables: formValue.nbSmallTables,
         remainingLargeTables: formValue.nbLargeTables,
-        isCurrent: false,
         remainingCityHallTables: formValue.nbCityHallTables,
+        isCurrent: false,
         tariffZones: formValue.tariffZones.map((zone: any) => ({
           ...zone,
           remainingSmallTables: zone.nbSmallTables,
@@ -140,23 +163,24 @@ export class FestivalFormComponent {
         }))
       };
 
-      // MODE ÉDITION : Si on a un festival à éditer
+      // MODE ÉDITION
       if (this.festivalToEdit()) {
         const originalName = this.festivalToEdit()!.name;
-        //this.festivalService.updateFestival(originalName, festival);
-        //On ne prend pas le nom car il est clé primaire et non modifiable, on prend les zones tarifaires en compte
         this.festivalService.updateFestivalByName(originalName, festival);
+        this.finishSubmit();
       }
-      // MODE CRÉATION : Nouveau festival
+      // MODE CRÉATION
       else {
-        //this.festivalService.addFestival(festival);
         this.festivalService.addFestival(festival);
+        this.finishSubmit();
       }
-
-      this.resetForm();
-      this.showForm.set(false);
-      this.formClosed.emit();
     }
+  }
+
+  finishSubmit() {
+    this.resetForm();
+    this.showForm.set(false);
+    this.formClosed.emit();
   }
 
   resetForm() {
@@ -171,5 +195,44 @@ export class FestivalFormComponent {
   // Indique si on est en mode édition ou création
   isEditMode(): boolean {
     return this.festivalToEdit() !== null;
+  }
+
+  // Custom Validator pour vérifier l'allocation des tables
+  tableAllocationValidator(group: AbstractControl): ValidationErrors | null {
+    const nbSmallTables = group.get('nbSmallTables')?.value || 0;
+    const nbLargeTables = group.get('nbLargeTables')?.value || 0;
+    const nbCityHallTables = group.get('nbCityHallTables')?.value || 0;
+
+    const tariffZones = group.get('tariffZones') as FormArray;
+
+    if (!tariffZones) return null;
+
+    let allocatedSmall = 0;
+    let allocatedLarge = 0;
+    let allocatedCityHall = 0;
+
+    tariffZones.controls.forEach((zone) => {
+      allocatedSmall += zone.get('nbSmallTables')?.value || 0;
+      allocatedLarge += zone.get('nbLargeTables')?.value || 0;
+      allocatedCityHall += zone.get('nbCityHallTables')?.value || 0;
+    });
+
+    const errors: any = {};
+    let hasError = false;
+
+    if (allocatedSmall > nbSmallTables) {
+      errors.smallTablesExceeded = { allocated: allocatedSmall, total: nbSmallTables };
+      hasError = true;
+    }
+    if (allocatedLarge > nbLargeTables) {
+      errors.largeTablesExceeded = { allocated: allocatedLarge, total: nbLargeTables };
+      hasError = true;
+    }
+    if (allocatedCityHall > nbCityHallTables) {
+      errors.cityHallTablesExceeded = { allocated: allocatedCityHall, total: nbCityHallTables };
+      hasError = true;
+    }
+
+    return hasError ? errors : null;
   }
 }

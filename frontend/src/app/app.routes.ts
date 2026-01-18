@@ -5,7 +5,6 @@ import { Login } from './shared/auth/login/login';
 import { ForbiddenPage } from './components/forbidden-page/forbidden-page';
 import { FestivalList } from './components/festival-list/festival-list';
 import { ReservationWorkflow } from './components/reservation-workflow/reservation-workflow';
-import { TestService } from './components/test-service/test-service';
 import { Admin } from './components/admin/admin';
 import { adminGuard } from './shared/admin/admin-guard';
 import { EditorList } from './components/editor-list/editor-list';
@@ -20,7 +19,6 @@ export const routes: Routes = [
     { path: 'login', component: Login },
     { path: 'festival_list', component: FestivalList, canActivate: [authGuardInterceptor] },
     { path: 'reservation_workflow', component: ReservationWorkflow, canActivate: [authGuardInterceptor] },
-    { path: 'test-service', component: TestService, canActivate: [authGuardInterceptor] },
     { path: 'admin', component: Admin, canActivate: [authGuardInterceptor, adminGuard] },
     { path: 'forbidden', component: ForbiddenPage },
     { path: '', pathMatch: 'full', redirectTo: 'home' },

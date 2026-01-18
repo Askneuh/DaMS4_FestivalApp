@@ -33,6 +33,12 @@
   font-weight: 600;
 }
 
+.header-stats {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
 .tables-count {
   background: #6366f1;
   color: white;
@@ -78,17 +84,37 @@
   font-size: 1rem;
 }
 
-.zone-info {
+.zone-details {
   display: flex;
-  gap: 1rem;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
   font-size: 0.875rem;
-  color: #6b7280;
+  color: #4b5563;
 }
 
-.zone-info span {
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   padding: 0.25rem 0.5rem;
   background: white;
   border-radius: 4px;
+  border: 1px solid #f3f4f6;
+}
+
+.detail-row .label {
+  font-weight: 500;
+  color: #6b7280;
+}
+
+.detail-row .price {
+  font-weight: 600;
+  color: #1f2937;
+  background: #eef2ff;
+  padding: 0.125rem 0.5rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
 }
 
 /* Actions */
@@ -167,16 +193,16 @@
     align-items: flex-start;
     gap: 0.75rem;
   }
-  
+
   .zone-info {
     flex-direction: column;
     gap: 0.5rem;
   }
-  
+
   .card-actions {
     flex-direction: column;
   }
-  
+
   .btn {
     width: 100%;
   }

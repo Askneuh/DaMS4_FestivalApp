@@ -46,6 +46,34 @@
         </div>
       </div>
 
+      <!-- Validation Errors for Table Allocation -->
+      @if (festivalForm.hasError('smallTablesExceeded') || festivalForm.hasError('largeTablesExceeded') ||
+      festivalForm.hasError('cityHallTablesExceeded')) {
+      <div class="form-section error-section"
+        style="background-color: #ffebee; border: 1px solid #ffcdd2; color: #b71c1c; padding: 1rem; border-radius: 4px; margin-bottom: 1rem;">
+        <h4 style="margin-top: 0;">Erreur d'allocation</h4>
+        @if (festivalForm.hasError('smallTablesExceeded')) {
+        <div>
+          Attention : Le nombre de petites tables allouées ({{ festivalForm.errors?.['smallTablesExceeded'].allocated
+          }}) dépasse le total disponible ({{ festivalForm.errors?.['smallTablesExceeded'].total }}).
+        </div>
+        }
+        @if (festivalForm.hasError('largeTablesExceeded')) {
+        <div>
+          Attention : Le nombre de grandes tables allouées ({{ festivalForm.errors?.['largeTablesExceeded'].allocated
+          }}) dépasse le total disponible ({{ festivalForm.errors?.['largeTablesExceeded'].total }}).
+        </div>
+        }
+        @if (festivalForm.hasError('cityHallTablesExceeded')) {
+        <div>
+          Attention : Le nombre de tables de mairie allouées ({{
+          festivalForm.errors?.['cityHallTablesExceeded'].allocated }}) dépasse le total disponible ({{
+          festivalForm.errors?.['cityHallTablesExceeded'].total }}).
+        </div>
+        }
+      </div>
+      }
+
       <!-- Zones tarifaires -->
       <div class="form-section">
         <div class="section-header">
