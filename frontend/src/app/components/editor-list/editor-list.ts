@@ -1,12 +1,13 @@
 import { Component, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { EditorCardComponent } from '../editor-card/editor-card';
+import { EditorFormComponent } from '../editor-form/editor-form';
 import { Editor } from '../../interfaces/editor';
 import { EditorService } from '../../services/editor-service';
 
 @Component({
   selector: 'app-editor-list',
-  imports: [EditorCardComponent],
+  imports: [EditorCardComponent, EditorFormComponent],
   templateUrl: './editor-list.html',
   styleUrl: './editor-list.css',
 })

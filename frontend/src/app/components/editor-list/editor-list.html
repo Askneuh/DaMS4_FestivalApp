@@ -1,10 +1,12 @@
 <div class="editor-list-container">
   <div class="header">
     <h1>Liste des Éditeurs</h1>
-    <button class="btn btn-add" (click)="editorToEdit.set({id: 0, name: '', exposant: false, distributeur: false, logo: ''})">
-      + Ajouter un éditeur
-    </button>
   </div>
+
+  <app-editor-form 
+    [editorToEdit]="editorToEdit()" 
+    (formClosed)="onFormClosed()"
+  />
 
   @if (editors().length === 0) {
     <div class="empty-state">
