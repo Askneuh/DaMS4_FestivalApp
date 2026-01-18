@@ -5,6 +5,17 @@ import { verifyToken } from '../middleware/token-management.js'
 
 const router = Router()
 
+// Route pour récupérer tous les types de jeux
+router.get('/', verifyToken, async (req, res) => {
+    try {
+        const { rows } = await pool.query('SELECT * FROM gameType ORDER BY "gameTypeLabel"');
+        res.json(rows);
+    } catch (err: any) {
+        console.error(err);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
 // Route pour récupérer un type de jeu par son ID
 router.get('/:gameTypeId', verifyToken, async (req, res) => {
     const gameTypeId = req.params.gameTypeId
@@ -55,6 +66,33 @@ router.post('/update/:gameTypeId', verifyToken, requireAdmin, async (req, res) =
             return res.status(404).json({ error: "Type de jeu non trouvé" })
         }
         return res.status(200).json({ message: 'Type de jeu mis à jour' })
+    } catch (err: any) {
+        console.error(err)
+        return res.status(500).json({ error: 'Erreur serveur' })
+    }
+})
+
+// Route de suppression d'un type de jeu
+router.delete('/:gameTypeId', verifyToken, requireAdmin, async (req, res) => {
+    const gameTypeId = req.params.gameTypeId
+    try {
+        // Vérifier si des jeux utilisent ce type
+        const { rows: gamesUsingType } = await pool.query(
+            'SELECT COUNT(*) as count FROM game WHERE "idGameType" = $1',
+            [gameTypeId]
+        );
+
+        if (parseInt(gamesUsingType[0].count) > 0) {
+            return res.status(409).json({
+                error: 'Impossible de supprimer ce type de jeu car il est utilisé par des jeux'
+            });
+        }
+
+        const { rowCount } = await pool.query('DELETE FROM gameType WHERE id = $1', [gameTypeId])
+        if (rowCount === 0) {
+            return res.status(404).json({ error: "Type de jeu non trouvé" })
+        }
+        return res.status(200).json({ message: 'Type de jeu supprimé' })
     } catch (err: any) {
         console.error(err)
         return res.status(500).json({ error: 'Erreur serveur' })

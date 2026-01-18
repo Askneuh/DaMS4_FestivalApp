@@ -5,6 +5,8 @@ import { HttpClient } from '@angular/common/http';
 import { ReservationDAO } from '../interfaces/reservationDAO';
 import { Observable } from 'rxjs';
 
+import { ReservationGame } from '../interfaces/reservation-game';
+
 @Injectable({
   providedIn: 'root',
 })
@@ -34,12 +36,28 @@ export class ReservationService {
     return this.http.post<any>(`${this.API_URL}/reservation/update/${idReservation}`, reservation, { withCredentials: true });
   }
 
-  //addContactEntry(idReservation: number, entry: Contact) {
-  //TODO
-  //}
+  getReservationGames(idReservation: number): Observable<ReservationGame[]> {
+    return this.http.get<ReservationGame[]>(`${this.API_URL}/reservation/${idReservation}/games`, { withCredentials: true });
+  }
 
-  //updateStatus(idReservation: number, newStatus: string) {
-  //TODO
-  //}
+  addGameToReservation(idReservation: number, idGame: number, quantity: number = 1): Observable<any> {
+    return this.http.post<any>(`${this.API_URL}/reservation/${idReservation}/games`, { idGame, quantity }, { withCredentials: true });
+  }
+
+  updateGameInReservation(idReservation: number, idGame: number, updates: { quantity?: number, isGamePlaced?: boolean }): Observable<any> {
+    return this.http.put<any>(`${this.API_URL}/reservation/${idReservation}/games/${idGame}`, updates, { withCredentials: true });
+  }
+
+  removeGameFromReservation(idReservation: number, idGame: number): Observable<any> {
+    return this.http.delete<any>(`${this.API_URL}/reservation/${idReservation}/games/${idGame}`, { withCredentials: true });
+  }
+
+  addSuivi(idReservation: number, status: string, commentaire: string = ''): Observable<any> {
+    return this.http.post<any>(`${this.API_URL}/suiviReservation`, { idReservation, status, commentaire }, { withCredentials: true });
+  }
+
+  updateStatus(idReservation: number, newStatus: string): Observable<any> {
+    return this.http.post<any>(`${this.API_URL}/reservation/update/${idReservation}`, { status: newStatus }, { withCredentials: true });
+  }
 }
 

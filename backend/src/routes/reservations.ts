@@ -67,6 +67,14 @@ router.post('/', verifyToken, requireOrganizer, async (req, res) => {
     if (!idEditor || !idTZ) {
         return res.status(400).json({ error: "ID de l'éditeur et ID de la zone tarifaire obligatoires pour la création de réservation" })
     }
+
+    // Validation des tables
+    try {
+        await checkTableCapacity(idTZ, -1, nbSmallTables || 0, nbLargeTables || 0, nbCityHallTables || 0);
+    } catch (error: any) {
+        return res.status(400).json({ error: error.message });
+    }
+
     try {
         const { rows } = await pool.query(
             'INSERT INTO reservation (idEditor, status, nbSmallTables, nbLargeTables, nbCityHallTables, remise, typeAnimateur, listeDemandee, listeRecue, jeuxRecus, festivalName, idTZ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING idReservation',
@@ -89,6 +97,26 @@ router.post('/update/:reservationId', verifyToken, requireOrganizer, async (req,
     const reservationId = req.params.reservationId
     const { status, nbSmallTables, nbLargeTables, nbCityHallTables, remise, typeAnimateur, listeDemandee, listeRecue, jeuxRecus, idTZ } = req.body
     try {
+        // 1. Récupérer la réservation actuelle pour avoir les valeurs courantes si non fournies
+        const currentRes = await pool.query('SELECT * FROM reservation WHERE idReservation = $1', [reservationId]);
+        if (currentRes.rows.length === 0) {
+            return res.status(404).json({ error: "Réservation non trouvée" });
+        }
+        const current = currentRes.rows[0];
+
+        // 2. Déterminer les valeurs cibles
+        // Si idTZ change, on vérifie dans la NOUVELLE zone
+        const targetIdTZ = idTZ !== undefined ? idTZ : current.idtz;
+
+        // Si les tables sont fournies, on prend la nouvelle valeur, sinon on garde l'ancienne
+        const targetSmall = nbSmallTables !== undefined ? nbSmallTables : current.nbsmalltables;
+        const targetLarge = nbLargeTables !== undefined ? nbLargeTables : current.nblargetables;
+        const targetCityHall = nbCityHallTables !== undefined ? nbCityHallTables : current.nbcityhalltables;
+
+        // 3. Valider la capacité
+        await checkTableCapacity(targetIdTZ, parseInt(reservationId ?? "0"), targetSmall, targetLarge, targetCityHall);
+
+        // 4. Update
         const { rowCount } = await pool.query(
             `UPDATE reservation SET 
                 status = COALESCE($1, status), 
@@ -109,6 +137,9 @@ router.post('/update/:reservationId', verifyToken, requireOrganizer, async (req,
         }
         return res.status(200).json({ message: 'Réservation mise à jour' })
     } catch (err: any) {
+        if (err.message && err.message.startsWith('Capacité')) {
+            return res.status(400).json({ error: err.message });
+        }
         console.error(err)
         return res.status(500).json({ error: 'Erreur serveur' })
     }
@@ -214,5 +245,195 @@ router.get('/byFestival/:festivalName', verifyToken, requireOrganizer, async (re
     }
 })
 
+// Route pour récupérer les jeux d'une réservation
+router.get('/:reservationId/games', verifyToken, requireOrganizer, async (req, res) => {
+    const reservationId = req.params.reservationId
+    try {
+        const query = `
+            SELECT g.*, rg.isGamePlaced, rg.quantity, rg.idReservation,
+                   gt.id as gameType_id, gt."gameTypeLabel"
+            FROM game g
+            JOIN reservation_game rg ON g.id = rg.idGame
+            LEFT JOIN gameType gt ON g."idGameType" = gt.id
+            WHERE rg.idReservation = $1
+        `
+        const { rows } = await pool.query(query, [reservationId])
+
+        const games = rows.map(row => ({
+            id: row.id,
+            name: row.name,
+            author: row.author,
+            nbMinPlayer: row.nbminplayer,
+            nbMaxPlayer: row.nbmaxplayer,
+            gameNotice: row.gamenotice,
+            idGameType: row.idgametype,
+            minimumAge: row.minimumage,
+            prototype: row.prototype,
+            duration: row.duration,
+            theme: row.theme,
+            description: row.description,
+            gameImage: row.gameimage,
+            rulesTutorial: row.rulestutorial,
+            edition: row.edition,
+            idEditor: row.ideditor,
+            isGamePlaced: row.isgameplaced,
+            quantity: row.quantity,
+            idReservation: row.idreservation,
+            gameType: row.gametype_id ? {
+                id: row.gametype_id,
+                gameTypeLabel: row.gametypelabel
+            } : null
+        }))
+
+        res.json(games)
+    } catch (err: any) {
+        console.error(err)
+        res.status(500).json({ error: 'Erreur serveur' })
+    }
+})
+
+// Route pour ajouter un jeu à une réservation
+router.post('/:reservationId/games', verifyToken, requireOrganizer, async (req, res) => {
+    const reservationId = req.params.reservationId
+    const { idGame, quantity } = req.body
+
+    if (!idGame) {
+        return res.status(400).json({ error: "ID du jeu obligatoire" })
+    }
+
+    try {
+        await pool.query(
+            'INSERT INTO reservation_game (idReservation, idGame, isGamePlaced, quantity) VALUES ($1, $2, $3, $4)',
+            [reservationId, idGame, false, quantity || 1]
+        )
+        return res.status(201).json({ message: 'Jeu ajouté à la réservation' })
+    } catch (err: any) {
+        if (err.code === '23505') {
+            return res.status(409).json({ error: 'Ce jeu est déjà dans cette réservation' })
+        }
+        console.error(err)
+        return res.status(500).json({ error: 'Erreur serveur' })
+    }
+})
+
+// Route pour mettre à jour un jeu dans une réservation (quantité, placement)
+router.put('/:reservationId/games/:gameId', verifyToken, requireOrganizer, async (req, res) => {
+    const { reservationId, gameId } = req.params
+    const { quantity, isGamePlaced } = req.body
+
+    try {
+        const { rowCount } = await pool.query(
+            `UPDATE reservation_game 
+             SET quantity = COALESCE($1, quantity), 
+                 isGamePlaced = COALESCE($2, isGamePlaced)
+             WHERE idReservation = $3 AND idGame = $4`,
+            [quantity, isGamePlaced, reservationId, gameId]
+        )
+
+        if (rowCount === 0) {
+            return res.status(404).json({ error: "Jeu non trouvé dans cette réservation" })
+        }
+
+        return res.status(200).json({ message: 'Jeu mis à jour dans la réservation' })
+    } catch (err: any) {
+        console.error(err)
+        return res.status(500).json({ error: 'Erreur serveur' })
+    }
+})
+
+// Route pour retirer un jeu d'une réservation
+router.delete('/:reservationId/games/:gameId', verifyToken, requireOrganizer, async (req, res) => {
+    const { reservationId, gameId } = req.params
+
+    try {
+        const { rowCount } = await pool.query(
+            'DELETE FROM reservation_game WHERE idReservation = $1 AND idGame = $2',
+            [reservationId, gameId]
+        )
+
+        if (rowCount === 0) {
+            return res.status(404).json({ error: "Jeu non trouvé dans cette réservation" })
+        }
+
+        return res.status(200).json({ message: 'Jeu retiré de la réservation' })
+    } catch (err: any) {
+        console.error(err)
+        return res.status(500).json({ error: 'Erreur serveur' })
+    }
+})
+
+// Route pour supprimer une réservation (avec cascade)
+router.delete('/:reservationId', verifyToken, requireOrganizer, async (req, res) => {
+    const reservationId = req.params.reservationId
+    const client = await pool.connect()
+
+    try {
+        await client.query('BEGIN')
+
+        // Supprimer les jeux de la réservation
+        await client.query('DELETE FROM reservation_game WHERE idReservation = $1', [reservationId])
+
+        // Supprimer les suivis
+        await client.query('DELETE FROM suiviReservation WHERE idReservation = $1', [reservationId])
+
+        // Supprimer la réservation
+        const { rowCount } = await client.query('DELETE FROM reservation WHERE idReservation = $1', [reservationId])
+
+        if (rowCount === 0) {
+            await client.query('ROLLBACK')
+            return res.status(404).json({ error: "Réservation non trouvée" })
+        }
+
+        await client.query('COMMIT')
+        return res.status(200).json({ message: 'Réservation supprimée' })
+    } catch (err: any) {
+        await client.query('ROLLBACK')
+        console.error(err)
+        return res.status(500).json({ error: 'Erreur serveur' })
+    } finally {
+        client.release()
+    }
+})
+
 
 export default router
+
+
+async function checkTableCapacity(idTZ: number, excludeResId: number, newSmall: number, newLarge: number, newCityHall: number) {
+    const query = `
+        SELECT
+            tz."nbSmallTables" as total_small,
+            tz."nbLargeTables" as total_large,
+            tz."nbCityHallTables" as total_city_hall,
+            (SELECT COALESCE(SUM("nbSmallTables"), 0) FROM reservation WHERE "idTZ" = $1 AND "idReservation" != $2) as used_small,
+            (SELECT COALESCE(SUM("nbLargeTables"), 0) FROM reservation WHERE "idTZ" = $1 AND "idReservation" != $2) as used_large,
+            (SELECT COALESCE(SUM("nbCityHallTables"), 0) FROM reservation WHERE "idTZ" = $1 AND "idReservation" != $2) as used_city_hall
+        FROM "tariffZone" tz
+        WHERE tz."idTZ" = $1
+    `;
+    const { rows } = await pool.query(query, [idTZ, excludeResId]);
+
+    if (rows.length === 0) throw new Error("Zone tarifaire introuvable");
+
+    const data = rows[0];
+    const availableTheoreticallySmall = data.total_small;
+    const currentUsedSmall = parseInt(data.used_small);
+
+    if (currentUsedSmall + newSmall > availableTheoreticallySmall) {
+        throw new Error(`Capacité dépassée pour les petites tables (Max: ${availableTheoreticallySmall}, Utilisées: ${currentUsedSmall}, Demandées: ${newSmall})`);
+    }
+
+    const availableTheoreticallyLarge = data.total_large;
+    const currentUsedLarge = parseInt(data.used_large);
+
+    if (currentUsedLarge + newLarge > availableTheoreticallyLarge) {
+        throw new Error(`Capacité dépassée pour les grandes tables (Max: ${availableTheoreticallyLarge}, Utilisées: ${currentUsedLarge}, Demandées: ${newLarge})`);
+    }
+
+    const availableTheoreticallyCityp = data.total_city_hall;
+    const currentUsedCityp = parseInt(data.used_city_hall);
+
+    if (currentUsedCityp + newCityHall > availableTheoreticallyCityp) {
+        throw new Error(`Capacité dépassée pour les tables de réception (Max: ${availableTheoreticallyCityp}, Utilisées: ${currentUsedCityp}, Demandées: ${newCityHall})`);
+    }
+}
