@@ -18,10 +18,6 @@ export class ContactService {
       .subscribe(data => this._contacts.set(data));
   }
 
-  getPriorityContact(editorId: number): Observable<Contact> {
-    return this.http.get<Contact>(`${this.base}/editor/${editorId}/priority`, { withCredentials: true });
-  }
-
   clearContacts(): void {
     this._contacts.set([]);
   }
