@@ -25,4 +25,8 @@ export class ContactService {
   clearContacts(): void {
     this._contacts.set([]);
   }
+
+  addContactByEditor(contact: Omit<Contact, 'id'>): Observable<{ message: string; id: number }> {
+    return this.http.post<{ message: string; id: number }>(this.base, contact, { withCredentials: true });
+  }
 }

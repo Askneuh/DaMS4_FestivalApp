@@ -149,14 +149,14 @@ router.post('/', verifyToken, requireOrganizer, async (req, res) => {
             const smallTables = nbSmallTables || 0;
             const largeTables = nbLargeTables || 0;
             const cityHallTables = nbCityHallTables || 0;
-            const isCurrent = req.body.isCurrent || false;
 
-            // Si le nouveau festival doit être courant, désactiver les autres
-            if (isCurrent) {
-                await client.query(
-                    'UPDATE "festival" SET "isCurrent" = FALSE WHERE "isCurrent" = TRUE'
-                );
-            }
+            // Le nouveau festival devient toujours le festival courant
+            const isCurrent = true;
+
+            // Désactiver tous les autres festivals courants
+            await client.query(
+                'UPDATE "festival" SET "isCurrent" = FALSE WHERE "isCurrent" = TRUE'
+            );
 
             const festivalRes = await client.query(
                 'INSERT INTO "festival" ("name", "nbSmallTables", "nbLargeTables", "nbCityHallTables", "remainingSmallTables", "remainingLargeTables", "remainingCityHallTables", "creation_date", "begin_date", "end_date", "isCurrent") VALUES ($1, $2, $3, $4, $5, $6, $7, CURRENT_DATE, $8, $9, $10) RETURNING *',
