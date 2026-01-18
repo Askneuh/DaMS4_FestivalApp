@@ -1,0 +1,22 @@
+services:
+ db:
+  image: postgres:16-alpine
+  container_name: festivalapp_db
+  restart: unless-stopped
+  environment:
+    POSTGRES_USER: festivalapp
+    POSTGRES_PASSWORD: festivalapp
+    POSTGRES_DB: festivalapp
+  volumes:
+    - ./backend/db/init.sql:/docker-entrypoint-initdb.d/init.sql
+    - db_data:/var/lib/postgresql/data
+  ports:
+    - "5433:5432"
+ adminer:
+  image: adminer
+  container_name: festivalapp_adminer
+  restart: unless-stopped
+  ports:
+    - "8080:8080"
+volumes:
+ db_data: 

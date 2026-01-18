@@ -130,6 +130,17 @@ router.post('/update/:tzId', verifyToken, requireOrganizer, async (req, res) => 
 router.delete('/:tzId', verifyToken, requireOrganizer, async (req, res) => {
     const tzId = req.params.tzId;
     try {
+        // Validation: Vérifier si des réservations sont liées à cette zone
+        const checkQuery = 'SELECT COUNT(*) FROM reservation WHERE "idTZ" = $1';
+        const { rows: checkRows } = await pool.query(checkQuery, [tzId]);
+        const reservationCount = parseInt(checkRows[0].count, 10);
+
+        if (reservationCount > 0) {
+            return res.status(409).json({
+                error: `Impossible de supprimer cette zone tarifaire car elle contient ${reservationCount} réservation(s).`
+            });
+        }
+
         const { rowCount } = await pool.query('DELETE FROM "tariffZone" WHERE "idTZ" = $1', [tzId]);
         if (rowCount === 0) {
             return res.status(404).json({ error: "Zone tarifaire non trouvée" });
