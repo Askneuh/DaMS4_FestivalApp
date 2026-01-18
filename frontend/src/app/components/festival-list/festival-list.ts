@@ -49,6 +49,7 @@ export class FestivalList {
   onMakeCurrent(festivalName: string) {
     this.svc.setCurrentFestival(festivalName).subscribe({
       next: () => {
+        alert(`Le festival "${festivalName}" est désormais le festival courant !`);
         console.log(`Festival "${festivalName}" défini comme courant`);
       },
       error: (err) => {
