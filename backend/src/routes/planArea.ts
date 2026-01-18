@@ -1,11 +1,12 @@
 import { Router } from 'express'
 import pool from '../db/database.js'
 import { requireAdmin } from '../middleware/auth-admin.js'
+import { verifyToken } from '../middleware/token-management.js'
 
 const router = Router()
 
 // Route pour récupérer une zone de plan par son ID
-router.get('/:planAreaId', async (req, res) => {
+router.get('/:planAreaId', verifyToken, async (req, res) => {
     const planAreaId = req.params.planAreaId
     try {
         const { rows } = await pool.query('SELECT * FROM planArea WHERE id = $1', [planAreaId])
@@ -17,7 +18,7 @@ router.get('/:planAreaId', async (req, res) => {
 })
 
 // Route de création d'une zone de plan
-router.post('/', requireAdmin, async (req, res) => {
+router.post('/', verifyToken, requireAdmin, async (req, res) => {
     const { name, nbTables, festivalName } = req.body
     if (!name || !nbTables || !festivalName) {
         return res.status(400).json({ error: "Nom, nombre de tables et nom du festival obligatoires pour la création de zone de plan" })
@@ -40,12 +41,16 @@ router.post('/', requireAdmin, async (req, res) => {
 })
 
 // Route de mise à jour d'une zone de plan
-router.post('/update/:planAreaId', requireAdmin, async (req, res) => {
+router.post('/update/:planAreaId', verifyToken, requireAdmin, async (req, res) => {
     const planAreaId = req.params.planAreaId
     const { name, nbTables, festivalName } = req.body
     try {
         const { rowCount } = await pool.query(
-            'UPDATE planArea SET name = $1, nbTables = $2, festivalName = $3 WHERE id = $4',
+            `UPDATE planArea SET 
+                name = COALESCE($1, name), 
+                nbTables = COALESCE($2, nbTables), 
+                festivalName = COALESCE($3, festivalName) 
+            WHERE id = $4`,
             [name, nbTables, festivalName, planAreaId]
         )
         if (rowCount === 0) {

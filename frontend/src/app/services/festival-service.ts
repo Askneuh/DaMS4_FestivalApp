@@ -10,10 +10,15 @@ export class FestivalService {
   private readonly http = inject(HttpClient)
   private readonly apiUrl = 'https://localhost:4000/api';
 
-  festivalList = signal<Festival[]>([]);
+  private readonly _festivalList = signal<Festival[]>([])
+  readonly festivalList = this._festivalList.asReadonly()
+
+  private readonly _currentFestival = signal<Festival | null>(null)
+  readonly currentFestival = this._currentFestival.asReadonly()
 
   constructor() {
     this.loadFestivalsFromBD();
+    this.loadCurrentFestival();
   }
 
 
@@ -42,7 +47,47 @@ export class FestivalService {
   loadFestivalsFromBD(): void {
     this.http.get<Festival[]>(`${this.apiUrl}/festivals`, { withCredentials: true })
       .subscribe(data => {
-        this.festivalList.set(data);
+        this._festivalList.set(data);
+        // Identifier le festival courant dans la liste
+        const current = data.find(f => f.isCurrent === true);
+        if (current) {
+          this._currentFestival.set(current);
+        }
       });
+  }
+
+  loadCurrentFestival(): void {
+    this.http.get<Festival>(`${this.apiUrl}/festivals/current`, { withCredentials: true })
+      .subscribe({
+        next: (festival) => {
+          this._currentFestival.set(festival);
+        },
+        error: (err) => {
+          console.warn('Aucun festival courant défini', err);
+          this._currentFestival.set(null);
+        }
+      });
+  }
+
+  setCurrentFestival(festivalName: string): Observable<Festival> {
+    const observable = this.http.post<Festival>(
+      `${this.apiUrl}/festivals/current/${festivalName}`,
+      {},
+      { withCredentials: true }
+    );
+
+    observable.subscribe({
+      next: (festival) => {
+        this._currentFestival.set(festival);
+        // Mettre à jour la liste des festivals
+        this.loadFestivalsFromBD();
+      }
+    });
+
+    return observable;
+  }
+
+  getCurrentFestivalName(): string | null {
+    return this._currentFestival()?.name || null;
   }
 }

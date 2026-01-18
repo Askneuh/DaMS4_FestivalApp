@@ -1,10 +1,11 @@
 import { Router } from 'express'
 import pool from '../db/database.js'
-import { requireAdmin } from '../middleware/auth-admin.js'
+import { requireOrganizer } from '../middleware/auth-organizer.js'
+import { verifyToken } from '../middleware/token-management.js'
 
 const router = Router()
 
-router.get('/:reservationId', requireAdmin, async (req, res) => {
+router.get('/:reservationId', verifyToken, requireOrganizer, async (req, res) => {
     const reservationId = req.params.reservationId
     try {
         const query = `
@@ -61,7 +62,7 @@ router.get('/:reservationId', requireAdmin, async (req, res) => {
 })
 
 // Route de création d'une réservation
-router.post('/', requireAdmin, async (req, res) => {
+router.post('/', verifyToken, requireOrganizer, async (req, res) => {
     const { idEditor, status, nbSmallTables, nbLargeTables, nbCityHallTables, remise, typeAnimateur, listeDemandee, listeRecue, jeuxRecus, festivalName, idTZ } = req.body
     if (!idEditor || !idTZ) {
         return res.status(400).json({ error: "ID de l'éditeur et ID de la zone tarifaire obligatoires pour la création de réservation" })
@@ -84,12 +85,23 @@ router.post('/', requireAdmin, async (req, res) => {
 })
 
 // Route de mise à jour d'une réservation
-router.post('/update/:reservationId', requireAdmin, async (req, res) => {
+router.post('/update/:reservationId', verifyToken, requireOrganizer, async (req, res) => {
     const reservationId = req.params.reservationId
     const { status, nbSmallTables, nbLargeTables, nbCityHallTables, remise, typeAnimateur, listeDemandee, listeRecue, jeuxRecus, idTZ } = req.body
     try {
         const { rowCount } = await pool.query(
-            'UPDATE reservation SET status = $1, nbSmallTables = $2, nbLargeTables = $3, nbCityHallTables = $4, remise = $5, typeAnimateur = $6, listeDemandee = $7, listeRecue = $8, jeuxRecus = $9, idTZ = $10 WHERE idReservation = $11',
+            `UPDATE reservation SET 
+                status = COALESCE($1, status), 
+                nbSmallTables = COALESCE($2, nbSmallTables), 
+                nbLargeTables = COALESCE($3, nbLargeTables), 
+                nbCityHallTables = COALESCE($4, nbCityHallTables), 
+                remise = COALESCE($5, remise), 
+                typeAnimateur = COALESCE($6, typeAnimateur), 
+                listeDemandee = COALESCE($7, listeDemandee), 
+                listeRecue = COALESCE($8, listeRecue), 
+                jeuxRecus = COALESCE($9, jeuxRecus), 
+                idTZ = COALESCE($10, idTZ) 
+            WHERE idReservation = $11`,
             [status, nbSmallTables, nbLargeTables, nbCityHallTables, remise, typeAnimateur, listeDemandee, listeRecue, jeuxRecus, idTZ, reservationId]
         )
         if (rowCount === 0) {
@@ -103,7 +115,7 @@ router.post('/update/:reservationId', requireAdmin, async (req, res) => {
 })
 
 // Route pour récupérer les réservations d'un editeur 
-router.get('/byEditor/:idEditor', requireAdmin, async (req, res) => {
+router.get('/byEditor/:idEditor', verifyToken, requireOrganizer, async (req, res) => {
     const idEditor = req.params.idEditor
     try {
         const query = `
@@ -153,7 +165,7 @@ router.get('/byEditor/:idEditor', requireAdmin, async (req, res) => {
 })
 
 //Route pour récupérer les réservations d'un festival
-router.get('/byFestival/:festivalName', requireAdmin, async (req, res) => {
+router.get('/byFestival/:festivalName', verifyToken, requireOrganizer, async (req, res) => {
     const festivalName = req.params.festivalName
     try {
         const query = `

@@ -30,7 +30,7 @@ export class ReservationService {
     return this.http.post<any>(`${this.API_URL}/reservation`, reservation, { withCredentials: true });
   }
 
-  updateReservation(idReservation: number, reservation: Partial<Reservation>): Observable<any> {
+  updateReservation(idReservation: number, reservation: Reservation): Observable<any> {
     return this.http.post<any>(`${this.API_URL}/reservation/update/${idReservation}`, reservation, { withCredentials: true });
   }
 

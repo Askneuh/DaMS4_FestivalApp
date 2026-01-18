@@ -2,10 +2,9 @@ import { Editor } from './editor';
 import { TariffZone } from './tariff-zone';
 
 export interface Reservation {
-    idReservation?: number;
+    idReservation: number;
     idEditor: number;
     status: string;
-    editor?: Editor;
     nbSmallTables: number;
     nbLargeTables: number;
     nbCityHallTables: number;
@@ -16,5 +15,6 @@ export interface Reservation {
     jeuxRecus: boolean;
     festivalName: string;
     tariffZone?: TariffZone // appeler findById(idTZ: number)
+    editor?: Editor;
     idTZ: number;
 }

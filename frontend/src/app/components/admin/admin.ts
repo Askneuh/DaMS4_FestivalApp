@@ -102,6 +102,24 @@ export class Admin {
     return role ? role.label : roleValue.toString();
   }
 
+  // Delete a user
+  deleteUser(userId: number, login: string) {
+    if (!confirm(`Êtes-vous sûr de vouloir supprimer l'utilisateur "${login}" ?`)) {
+      return;
+    }
+
+    this.userService.deleteUser(userId).subscribe({
+      next: () => {
+        this.showSuccess(`Utilisateur "${login}" supprimé avec succès`);
+        this.userService.loadAll();
+      },
+      error: (err) => {
+        const message = err.error?.error || 'Erreur lors de la suppression de l\'utilisateur';
+        this.showError(message);
+      }
+    });
+  }
+
   // Show success message
   private showSuccess(message: string) {
     this.successMessage.set(message);

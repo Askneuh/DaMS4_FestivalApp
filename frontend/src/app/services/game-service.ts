@@ -11,7 +11,6 @@ export class GameService {
   private readonly http = inject(HttpClient);
   private readonly apiUrl = 'https://localhost:4000/api';
 
-  // Signal pour stocker la liste des jeux
   private readonly _gameList = signal<Game[]>([]);
   readonly gameList = this._gameList.asReadonly();
 
@@ -56,7 +55,7 @@ export class GameService {
     return this.http.post<{ message: string; id: number }>(`${this.apiUrl}/games`, gameToSend, { withCredentials: true });
   }
 
-  updateGame(id: number, game: Partial<Game>): Observable<{ message: string }> {
+  updateGame(id: number, game: Game): Observable<{ message: string }> {
     return this.http.post<{ message: string }>(`${this.apiUrl}/games/update/${id}`, game, { withCredentials: true });
   }
 

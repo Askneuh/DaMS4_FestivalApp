@@ -1,11 +1,12 @@
 import { Router } from 'express'
 import pool from '../db/database.js'
 import { requireAdmin } from '../middleware/auth-admin.js'
+import { verifyToken } from '../middleware/token-management.js'
 
 const router = Router()
 
 // Route pour récupérer un mécanisme par son ID
-router.get('/:mechanismId', async (req, res) => {
+router.get('/:mechanismId', verifyToken, async (req, res) => {
     const mechanismId = req.params.mechanismId
     try {
         const { rows } = await pool.query('SELECT * FROM mechanism WHERE id = $1', [mechanismId])
@@ -17,7 +18,7 @@ router.get('/:mechanismId', async (req, res) => {
 })
 
 // Route de création d'un mécanisme
-router.post('/', requireAdmin, async (req, res) => {
+router.post('/', verifyToken, requireAdmin, async (req, res) => {
     const { name, description } = req.body
     if (!name) {
         return res.status(400).json({ error: "Nom du mécanisme obligatoire pour la création" })
@@ -40,12 +41,15 @@ router.post('/', requireAdmin, async (req, res) => {
 })
 
 // Route de mise à jour d'un mécanisme
-router.post('/update/:mechanismId', requireAdmin, async (req, res) => {
+router.post('/update/:mechanismId', verifyToken, requireAdmin, async (req, res) => {
     const mechanismId = req.params.mechanismId
     const { name, description } = req.body
     try {
         const { rowCount } = await pool.query(
-            'UPDATE mechanism SET name = $1, description = $2 WHERE id = $3',
+            `UPDATE mechanism SET 
+                name = COALESCE($1, name), 
+                description = $2 
+            WHERE id = $3`,
             [name, description, mechanismId]
         )
         if (rowCount === 0) {

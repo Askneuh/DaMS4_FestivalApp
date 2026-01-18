@@ -1,11 +1,12 @@
 import { Router } from 'express'
 import pool from '../db/database.js'
 import { requireAdmin } from '../middleware/auth-admin.js'
+import { verifyToken } from '../middleware/token-management.js'
 
 const router = Router()
 
 // Route pour récupérer tous les éditeurs
-router.get('/', async (req, res) => {
+router.get('/', verifyToken, async (req, res) => {
     try {
         const { rows } = await pool.query('SELECT * FROM editor ORDER BY name');
 
@@ -25,8 +26,181 @@ router.get('/', async (req, res) => {
     }
 });
 
+// Route pour récupérer tous les éditeurs avec leur statut de réservation pour le FESTIVAL COURANT
+// IMPORTANT: Cette route doit être AVANT /festival/:festivalName pour éviter les conflits
+router.get('/current-festival/withReservationStatus', verifyToken, async (req, res) => {
+    try {
+        // Récupérer le festival courant
+        const { rows: festivalRows } = await pool.query(
+            'SELECT "name" FROM "festival" WHERE "isCurrent" = TRUE'
+        );
+
+        if (festivalRows.length === 0) {
+            return res.status(404).json({ error: 'Aucun festival courant défini' });
+        }
+
+        const festivalName = festivalRows[0].name;
+
+        // Réutiliser la même logique que la route /festival/:festivalName/withReservationStatus
+        const query = `
+            SELECT 
+                e.id,
+                e.name,
+                e.exposant,
+                e.distributeur,
+                e.logo,
+                -- Informations de réservation
+                r.idReservation,
+                r.status as reservationStatus,
+                r.nbSmallTables,
+                r.nbLargeTables,
+                r.nbCityHallTables,
+                r.remise,
+                -- Calcul du prix total
+                COALESCE(
+                    (SELECT 
+                        (COALESCE(r.nbSmallTables, 0) * COALESCE(tz."smallTablePrice", 0) +
+                         COALESCE(r.nbLargeTables, 0) * COALESCE(tz."largeTablePrice", 0) +
+                         COALESCE(r.nbCityHallTables, 0) * COALESCE(tz."cityHallTablePrice", 0)) - 
+                        COALESCE(r.remise, 0)
+                    FROM "tariffZone" tz
+                    WHERE tz."idTZ" = r.idTZ),
+                    0
+                ) as totalPrice,
+                -- Dernière date de contact (du suivi de réservation le plus récent)
+                (SELECT MAX(sr.date) 
+                 FROM suiviReservation sr 
+                 WHERE sr.idReservation = r.idReservation) as lastContactDate,
+                -- Contact prioritaire
+                c.id as contactId,
+                c.name as contactName,
+                c.email as contactEmail,
+                c.phone as contactPhone
+            FROM editor e
+            LEFT JOIN reservation r ON e.id = r.idEditor AND r.festivalName = $1
+            LEFT JOIN contact c ON e.id = c."idEditor" AND c.role = 'prioritaire'
+            ORDER BY e.name
+        `;
+
+        const { rows } = await pool.query(query, [festivalName]);
+
+        const editors = rows.map(row => ({
+            id: row.id,
+            name: row.name,
+            exposant: row.exposant,
+            distributeur: row.distributeur,
+            logo: row.logo,
+            reservation: row.idreservation ? {
+                idReservation: row.idreservation,
+                status: row.reservationstatus,
+                nbSmallTables: row.nbsmalltables,
+                nbLargeTables: row.nblargetables,
+                nbCityHallTables: row.nbcityhalltables,
+                remise: parseFloat(row.remise) || 0,
+                totalPrice: parseFloat(row.totalprice) || 0,
+                lastContactDate: row.lastcontactdate
+            } : null,
+            contact: row.contactid ? {
+                id: row.contactid,
+                name: row.contactname,
+                email: row.contactemail,
+                phone: row.contactphone
+            } : null,
+            // Indicateurs dérivés pour faciliter le tri/filtrage côté frontend
+            hasReservation: !!row.idreservation,
+            hasBeenContacted: !!row.lastcontactdate
+        }));
+
+        res.json(editors);
+    } catch (err: any) {
+        console.error(err);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
+// Route pour récupérer tous les éditeurs avec leur statut de réservation pour un festival
+// IMPORTANT: Cette route doit être AVANT /:editorId pour éviter les conflits
+router.get('/festival/:festivalName/withReservationStatus', verifyToken, async (req, res) => {
+    const festivalName = req.params.festivalName;
+    try {
+        const query = `
+            SELECT 
+                e.id,
+                e.name,
+                e.exposant,
+                e.distributeur,
+                e.logo,
+                -- Informations de réservation
+                r.idReservation,
+                r.status as reservationStatus,
+                r.nbSmallTables,
+                r.nbLargeTables,
+                r.nbCityHallTables,
+                r.remise,
+                -- Calcul du prix total
+                COALESCE(
+                    (SELECT 
+                        (COALESCE(r.nbSmallTables, 0) * COALESCE(tz."smallTablePrice", 0) +
+                         COALESCE(r.nbLargeTables, 0) * COALESCE(tz."largeTablePrice", 0) +
+                         COALESCE(r.nbCityHallTables, 0) * COALESCE(tz."cityHallTablePrice", 0)) - 
+                        COALESCE(r.remise, 0)
+                    FROM "tariffZone" tz
+                    WHERE tz."idTZ" = r.idTZ),
+                    0
+                ) as totalPrice,
+                -- Dernière date de contact (du suivi de réservation le plus récent)
+                (SELECT MAX(sr.date) 
+                 FROM suiviReservation sr 
+                 WHERE sr.idReservation = r.idReservation) as lastContactDate,
+                -- Contact prioritaire
+                c.id as contactId,
+                c.name as contactName,
+                c.email as contactEmail,
+                c.phone as contactPhone
+            FROM editor e
+            LEFT JOIN reservation r ON e.id = r.idEditor AND r.festivalName = $1
+            LEFT JOIN contact c ON e.id = c."idEditor" AND c.role = 'prioritaire'
+            ORDER BY e.name
+        `;
+
+        const { rows } = await pool.query(query, [festivalName]);
+
+        const editors = rows.map(row => ({
+            id: row.id,
+            name: row.name,
+            exposant: row.exposant,
+            distributeur: row.distributeur,
+            logo: row.logo,
+            reservation: row.idreservation ? {
+                idReservation: row.idreservation,
+                status: row.reservationstatus,
+                nbSmallTables: row.nbsmalltables,
+                nbLargeTables: row.nblargetables,
+                nbCityHallTables: row.nbcityhalltables,
+                remise: parseFloat(row.remise) || 0,
+                totalPrice: parseFloat(row.totalprice) || 0,
+                lastContactDate: row.lastcontactdate
+            } : null,
+            contact: row.contactid ? {
+                id: row.contactid,
+                name: row.contactname,
+                email: row.contactemail,
+                phone: row.contactphone
+            } : null,
+            // Indicateurs dérivés pour faciliter le tri/filtrage côté frontend
+            hasReservation: !!row.idreservation,
+            hasBeenContacted: !!row.lastcontactdate
+        }));
+
+        res.json(editors);
+    } catch (err: any) {
+        console.error(err);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
 // Route pour récupérer un éditeur par son ID
-router.get('/:editorId', async (req, res) => {
+router.get('/:editorId', verifyToken, async (req, res) => {
     const idE = req.params.editorId
     try {
         const { rows } = await pool.query('SELECT * FROM editor WHERE "id" = $1', [idE])
@@ -54,7 +228,7 @@ router.get('/:editorId', async (req, res) => {
 })
 
 // Route de création d'un editeur
-router.post('/', async (req, res) => {
+router.post('/', verifyToken, requireAdmin, async (req, res) => {
     const { name, exposant, distributeur, logo } = req.body
     if (!name) {
         return res.status(400).json({ error: "Nom de l'éditeur obligatoire pour la création" })
@@ -77,18 +251,18 @@ router.post('/', async (req, res) => {
     }
 })
 
-router.post('/update/:editorId', async (req, res) => {
+router.post('/update/:editorId', verifyToken, requireAdmin, async (req, res) => {
     const editeurId = req.params.editorId;
     const { name, exposant, distributeur, logo } = req.body;
 
     try {
-        // Utilisation de COALESCE pour garder l'ancienne valeur si la nouvelle est undefined/null
+        // Utilisation de COALESCE pour les champs requis, pas pour logo (nullable)
         const { rows, rowCount } = await pool.query(
             `UPDATE editor 
              SET name = COALESCE($1, name), 
                  exposant = COALESCE($2, exposant), 
                  distributeur = COALESCE($3, distributeur), 
-                 logo = COALESCE($4, logo) 
+                 logo = $4 
              WHERE "id" = $5 
              RETURNING *`,
             [name, exposant, distributeur, logo, editeurId]
@@ -106,8 +280,36 @@ router.post('/update/:editorId', async (req, res) => {
     }
 });
 
+// Route pour récupérer tous les éditeurs d'un festival
+router.get('/festival/:festivalName', verifyToken, async (req, res) => {
+    const festivalName = req.params.festivalName;
+    try {
+        const { rows } = await pool.query(
+            `SELECT e.id, e.name, e.exposant, e.distributeur, e.logo 
+             FROM editor e
+             INNER JOIN editor_festival ef ON e.id = ef."idEditor"
+             WHERE ef."festivalName" = $1
+             ORDER BY e.name`,
+            [festivalName]
+        );
+
+        const editors = rows.map(row => ({
+            id: row.id,
+            name: row.name,
+            exposant: row.exposant,
+            distributeur: row.distributeur,
+            logo: row.logo
+        }));
+
+        res.json(editors);
+    } catch (err: any) {
+        console.error(err);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
 // Route de suppression d'un éditeur par ID
-router.delete('/:editorId', requireAdmin, async (req, res) => {
+router.delete('/:editorId', verifyToken, requireAdmin, async (req, res) => {
     const editorId = req.params.editorId;
     try {
         const { rowCount } = await pool.query('DELETE FROM editor WHERE "id" = $1', [editorId]);

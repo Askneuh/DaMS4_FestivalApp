@@ -5,10 +5,100 @@ import bcrypt from 'bcryptjs'
 
 import pool from '../db/database.js'
 import { requireAdmin } from '../middleware/auth-admin.js'
+import { requireOrganizer } from '../middleware/auth-organizer.js'
+import { verifyToken } from '../middleware/token-management.js'
 
 const router = Router()
+
+// Route pour récupérer le festival courant
+router.get('/current', verifyToken, async (req, res) => {
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+        const { rows } = await client.query(
+            'SELECT * FROM "festival" WHERE "isCurrent" = TRUE'
+        );
+
+        if (rows.length === 0) {
+            await client.query('COMMIT');
+            return res.status(404).json({ error: 'Aucun festival courant défini' });
+        }
+
+        const { rows: tzRows } = await client.query(
+            'SELECT * FROM "tariffZone" WHERE "festivalName" = $1',
+            [rows[0].name]
+        );
+
+        const festivalWithZones = {
+            ...rows[0],
+            tariffZones: tzRows
+        };
+
+        res.json(festivalWithZones);
+        await client.query('COMMIT');
+    } catch (err: any) {
+        await client.query('ROLLBACK');
+        console.error(err);
+        return res.status(500).json({ error: 'Erreur serveur' });
+    } finally {
+        client.release();
+    }
+});
+
+// Route pour définir un festival comme courant
+router.post('/current/:festivalName', verifyToken, requireOrganizer, async (req, res) => {
+    const festivalName = req.params.festivalName;
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+
+        // Vérifier que le festival existe
+        const { rows: festivalRows } = await client.query(
+            'SELECT * FROM "festival" WHERE "name" = $1',
+            [festivalName]
+        );
+
+        if (festivalRows.length === 0) {
+            await client.query('ROLLBACK');
+            return res.status(404).json({ error: 'Festival non trouvé' });
+        }
+
+        // Désactiver tous les festivals courants
+        await client.query(
+            'UPDATE "festival" SET "isCurrent" = FALSE WHERE "isCurrent" = TRUE'
+        );
+
+        // Activer le festival spécifié
+        const { rows } = await client.query(
+            'UPDATE "festival" SET "isCurrent" = TRUE WHERE "name" = $1 RETURNING *',
+            [festivalName]
+        );
+
+        // Récupérer les zones tarifaires
+        const { rows: tzRows } = await client.query(
+            'SELECT * FROM "tariffZone" WHERE "festivalName" = $1',
+            [festivalName]
+        );
+
+        const festivalWithZones = {
+            ...rows[0],
+            tariffZones: tzRows
+        };
+
+        await client.query('COMMIT');
+        res.status(200).json(festivalWithZones);
+    } catch (err: any) {
+        await client.query('ROLLBACK');
+        console.error(err);
+        return res.status(500).json({ error: 'Erreur serveur' });
+    } finally {
+        client.release();
+    }
+});
+
+
 //Route pour récupérer les données d'un festival dont le nom (unique) est passé en paramètre.
-router.get('/:festivalName', async (req, res) => {
+router.get('/:festivalName', verifyToken, async (req, res) => {
     const festivalName = req.params.festivalName;
     const client = await pool.connect();
     try {
@@ -37,7 +127,7 @@ router.get('/:festivalName', async (req, res) => {
     }
 });
 //Route pour la création d'un festival
-router.post('/', async (req, res) => {
+router.post('/', verifyToken, requireOrganizer, async (req, res) => {
     const { name, nbSmallTables, nbLargeTables, nbCityHallTables, begin_date, end_date } = req.body;
     const dateActuelle: Date = new Date();
     //Gérer le fuseau horaire et formate pour le type Date de postgres
@@ -59,10 +149,18 @@ router.post('/', async (req, res) => {
             const smallTables = nbSmallTables || 0;
             const largeTables = nbLargeTables || 0;
             const cityHallTables = nbCityHallTables || 0;
+            const isCurrent = req.body.isCurrent || false;
+
+            // Si le nouveau festival doit être courant, désactiver les autres
+            if (isCurrent) {
+                await client.query(
+                    'UPDATE "festival" SET "isCurrent" = FALSE WHERE "isCurrent" = TRUE'
+                );
+            }
 
             const festivalRes = await client.query(
-                'INSERT INTO "festival" ("name", "nbSmallTables", "nbLargeTables", "nbCityHallTables", "remainingSmallTables", "remainingLargeTables", "remainingCityHallTables", "creation_date", "begin_date", "end_date") VALUES ($1, $2, $3, $4, $5, $6, $7, CURRENT_DATE, $8, $9) RETURNING *',
-                [name, smallTables, largeTables, cityHallTables, smallTables, largeTables, cityHallTables, begin_date || null, end_date || null]
+                'INSERT INTO "festival" ("name", "nbSmallTables", "nbLargeTables", "nbCityHallTables", "remainingSmallTables", "remainingLargeTables", "remainingCityHallTables", "creation_date", "begin_date", "end_date", "isCurrent") VALUES ($1, $2, $3, $4, $5, $6, $7, CURRENT_DATE, $8, $9, $10) RETURNING *',
+                [name, smallTables, largeTables, cityHallTables, smallTables, largeTables, cityHallTables, begin_date || null, end_date || null, isCurrent]
             );
 
             await client.query('COMMIT');
@@ -84,13 +182,23 @@ router.post('/', async (req, res) => {
     }
 })
 
-router.post('/update/:festivalName', async (req, res) => {
+router.post('/update/:festivalName', verifyToken, requireOrganizer, async (req, res) => {
     const festivalNameParam = req.params.festivalName;
     const { nbSmallTables, nbLargeTables, nbCityHallTables, remainingSmallTables, remainingLargeTables, remainingCityHallTables, begin_date, end_date } = req.body;
     const client = await pool.connect();
 
     try {
         await client.query('BEGIN');
+        const isCurrent = req.body.isCurrent;
+
+        // Si le festival doit devenir courant, désactiver les autres
+        if (isCurrent === true) {
+            await client.query(
+                'UPDATE "festival" SET "isCurrent" = FALSE WHERE "isCurrent" = TRUE AND "name" != $1',
+                [festivalNameParam]
+            );
+        }
+
         const updateFestivalQuery = `
             UPDATE "festival" 
             SET "nbSmallTables" = COALESCE($1, "nbSmallTables"), 
@@ -99,11 +207,12 @@ router.post('/update/:festivalName', async (req, res) => {
                 "remainingSmallTables" = COALESCE($4, "remainingSmallTables"),
                 "remainingLargeTables" = COALESCE($5, "remainingLargeTables"),
                 "remainingCityHallTables" = COALESCE($6, "remainingCityHallTables"),
-                "begin_date" = COALESCE($7, "begin_date"), 
-                "end_date" = COALESCE($8, "end_date") 
-            WHERE "name" = $9 
+                "begin_date" = $7, 
+                "end_date" = $8,
+                "isCurrent" = COALESCE($9, "isCurrent")
+            WHERE "name" = $10 
             RETURNING *`;
-        const { rowCount, rows } = await client.query(updateFestivalQuery, [nbSmallTables, nbLargeTables, nbCityHallTables, remainingSmallTables, remainingLargeTables, remainingCityHallTables, begin_date, end_date, festivalNameParam]);
+        const { rowCount, rows } = await client.query(updateFestivalQuery, [nbSmallTables, nbLargeTables, nbCityHallTables, remainingSmallTables, remainingLargeTables, remainingCityHallTables, begin_date, end_date, isCurrent, festivalNameParam]);
 
         if (rowCount === 0) {
             await client.query('ROLLBACK');
@@ -130,7 +239,7 @@ router.post('/update/:festivalName', async (req, res) => {
 });
 
 //Route pour récupérer tous les festivals
-router.get('/', async (req, res) => {
+router.get('/', verifyToken, async (req, res) => {
     try {
         const query = `
             SELECT f.*,
@@ -151,7 +260,7 @@ router.get('/', async (req, res) => {
 });
 
 //Route pour supprimer un festival par son nom
-router.delete('/:festivalName', requireAdmin, async (req, res) => {
+router.delete('/:festivalName', verifyToken, requireAdmin, async (req, res) => {
     const festivalName = req.params.festivalName;
     const client = await pool.connect();
     try {
