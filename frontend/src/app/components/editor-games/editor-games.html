@@ -6,6 +6,12 @@
     }
   </div>
 
+  <app-game-form 
+    [gameToEdit]="gameToEdit()"
+    [idEditor]="editorId()"
+    (formClosed)="onFormClosed()"
+  />
+
   @if (loading()) {
     <div class="loading">
       <p>Chargement des jeux...</p>
@@ -41,9 +47,11 @@
               <span>{{ game.duration }} min</span>
               <span>{{ game.minimumAge }}+ ans</span>
             </div>
-            @if (game.theme) {
-              <p class="theme">{{ game.theme }}</p>
-            }
+            <p class="game-type">{{ getGameTypeLabel(game.idGameType) }}</p>
+          </div>
+          <div class="game-actions">
+            <button class="btn btn-edit" (click)="onEditGame(game)">Modifier</button>
+            <button class="btn btn-delete" (click)="deleteGame(game.id)">Supprimer</button>
           </div>
         </div>
       }
