@@ -29,4 +29,7 @@ export class ContactService {
   addContactByEditor(contact: Omit<Contact, 'id'>): Observable<{ message: string; id: number }> {
     return this.http.post<{ message: string; id: number }>(this.base, contact, { withCredentials: true });
   }
+  deleteContact(id: number): Observable<any> {
+    return this.http.delete(`${this.base}/${id}`, { withCredentials: true });
+  }
 }
