@@ -1,0 +1,46 @@
+<div class="editor-contacts-container">
+  <div class="header">
+    <button class="btn btn-back" (click)="goBack()">← Retour</button>
+    @if (editor()) {
+      <h1>Contacts de {{ editor()!.name }}</h1>
+    }
+  </div>
+
+  <app-contact-form 
+    [contactToEdit]="contactToEdit()"
+    [idEditor]="editorId()"
+    (formClosed)="onFormClosed()"
+  />
+
+  @if (sortedContacts().length === 0) {
+    <div class="empty-state">
+      <p>Aucun contact pour cet éditeur</p>
+    </div>
+  } @else {
+    <div class="contacts-list">
+      @for (contact of sortedContacts(); track contact.id) {
+        <div class="contact-card" [class.priority]="contact.priority">
+          <div class="contact-info">
+            <div class="contact-header">
+              <h3>{{ contact.name }}</h3>
+              @if (contact.priority) {
+                <span class="priority-badge">Prioritaire</span>
+              }
+            </div>
+            <p class="email">📧 {{ contact.email }}</p>
+            @if (contact.phone) {
+              <p class="phone">📞 {{ contact.phone }}</p>
+            }
+            @if (contact.role) {
+              <p class="role">{{ contact.role }}</p>
+            }
+          </div>
+          <div class="contact-actions">
+            <button class="btn btn-edit" (click)="onEditContact(contact)">Modifier</button>
+            <button class="btn btn-delete" (click)="deleteContact(contact.id)">Supprimer</button>
+          </div>
+        </div>
+      }
+    </div>
+  }
+</div>

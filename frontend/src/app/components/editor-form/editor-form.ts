@@ -1,5 +1,5 @@
 import { Component, effect, inject, input, output, signal } from '@angular/core';
-import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { AbstractControl, FormControl, FormGroup, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { EditorService } from '../../services/editor-service';
 import { Editor } from '../../interfaces/editor';
 import { CommonModule } from '@angular/common';
@@ -17,7 +17,6 @@ export class EditorFormComponent {
 
   showForm = signal(false);
 
-  // Syntaxe conforme au PDF 09 Page 2
   editorForm = new FormGroup({
     id: new FormControl<number>(0, { nonNullable: true }),
     name: new FormControl<string>('', { 
@@ -27,7 +26,18 @@ export class EditorFormComponent {
     exposant: new FormControl<boolean>(false, { nonNullable: true }),
     distributeur: new FormControl<boolean>(false, { nonNullable: true }),
     logo: new FormControl<string>('', { nonNullable: true })
-  });
+  }, { validators: this.atLeastOneCheckbox });
+
+  atLeastOneCheckbox(control: AbstractControl): ValidationErrors | null {
+    const exposant = control.get('exposant')?.value;
+    const distributeur = control.get('distributeur')?.value;
+    return (exposant || distributeur) ? null : { atLeastOne: true };
+  }
+
+  hasCheckboxError(): boolean {
+    return this.editorForm.hasError('atLeastOne') && 
+      (this.editorForm.get('exposant')?.touched === true || this.editorForm.get('distributeur')?.touched === true);
+  }
 
   constructor() {
     effect(() => {
