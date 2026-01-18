@@ -10,6 +10,7 @@ export interface Festival {
     remainingSmallTables: number
     remainingLargeTables: number
     remainingCityHallTables: number
+    isCurrent: boolean
     tariffZones?: TariffZone[] // appeler findByFestivalName(festivalName: string)
     reservations?: Reservation[] // appeler getReservationsByFestival(festivalName: string)
     games?: Game[] // appeler getGamesByFestival(festivalName: string)

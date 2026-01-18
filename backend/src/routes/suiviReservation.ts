@@ -1,11 +1,12 @@
 import { Router } from 'express'
 import pool from '../db/database.js'
-import { requireAdmin } from '../middleware/auth-admin.js'
+import { requireOrganizer } from '../middleware/auth-organizer.js'
+import { verifyToken } from '../middleware/token-management.js'
 
 const router = Router()
 
 // Route pour récupérer un suivi de réservation par son ID
-router.get('/:suiviId', requireAdmin, async (req, res) => {
+router.get('/:suiviId', verifyToken, requireOrganizer, async (req, res) => {
     const suiviId = req.params.suiviId
     try {
         const { rows } = await pool.query('SELECT * FROM suiviReservation WHERE idSuivi = $1', [suiviId])
@@ -17,7 +18,7 @@ router.get('/:suiviId', requireAdmin, async (req, res) => {
 })
 
 // Route de création d'un suivi de réservation
-router.post('/', requireAdmin, async (req, res) => {
+router.post('/', verifyToken, requireOrganizer, async (req, res) => {
     const { status, idReservation } = req.body
     const dateActuelle: Date = new Date()
     // Gestion du fuseau horaire
@@ -48,7 +49,7 @@ router.post('/', requireAdmin, async (req, res) => {
 
 // Route de mise à jour du statut d'un suivi de réservation (met à jour le statut et la date)
 // Il est plus logique de créer un NOUVEAU suivi pour refléter un historique, mais si l'objectif est de modifier le DERNIER statut...
-router.post('/update/:suiviId', requireAdmin, async (req, res) => {
+router.post('/update/:suiviId', verifyToken, requireOrganizer, async (req, res) => {
     const suiviId = req.params.suiviId
     const { status } = req.body
     const dateActuelle: Date = new Date()

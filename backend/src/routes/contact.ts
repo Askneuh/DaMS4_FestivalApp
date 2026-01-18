@@ -1,11 +1,12 @@
 import { Router } from 'express'
 import pool from '../db/database.js'
 import { requireAdmin } from '../middleware/auth-admin.js'
+import { verifyToken } from '../middleware/token-management.js'
 
 const router = Router()
 
 // Route pour récupérer un contact par son ID
-router.get('/:contactId', requireAdmin, async (req, res) => {
+router.get('/:contactId', verifyToken, requireAdmin, async (req, res) => {
     const contactId = req.params.contactId
     try {
         const { rows } = await pool.query('SELECT * FROM contact WHERE id = $1', [contactId])
@@ -17,7 +18,7 @@ router.get('/:contactId', requireAdmin, async (req, res) => {
 })
 
 // Route de création d'un contact
-router.post('/', requireAdmin, async (req, res) => {
+router.post('/', verifyToken, requireAdmin, async (req, res) => {
     const { name, email, phone, role, idEditor } = req.body
     if (!name || !email || !idEditor) {
         return res.status(400).json({ error: "Nom, email et ID éditeur obligatoires pour la création de contact" })
@@ -40,12 +41,18 @@ router.post('/', requireAdmin, async (req, res) => {
 })
 
 // Route de mise à jour d'un contact
-router.post('/update/:contactId', requireAdmin, async (req, res) => {
+router.post('/update/:contactId', verifyToken, requireAdmin, async (req, res) => {
     const contactId = req.params.contactId
     const { name, email, phone, role, idEditor } = req.body
     try {
         const { rowCount } = await pool.query(
-            'UPDATE contact SET name = $1, email = $2, phone = $3, role = $4, idEditor = $5 WHERE id = $6',
+            `UPDATE contact SET 
+                name = COALESCE($1, name), 
+                email = COALESCE($2, email), 
+                phone = $3, 
+                role = $4, 
+                idEditor = COALESCE($5, idEditor) 
+            WHERE id = $6`,
             [name, email, phone, role, idEditor, contactId]
         )
         if (rowCount === 0) {
@@ -59,7 +66,7 @@ router.post('/update/:contactId', requireAdmin, async (req, res) => {
 })
 
 // Route pour récupérer tous les contacts d'un éditeur
-router.get('/editor/:editorId', requireAdmin, async (req, res) => {
+router.get('/editor/:editorId', verifyToken, requireAdmin, async (req, res) => {
     const editorId = req.params.editorId
     try {
         const { rows } = await pool.query(
@@ -74,7 +81,7 @@ router.get('/editor/:editorId', requireAdmin, async (req, res) => {
 })
 
 // Route pour récupérer le contact prioritaire d'un éditeur
-router.get('/editor/:editorId/priority', requireAdmin, async (req, res) => {
+router.get('/editor/:editorId/priority', verifyToken, requireAdmin, async (req, res) => {
     const editorId = req.params.editorId
     try {
         const { rows } = await pool.query(

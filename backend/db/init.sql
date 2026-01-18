@@ -35,8 +35,13 @@ CREATE TABLE IF NOT EXISTS "festival" (
     "remainingCityHallTables" INTEGER NOT NULL,
     "creation_date" DATE,
     "begin_date" DATE,
-    "end_date" DATE
+    "end_date" DATE,
+    "isCurrent" BOOLEAN DEFAULT FALSE
 );
+
+-- Index unique partiel pour garantir qu'un seul festival peut être courant
+CREATE UNIQUE INDEX unique_current_festival_idx ON "festival" ("isCurrent") WHERE "isCurrent" = TRUE;
+
 
 CREATE TABLE IF NOT EXISTS "mechanism" (
     "id" SERIAL PRIMARY KEY,
@@ -135,6 +140,12 @@ CREATE TABLE IF NOT EXISTS suiviReservation (
     idReservation INTEGER REFERENCES reservation(idReservation) NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS "editor_festival" (
+    "idEditor" INTEGER REFERENCES editor("id") NOT NULL,
+    "festivalName" TEXT REFERENCES festival("name") NOT NULL,
+    PRIMARY KEY("idEditor", "festivalName")
+);
+
 
 CREATE TABLE IF NOT EXISTS "game_mechanism" (
     "id" SERIAL PRIMARY KEY,
@@ -183,11 +194,11 @@ CREATE TABLE IF NOT EXISTS game_festival (
 -- ============================================
 
 -- Insérer les festivals de test
-INSERT INTO festival ("name", "nbSmallTables", "nbLargeTables", "nbCityHallTables", "remainingSmallTables", "remainingLargeTables", "remainingCityHallTables", "creation_date", "begin_date", "end_date") VALUES
-('Festival 2025', 50, 30, 20, 50, 30, 20, '2024-01-01', '2025-06-01', '2025-06-03'),
-('Festival-Rose', 30, 15, 5, 30, 15, 5, CURRENT_DATE, '2026-05-15', '2026-05-17'),
-('Festival-Batman', 60, 30, 10, 60, 30, 10, CURRENT_DATE, '2026-07-10', '2026-07-12'),
-('Festival-Nouveau', 40, 20, 10, 40, 20, 10, CURRENT_DATE, '2026-09-20', '2026-09-22')
+INSERT INTO festival ("name", "nbSmallTables", "nbLargeTables", "nbCityHallTables", "remainingSmallTables", "remainingLargeTables", "remainingCityHallTables", "creation_date", "begin_date", "end_date", "isCurrent") VALUES
+('Festival 2025', 50, 30, 20, 50, 30, 20, '2024-01-01', '2025-06-01', '2025-06-03', TRUE),
+('Festival-Rose', 30, 15, 5, 30, 15, 5, CURRENT_DATE, '2026-05-15', '2026-05-17', FALSE),
+('Festival-Batman', 60, 30, 10, 60, 30, 10, CURRENT_DATE, '2026-07-10', '2026-07-12', FALSE),
+('Festival-Nouveau', 40, 20, 10, 40, 20, 10, CURRENT_DATE, '2026-09-20', '2026-09-22', FALSE)
 ON CONFLICT (name) DO NOTHING;
 
 -- Insérer les zones tarifaires pour chaque festival

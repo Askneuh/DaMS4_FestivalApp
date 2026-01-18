@@ -37,7 +37,8 @@ export class FestivalFormComponent {
         remainingSmallTables: 0,
         remainingLargeTables: 0,
         remainingCityHallTables: 0,
-        tariffZones: []
+        tariffZones: [],
+        isCurrent: false
       }
       this.svc.addFestival(festival)
     }

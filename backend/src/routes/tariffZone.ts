@@ -1,13 +1,14 @@
 import { Router } from 'express'
 import pool from '../db/database.js'
-import { requireAdmin } from '../middleware/auth-admin.js'
+import { requireOrganizer } from '../middleware/auth-organizer.js'
 import { validateTariffZoneTableLimits } from '../middleware/validate-tariff-zone.js'
+import { verifyToken } from '../middleware/token-management.js'
 
 const router = Router()
 
 // Route de récupération de toutes les zones tarifaires d'un festival
 // IMPORTANT: Cette route doit être AVANT /:tzId pour éviter les conflits de matching
-router.get('/festival/:festivalName', async (req, res) => {
+router.get('/festival/:festivalName', verifyToken, async (req, res) => {
     const festivalName = req.params.festivalName;
     try {
         const { rows } = await pool.query('SELECT * FROM "tariffZone" WHERE "festivalName" = $1', [festivalName]);
@@ -22,7 +23,7 @@ router.get('/festival/:festivalName', async (req, res) => {
 });
 
 // Route pour récupérer une zone tarifaire par son ID
-router.get('/:tzId', async (req, res) => {
+router.get('/:tzId', verifyToken, async (req, res) => {
     const tzId = req.params.tzId
     try {
         const { rows } = await pool.query('SELECT * FROM "tariffZone" WHERE "idTZ" = $1', [tzId])
@@ -34,7 +35,7 @@ router.get('/:tzId', async (req, res) => {
 })
 
 // Route de création d'une zone tarifaire
-router.post('/', requireAdmin, async (req, res) => {
+router.post('/', verifyToken, requireOrganizer, async (req, res) => {
     const { name, nbSmallTables, nbLargeTables, nbCityHallTables, smallTablePrice, largeTablePrice, cityHallTablePrice, squareMeterPrice, festivalName } = req.body
     if (!festivalName) {
         return res.status(400).json({ error: "Nom du festival obligatoire pour la création de zone tarifaire" })
@@ -73,7 +74,7 @@ router.post('/', requireAdmin, async (req, res) => {
 })
 
 // Route de mise à jour d'une zone tarifaire
-router.post('/update/:tzId', requireAdmin, async (req, res) => {
+router.post('/update/:tzId', verifyToken, requireOrganizer, async (req, res) => {
     const tzId = req.params.tzId
     const { name, nbSmallTables, nbLargeTables, nbCityHallTables, remainingSmallTables, remainingLargeTables, remainingCityHallTables, smallTablePrice, largeTablePrice, cityHallTablePrice, squareMeterPrice } = req.body
     try {
@@ -103,7 +104,7 @@ router.post('/update/:tzId', requireAdmin, async (req, res) => {
                 nbSmallTables !== undefined ? nbSmallTables : current.nbSmallTables,
                 nbLargeTables !== undefined ? nbLargeTables : current.nbLargeTables,
                 nbCityHallTables !== undefined ? nbCityHallTables : current.nbCityHallTables,
-                parseInt(tzId) // Exclude this zone from totals
+                parseInt(tzId as string) // Exclude this zone from totals
             );
 
             if (!validation.valid) {
@@ -126,7 +127,7 @@ router.post('/update/:tzId', requireAdmin, async (req, res) => {
 })
 
 // Route de suppression d'une zone tarifaire par ID
-router.delete('/:tzId', requireAdmin, async (req, res) => {
+router.delete('/:tzId', verifyToken, requireOrganizer, async (req, res) => {
     const tzId = req.params.tzId;
     try {
         const { rowCount } = await pool.query('DELETE FROM "tariffZone" WHERE "idTZ" = $1', [tzId]);

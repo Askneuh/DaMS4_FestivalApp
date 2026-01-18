@@ -1,11 +1,12 @@
 import { Router } from 'express'
 import pool from '../db/database.js'
-import { requireAdmin } from '../middleware/auth-admin.js'
+import { requireOrganizer } from '../middleware/auth-organizer.js'
+import { verifyToken } from '../middleware/token-management.js'
 
 const router = Router()
 
 // Route pour récupérer tous les jeux présentés lors d'un festival
-router.get('/byFestival/:festivalName', async (req, res) => {
+router.get('/byFestival/:festivalName', verifyToken, async (req, res) => {
     const festivalName = req.params.festivalName
     try {
         const query = `
@@ -46,7 +47,7 @@ router.get('/byFestival/:festivalName', async (req, res) => {
 })
 
 // Route pour récupérer tous les jeux d'une réservation
-router.get('/byReservation/:reservationId', async (req, res) => {
+router.get('/byReservation/:reservationId', verifyToken, async (req, res) => {
     const reservationId = req.params.reservationId
     try {
         const query = `
@@ -86,7 +87,7 @@ router.get('/byReservation/:reservationId', async (req, res) => {
 })
 
 // Route pour ajouter un jeu à une réservation
-router.post('/add', requireAdmin, async (req, res) => {
+router.post('/add', verifyToken, requireOrganizer, async (req, res) => {
     const { idReservation, idGame } = req.body
     if (!idReservation || !idGame) {
         return res.status(400).json({ error: 'ID de réservation et ID de jeu obligatoires' })
@@ -112,7 +113,7 @@ router.post('/add', requireAdmin, async (req, res) => {
 })
 
 // Route pour retirer un jeu d'une réservation
-router.delete('/remove/:reservationId/:gameId', requireAdmin, async (req, res) => {
+router.delete('/remove/:reservationId/:gameId', verifyToken, requireOrganizer, async (req, res) => {
     const { reservationId, gameId } = req.params
     try {
         const { rowCount } = await pool.query(

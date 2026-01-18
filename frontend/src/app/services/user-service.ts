@@ -13,9 +13,7 @@ export class UserService {
   readonly users = this._users.asReadonly();
 
   loadAll(): void {
-
     this.http.get<UserDto[]>(this.base, { withCredentials: true }).subscribe(data => this._users.set(data))
-
   }
 
   createUser(login: string, password: string, role: string = 'visiteur') {
@@ -30,6 +28,13 @@ export class UserService {
     return this.http.put(
       `${this.base}/${userId}/role`,
       { role },
+      { withCredentials: true }
+    );
+  }
+
+  deleteUser(userId: number) {
+    return this.http.delete(
+      `${this.base}/${userId}`,
       { withCredentials: true }
     );
   }

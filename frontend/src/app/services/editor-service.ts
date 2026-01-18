@@ -2,6 +2,7 @@ import { Injectable, signal, inject } from '@angular/core';
 import { Editor } from '../interfaces/editor';
 import { Contact } from '../interfaces/contact';
 import { Game } from '../interfaces/game';
+import { EditorWithReservationStatus } from '../interfaces/editor-with-reservation-status';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
@@ -11,8 +12,8 @@ import { Observable } from 'rxjs';
 export class EditorService {
   private readonly http = inject(HttpClient)
   private readonly apiUrl = 'https://localhost:4000/api';
-  private readonly _editors = signal<Editor[]>([])
 
+  private readonly _editors = signal<Editor[]>([])
   readonly editors = this._editors.asReadonly()
 
   constructor() {
@@ -42,8 +43,26 @@ export class EditorService {
   }
 
 
-  updateEditor(partial: Partial<Editor>, id: number): Observable<Editor> {
-    return this.http.post<Editor>(`${this.apiUrl}/editeurs/update/${id}`, partial, { withCredentials: true });
+  updateEditor(editor: Editor, id: number): Observable<Editor> {
+    return this.http.post<Editor>(`${this.apiUrl}/editeurs/update/${id}`, editor, { withCredentials: true });
+  }
+
+  getEditorsByFestival(festivalName: string): Observable<Editor[]> {
+    return this.http.get<Editor[]>(`${this.apiUrl}/editeurs/festival/${festivalName}`, { withCredentials: true });
+  }
+
+  getEditorsWithReservationStatus(festivalName: string): Observable<EditorWithReservationStatus[]> {
+    return this.http.get<EditorWithReservationStatus[]>(
+      `${this.apiUrl}/editeurs/festival/${festivalName}/withReservationStatus`,
+      { withCredentials: true }
+    );
+  }
+
+  getEditorsWithReservationStatusForCurrentFestival(): Observable<EditorWithReservationStatus[]> {
+    return this.http.get<EditorWithReservationStatus[]>(
+      `${this.apiUrl}/editeurs/current-festival/withReservationStatus`,
+      { withCredentials: true }
+    );
   }
 
   removeEditor(id: number): Observable<{ message: string }> {

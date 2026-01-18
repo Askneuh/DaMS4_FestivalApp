@@ -129,6 +129,7 @@ export class FestivalFormComponent {
         nbCityHallTables: formValue.nbCityHallTables,
         remainingSmallTables: formValue.nbSmallTables,
         remainingLargeTables: formValue.nbLargeTables,
+        isCurrent: false,
         remainingCityHallTables: formValue.nbCityHallTables,
         tariffZones: formValue.tariffZones.map((zone: any) => ({
           ...zone,

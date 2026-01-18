@@ -1,11 +1,12 @@
 import { Router } from 'express'
 import pool from '../db/database.js'
 import { requireAdmin } from '../middleware/auth-admin.js'
+import { verifyToken } from '../middleware/token-management.js'
 
 const router = Router()
 
 // Route pour récupérer un type de jeu par son ID
-router.get('/:gameTypeId', async (req, res) => {
+router.get('/:gameTypeId', verifyToken, async (req, res) => {
     const gameTypeId = req.params.gameTypeId
     try {
         const { rows } = await pool.query('SELECT * FROM gameType WHERE id = $1', [gameTypeId])
@@ -17,7 +18,7 @@ router.get('/:gameTypeId', async (req, res) => {
 })
 
 // Route de création d'un type de jeu
-router.post('/', requireAdmin, async (req, res) => {
+router.post('/', verifyToken, requireAdmin, async (req, res) => {
     const { gameTypeLabel, idZone } = req.body
     if (!gameTypeLabel) {
         return res.status(400).json({ error: "Libellé du type de jeu obligatoire pour la création" })
@@ -39,12 +40,15 @@ router.post('/', requireAdmin, async (req, res) => {
     }
 })
 
-router.post('/update/:gameTypeId', requireAdmin, async (req, res) => {
+router.post('/update/:gameTypeId', verifyToken, requireAdmin, async (req, res) => {
     const gameTypeId = req.params.gameTypeId
     const { gameTypeLabel, idZone } = req.body
     try {
         const { rowCount } = await pool.query(
-            'UPDATE gameType SET gameTypeLabel = $1, idZone = $2 WHERE id = $3',
+            `UPDATE gameType SET 
+                gameTypeLabel = COALESCE($1, gameTypeLabel), 
+                idZone = COALESCE($2, idZone) 
+            WHERE id = $3`,
             [gameTypeLabel, idZone, gameTypeId]
         )
         if (rowCount === 0) {

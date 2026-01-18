@@ -1,6 +1,22 @@
-@if (this.auth_svc.isLoggedIn()) {
+<div class="welcome-container">
+    <h1>Bienvenue sur l'application de gestion du festival</h1>
+
+    @if (this.auth_svc.isLoggedIn()) {
     <p>Utilisateur connecté : {{this.auth_svc.currentUser()?.login}}</p>
-}
-@else {
+    }
+    @else {
     <p>Utilisateur non connecté</p>
-}
+    }
+
+    <div class="current-festival-section">
+        <h2>Festival Courant</h2>
+        @if (currentFestival(); as festival) {
+        <app-festival-card-component [festival]="festival" />
+        } @else {
+        <div class="no-festival-message">
+            <p>Aucun festival courant défini</p>
+            <p class="hint">Veuillez sélectionner un festival dans la liste des festivals</p>
+        </div>
+        }
+    </div>
+</div>

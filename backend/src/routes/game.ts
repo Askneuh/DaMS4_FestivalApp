@@ -1,11 +1,12 @@
 import { Router } from 'express'
 import pool from '../db/database.js'
 import { requireAdmin } from '../middleware/auth-admin.js'
+import { verifyToken } from '../middleware/token-management.js'
 
 const router = Router()
 
 // Route pour récupérer tous les jeux
-router.get('/', async (req, res) => {
+router.get('/', verifyToken, async (req, res) => {
     try {
         const { rows } = await pool.query('SELECT * FROM game ORDER BY name');
         res.json(rows);
@@ -17,7 +18,7 @@ router.get('/', async (req, res) => {
 
 // Route pour récupérer les jeux d'un éditeur
 // IMPORTANT: Routes spécifiques AVANT la route générique /:gameId
-router.get('/byEditor/:idEditor', async (req, res) => {
+router.get('/byEditor/:idEditor', verifyToken, async (req, res) => {
     const idEditor = req.params.idEditor
     try {
         const { rows } = await pool.query('SELECT * FROM game WHERE "idEditor" = $1', [idEditor])
@@ -29,7 +30,7 @@ router.get('/byEditor/:idEditor', async (req, res) => {
 })
 
 // Route pour récupérer les jeux qu'un éditeur N'A PAS
-router.get('/notByEditor/:idEditor', async (req, res) => {
+router.get('/notByEditor/:idEditor', verifyToken, async (req, res) => {
     const idEditor = req.params.idEditor;
     try {
         const { rows } = await pool.query(
@@ -44,7 +45,7 @@ router.get('/notByEditor/:idEditor', async (req, res) => {
 });
 
 // Route pour récupérer le libellé du type de jeu
-router.get('/gameType/:idGameType/label', async (req, res) => {
+router.get('/gameType/:idGameType/label', verifyToken, async (req, res) => {
     const idGameType = req.params.idGameType;
     try {
         const { rows } = await pool.query(
@@ -63,7 +64,7 @@ router.get('/gameType/:idGameType/label', async (req, res) => {
 
 // Route pour récupérer les mécanismes d'un jeu
 // IMPORTANT: Cette route doit être AVANT /:gameId
-router.get('/:gameId/mechanisms', async (req, res) => {
+router.get('/:gameId/mechanisms', verifyToken, async (req, res) => {
     const gameId = req.params.gameId;
     try {
         const { rows } = await pool.query(
@@ -81,7 +82,7 @@ router.get('/:gameId/mechanisms', async (req, res) => {
 
 // Route pour récupérer un jeu par son ID
 // IMPORTANT: Cette route générique doit être APRÈS les routes spécifiques
-router.get('/:gameId', async (req, res) => {
+router.get('/:gameId', verifyToken, async (req, res) => {
     const gameId = req.params.gameId
     try {
         const { rows } = await pool.query('SELECT * FROM game WHERE "id" = $1', [gameId])
@@ -96,7 +97,7 @@ router.get('/:gameId', async (req, res) => {
 })
 
 // Route de création d'un jeu
-router.post('/', requireAdmin, async (req, res) => {
+router.post('/', verifyToken, requireAdmin, async (req, res) => {
     const { name, author, nbMinPlayer, nbMaxPlayer, gameNotice, idGameType, minimumAge, prototype, duration, theme, description, gameImage, rulesTutorial, edition, idEditor } = req.body
     //On suppose que toutes les données sont obligatoires
     if (!name || !author || !idGameType || !idEditor || !nbMinPlayer || !nbMaxPlayer || !minimumAge || !duration) {
@@ -120,12 +121,28 @@ router.post('/', requireAdmin, async (req, res) => {
 })
 
 // Route de mise à jour d'un jeu
-router.post('/update/:gameId', requireAdmin, async (req, res) => {
+router.post('/update/:gameId', verifyToken, requireAdmin, async (req, res) => {
     const gameId = req.params.gameId
     const { name, author, nbMinPlayer, nbMaxPlayer, gameNotice, idGameType, minimumAge, prototype, duration, theme, description, gameImage, rulesTutorial, edition, idEditor } = req.body
     try {
         const { rowCount } = await pool.query(
-            'UPDATE game SET "name" = $1, "author" = $2, "nbMinPlayer" = $3, "nbMaxPlayer" = $4, "gameNotice" = $5, "idGameType" = $6, "minimumAge" = $7, "prototype" = $8, "duration" = $9, "theme" = $10, "description" = $11, "gameImage" = $12, "rulesTutorial" = $13, "edition" = $14, "idEditor" = $15 WHERE "id" = $16',
+            `UPDATE game SET 
+                "name" = COALESCE($1, "name"), 
+                "author" = COALESCE($2, "author"), 
+                "nbMinPlayer" = COALESCE($3, "nbMinPlayer"), 
+                "nbMaxPlayer" = COALESCE($4, "nbMaxPlayer"), 
+                "gameNotice" = $5, 
+                "idGameType" = COALESCE($6, "idGameType"), 
+                "minimumAge" = COALESCE($7, "minimumAge"), 
+                "prototype" = COALESCE($8, "prototype"), 
+                "duration" = COALESCE($9, "duration"), 
+                "theme" = $10, 
+                "description" = $11, 
+                "gameImage" = $12, 
+                "rulesTutorial" = $13, 
+                "edition" = $14, 
+                "idEditor" = COALESCE($15, "idEditor") 
+            WHERE "id" = $16`,
             [name, author, nbMinPlayer, nbMaxPlayer, gameNotice, idGameType, minimumAge, prototype, duration, theme, description, gameImage, rulesTutorial, edition, idEditor, gameId]
         )
         if (rowCount === 0) {
@@ -139,7 +156,7 @@ router.post('/update/:gameId', requireAdmin, async (req, res) => {
 })
 
 // Route de suppression d'un jeu
-router.delete('/:gameId', requireAdmin, async (req, res) => {
+router.delete('/:gameId', verifyToken, requireAdmin, async (req, res) => {
     const gameId = req.params.gameId
     try {
         const { rowCount } = await pool.query('DELETE FROM game WHERE "id" = $1', [gameId])

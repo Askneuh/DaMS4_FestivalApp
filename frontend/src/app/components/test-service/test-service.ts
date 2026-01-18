@@ -493,13 +493,17 @@ export class TestService {
         this.isLoading.set(true);
         const startTime = Date.now();
 
-        this.contactService.getPriorityContact(idEditor);
-
-        setTimeout(() => {
-            const data = this.contactService.priorityContact();
-            const duration = Date.now() - startTime;
-            this.logTestResult('ContactService', 'getPriorityContact', true, data, undefined, duration);
-            this.isLoading.set(false);
-        }, 500);
+        this.contactService.getPriorityContact(idEditor).subscribe({
+            next: (data) => {
+                const duration = Date.now() - startTime;
+                this.logTestResult('ContactService', 'getPriorityContact', true, data, undefined, duration);
+                this.isLoading.set(false);
+            },
+            error: (err) => {
+                const duration = Date.now() - startTime;
+                this.logTestResult('ContactService', 'getPriorityContact', false, undefined, err.message, duration);
+                this.isLoading.set(false);
+            }
+        });
     }
 }

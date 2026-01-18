@@ -5,11 +5,12 @@ import bcrypt from 'bcryptjs'
 
 import pool from '../db/database.js'
 import { requireAdmin } from '../middleware/auth-admin.js'
+import { verifyToken } from '../middleware/token-management.js'
 
 const router = Router()
 
 
-router.get('/:userId', async (req, res) => {
+router.get('/:userId', verifyToken, async (req, res) => {
     const userId = req.params.userId
     console.log("userid", userId)
     try {
@@ -22,7 +23,7 @@ router.get('/:userId', async (req, res) => {
     }
 })
 // Création d'un utilisateur
-router.post('/', async (req, res) => {
+router.post('/', verifyToken, requireAdmin, async (req, res) => {
     const { login, password, role } = req.body
     if (!login || !password) {
         return res.status(400).json({ error: 'Login et mot de passe requis' })
@@ -51,7 +52,7 @@ router.post('/', async (req, res) => {
 })
 
 // Mise à jour du rôle d'un utilisateur (admin uniquement)
-router.put('/:userId/role', requireAdmin, async (req, res) => {
+router.put('/:userId/role', verifyToken, requireAdmin, async (req, res) => {
     const userId = req.params.userId
     const { role } = req.body
 
@@ -81,8 +82,29 @@ router.put('/:userId/role', requireAdmin, async (req, res) => {
     }
 })
 
+// Suppression d'un utilisateur (admin uniquement)
+router.delete('/:userId', verifyToken, requireAdmin, async (req, res) => {
+    const userId = req.params.userId
+
+    try {
+        const result = await pool.query(
+            'DELETE FROM users WHERE id = $1 RETURNING id, login',
+            [userId]
+        )
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Utilisateur non trouvé' })
+        }
+
+        return res.json({ message: 'Utilisateur supprimé', user: result.rows[0] })
+    } catch (err: any) {
+        console.error(err)
+        return res.status(500).json({ error: 'Erreur serveur' })
+    }
+})
+
 // Récupération du profil utilisateur (authentifié)
-router.get('/me', async (req, res) => {
+router.get('/me', verifyToken, async (req, res) => {
     const user = req.user
     const { rows } = await pool.query('SELECT id, login, role FROM users WHERE id=$1', [user?.id])
     res.json(rows[0]);
@@ -90,7 +112,7 @@ router.get('/me', async (req, res) => {
 
 
 // Liste de tous les utilisateurs (réservée aux admins)
-router.get('/', requireAdmin, async (_req, res) => {
+router.get('/', verifyToken, requireAdmin, async (_req, res) => {
     const { rows } = await pool.query('SELECT id, login, role FROM users ORDER BY id')
     res.json(rows)
 })
