@@ -11,8 +11,10 @@
       @for (festival of festivals(); track festival.name) {
         <app-festival-card-component 
           [festival]="festival"
+          [showMakeCurrentButton]="true"
           (editFestival)="onEditFestival($event)"
           (deleteFestival)="removeFestival($event)"
+          (makeCurrent)="onMakeCurrent($event)"
         />
       } @empty {
         <p class="no-festivals">Aucun festival disponible</p>

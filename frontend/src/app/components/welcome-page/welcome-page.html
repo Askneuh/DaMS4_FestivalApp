@@ -11,12 +11,13 @@
     <div class="current-festival-section">
         <h2>Festival Courant</h2>
         @if (currentFestival(); as festival) {
-        <app-festival-card-component [festival]="festival" />
+            <!-- Ne pas passer showMakeCurrentButton, donc le bouton ne s'affichera pas -->
+            <app-festival-card-component [festival]="festival" />
         } @else {
-        <div class="no-festival-message">
-            <p>Aucun festival courant défini</p>
-            <p class="hint">Veuillez sélectionner un festival dans la liste des festivals</p>
-        </div>
+            <div class="no-festival-message">
+                <p>Aucun festival courant défini</p>
+                <p class="hint">Veuillez sélectionner un festival dans la liste des festivals</p>
+            </div>
         }
     </div>
 </div>

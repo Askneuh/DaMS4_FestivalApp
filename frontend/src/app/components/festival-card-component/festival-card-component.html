@@ -32,6 +32,12 @@
           <button class="btn btn-danger" (click)="onDelete()">
             Supprimer
           </button>
+          <!-- Affiche le bouton seulement si showMakeCurrentButton est true -->
+          @if (showMakeCurrentButton()) {
+            <button class="btn btn-primary" (click)="onMakeCurrent()">
+              Make Current
+            </button>
+          }
         </div>
     </div>
 } @else {
