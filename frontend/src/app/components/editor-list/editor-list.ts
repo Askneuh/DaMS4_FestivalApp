@@ -63,4 +63,8 @@ export class EditorList {
   viewGames(id: number) {
     this.router.navigate(['/editor-games', id]);
   }
+
+  viewContacts(id: number) {
+    this.router.navigate(['/editor-contacts', id]);
+  }
 }

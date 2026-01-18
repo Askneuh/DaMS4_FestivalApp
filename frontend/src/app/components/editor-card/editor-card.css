@@ -91,6 +91,15 @@
   background: #1565c0;
 }
 
+.btn-info {
+  background: #e1f5fe;
+  color: #0277bd;
+}
+
+.btn-info:hover {
+  background: #b3e5fc;
+}
+
 .btn-secondary {
   background: #f5f5f5;
   color: #333;

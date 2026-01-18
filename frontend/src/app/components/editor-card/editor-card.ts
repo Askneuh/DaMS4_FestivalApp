@@ -12,6 +12,7 @@ export class EditorCardComponent {
   editEditor = output<Editor>();
   deleteEditor = output<number>();
   viewGames = output<number>();
+  viewContacts = output<number>();
 
   onEdit() {
     const ed = this.editor();
@@ -36,6 +37,13 @@ export class EditorCardComponent {
     const ed = this.editor();
     if (ed) {
       this.viewGames.emit(ed.id);
+    }
+  }
+
+  onViewContacts() {
+    const ed = this.editor();
+    if (ed) {
+      this.viewContacts.emit(ed.id);
     }
   }
 }
