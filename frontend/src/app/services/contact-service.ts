@@ -32,4 +32,8 @@ export class ContactService {
   deleteContact(id: number): Observable<any> {
     return this.http.delete(`${this.base}/${id}`, { withCredentials: true });
   }
+
+  updateContact(contact: Contact): Observable<any> {
+    return this.http.post(`${this.base}/update/${contact.id}`, contact, { withCredentials: true });
+  }
 }
