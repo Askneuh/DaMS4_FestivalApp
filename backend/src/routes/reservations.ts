@@ -214,5 +214,128 @@ router.get('/byFestival/:festivalName', verifyToken, requireOrganizer, async (re
     }
 })
 
+// Route pour récupérer les jeux d'une réservation
+router.get('/:reservationId/games', verifyToken, requireOrganizer, async (req, res) => {
+    const reservationId = req.params.reservationId
+    try {
+        const query = `
+            SELECT g.*, rg.isGamePlaced,
+                   gt.id as gameType_id, gt."gameTypeLabel"
+            FROM game g
+            JOIN reservation_game rg ON g.id = rg.idGame
+            LEFT JOIN gameType gt ON g."idGameType" = gt.id
+            WHERE rg.idReservation = $1
+        `
+        const { rows } = await pool.query(query, [reservationId])
+
+        const games = rows.map(row => ({
+            id: row.id,
+            name: row.name,
+            author: row.author,
+            nbMinPlayer: row.nbminplayer,
+            nbMaxPlayer: row.nbmaxplayer,
+            gameNotice: row.gamenotice,
+            idGameType: row.idgametype,
+            minimumAge: row.minimumage,
+            prototype: row.prototype,
+            duration: row.duration,
+            theme: row.theme,
+            description: row.description,
+            gameImage: row.gameimage,
+            rulesTutorial: row.rulestutorial,
+            edition: row.edition,
+            idEditor: row.ideditor,
+            isGamePlaced: row.isgameplaced,
+            gameType: row.gametype_id ? {
+                id: row.gametype_id,
+                gameTypeLabel: row.gametypelabel
+            } : null
+        }))
+
+        res.json(games)
+    } catch (err: any) {
+        console.error(err)
+        res.status(500).json({ error: 'Erreur serveur' })
+    }
+})
+
+// Route pour ajouter un jeu à une réservation
+router.post('/:reservationId/games', verifyToken, requireOrganizer, async (req, res) => {
+    const reservationId = req.params.reservationId
+    const { idGame } = req.body
+
+    if (!idGame) {
+        return res.status(400).json({ error: "ID du jeu obligatoire" })
+    }
+
+    try {
+        await pool.query(
+            'INSERT INTO reservation_game (idReservation, idGame, isGamePlaced) VALUES ($1, $2, $3)',
+            [reservationId, idGame, false]
+        )
+        return res.status(201).json({ message: 'Jeu ajouté à la réservation' })
+    } catch (err: any) {
+        if (err.code === '23505') {
+            return res.status(409).json({ error: 'Ce jeu est déjà dans cette réservation' })
+        }
+        console.error(err)
+        return res.status(500).json({ error: 'Erreur serveur' })
+    }
+})
+
+// Route pour retirer un jeu d'une réservation
+router.delete('/:reservationId/games/:gameId', verifyToken, requireOrganizer, async (req, res) => {
+    const { reservationId, gameId } = req.params
+
+    try {
+        const { rowCount } = await pool.query(
+            'DELETE FROM reservation_game WHERE idReservation = $1 AND idGame = $2',
+            [reservationId, gameId]
+        )
+
+        if (rowCount === 0) {
+            return res.status(404).json({ error: "Jeu non trouvé dans cette réservation" })
+        }
+
+        return res.status(200).json({ message: 'Jeu retiré de la réservation' })
+    } catch (err: any) {
+        console.error(err)
+        return res.status(500).json({ error: 'Erreur serveur' })
+    }
+})
+
+// Route pour supprimer une réservation (avec cascade)
+router.delete('/:reservationId', verifyToken, requireOrganizer, async (req, res) => {
+    const reservationId = req.params.reservationId
+    const client = await pool.connect()
+
+    try {
+        await client.query('BEGIN')
+
+        // Supprimer les jeux de la réservation
+        await client.query('DELETE FROM reservation_game WHERE idReservation = $1', [reservationId])
+
+        // Supprimer les suivis
+        await client.query('DELETE FROM suiviReservation WHERE idReservation = $1', [reservationId])
+
+        // Supprimer la réservation
+        const { rowCount } = await client.query('DELETE FROM reservation WHERE idReservation = $1', [reservationId])
+
+        if (rowCount === 0) {
+            await client.query('ROLLBACK')
+            return res.status(404).json({ error: "Réservation non trouvée" })
+        }
+
+        await client.query('COMMIT')
+        return res.status(200).json({ message: 'Réservation supprimée' })
+    } catch (err: any) {
+        await client.query('ROLLBACK')
+        console.error(err)
+        return res.status(500).json({ error: 'Erreur serveur' })
+    } finally {
+        client.release()
+    }
+})
+
 
 export default router

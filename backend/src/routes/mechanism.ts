@@ -5,6 +5,17 @@ import { verifyToken } from '../middleware/token-management.js'
 
 const router = Router()
 
+// Route pour récupérer tous les mécanismes
+router.get('/', verifyToken, async (req, res) => {
+    try {
+        const { rows } = await pool.query('SELECT * FROM mechanism ORDER BY name');
+        res.json(rows);
+    } catch (err: any) {
+        console.error(err);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
 // Route pour récupérer un mécanisme par son ID
 router.get('/:mechanismId', verifyToken, async (req, res) => {
     const mechanismId = req.params.mechanismId
@@ -56,6 +67,33 @@ router.post('/update/:mechanismId', verifyToken, requireAdmin, async (req, res) 
             return res.status(404).json({ error: "Mécanisme non trouvé" })
         }
         return res.status(200).json({ message: 'Mécanisme mis à jour' })
+    } catch (err: any) {
+        console.error(err)
+        return res.status(500).json({ error: 'Erreur serveur' })
+    }
+})
+
+// Route de suppression d'un mécanisme
+router.delete('/:mechanismId', verifyToken, requireAdmin, async (req, res) => {
+    const mechanismId = req.params.mechanismId
+    try {
+        // Vérifier si des jeux utilisent ce mécanisme
+        const { rows: gamesUsingMechanism } = await pool.query(
+            'SELECT COUNT(*) as count FROM game_mechanism WHERE "idMechanism" = $1',
+            [mechanismId]
+        );
+
+        if (parseInt(gamesUsingMechanism[0].count) > 0) {
+            return res.status(409).json({
+                error: 'Impossible de supprimer ce mécanisme car il est utilisé par des jeux'
+            });
+        }
+
+        const { rowCount } = await pool.query('DELETE FROM mechanism WHERE id = $1', [mechanismId])
+        if (rowCount === 0) {
+            return res.status(404).json({ error: "Mécanisme non trouvé" })
+        }
+        return res.status(200).json({ message: 'Mécanisme supprimé' })
     } catch (err: any) {
         console.error(err)
         return res.status(500).json({ error: 'Erreur serveur' })

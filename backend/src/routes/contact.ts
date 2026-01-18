@@ -5,6 +5,19 @@ import { verifyToken } from '../middleware/token-management.js'
 
 const router = Router()
 
+// Route pour récupérer tous les contacts
+router.get('/', verifyToken, requireAdmin, async (req, res) => {
+    try {
+        const { rows } = await pool.query(
+            'SELECT id, name, email, phone, role, "idEditor" FROM contact ORDER BY name'
+        );
+        res.json(rows);
+    } catch (err: any) {
+        console.error(err);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
 // Route pour récupérer un contact par son ID
 router.get('/:contactId', verifyToken, requireAdmin, async (req, res) => {
     const contactId = req.params.contactId
@@ -95,6 +108,21 @@ router.get('/editor/:editorId/priority', verifyToken, requireAdmin, async (req, 
     } catch (err: any) {
         console.error(err)
         res.status(500).json({ error: 'Erreur serveur' })
+    }
+})
+
+// Route de suppression d'un contact
+router.delete('/:contactId', verifyToken, requireAdmin, async (req, res) => {
+    const contactId = req.params.contactId
+    try {
+        const { rowCount } = await pool.query('DELETE FROM contact WHERE id = $1', [contactId])
+        if (rowCount === 0) {
+            return res.status(404).json({ error: "Contact non trouvé" })
+        }
+        return res.status(200).json({ message: 'Contact supprimé' })
+    } catch (err: any) {
+        console.error(err)
+        return res.status(500).json({ error: 'Erreur serveur' })
     }
 })
 

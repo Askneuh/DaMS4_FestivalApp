@@ -5,6 +5,21 @@ import { verifyToken } from '../middleware/token-management.js'
 
 const router = Router()
 
+// Route pour récupérer l'historique complet des suivis pour une réservation
+router.get('/reservation/:reservationId', verifyToken, requireOrganizer, async (req, res) => {
+    const reservationId = req.params.reservationId
+    try {
+        const { rows } = await pool.query(
+            'SELECT * FROM suiviReservation WHERE idReservation = $1 ORDER BY date DESC',
+            [reservationId]
+        )
+        res.json(rows)
+    } catch (err: any) {
+        console.error(err)
+        res.status(500).json({ error: 'Erreur serveur' })
+    }
+})
+
 // Route pour récupérer un suivi de réservation par son ID
 router.get('/:suiviId', verifyToken, requireOrganizer, async (req, res) => {
     const suiviId = req.params.suiviId
@@ -71,6 +86,24 @@ router.post('/update/:suiviId', verifyToken, requireOrganizer, async (req, res) 
             return res.status(404).json({ error: "Suivi non trouvé" })
         }
         return res.status(200).json({ message: 'Suivi de réservation mis à jour' })
+    } catch (err: any) {
+        console.error(err)
+        return res.status(500).json({ error: 'Erreur serveur' })
+    }
+})
+
+// Route de suppression d'un suivi de réservation
+router.delete('/:suiviId', verifyToken, requireOrganizer, async (req, res) => {
+    const suiviId = req.params.suiviId
+    try {
+        const { rowCount } = await pool.query(
+            'DELETE FROM suiviReservation WHERE id = $1',
+            [suiviId]
+        )
+        if (rowCount === 0) {
+            return res.status(404).json({ error: "Suivi non trouvé" })
+        }
+        return res.status(200).json({ message: 'Suivi supprimé' })
     } catch (err: any) {
         console.error(err)
         return res.status(500).json({ error: 'Erreur serveur' })
