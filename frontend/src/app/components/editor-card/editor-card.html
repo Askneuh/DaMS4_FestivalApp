@@ -1,0 +1,37 @@
+@if (editor()) {
+  <div class="editor-card">
+    <div class="editor-header">
+      @if (editor()!.logo) {
+        <img [src]="editor()!.logo" [alt]="editor()!.name" class="editor-logo">
+      } @else {
+        <div class="editor-logo-placeholder">{{ editor()!.name.charAt(0) }}</div>
+      }
+      <h2>{{ editor()!.name }}</h2>
+    </div>
+
+    <div class="editor-badges">
+      @if (editor()!.exposant) {
+        <span class="badge exposant">Exposant</span>
+      }
+      @if (editor()!.distributeur) {
+        <span class="badge distributeur">Distributeur</span>
+      }
+    </div>
+
+    <div class="card-actions">
+      <button class="btn btn-primary" (click)="onViewGames()">
+        Voir les jeux
+      </button>
+      <button class="btn btn-secondary" (click)="onEdit()">
+        Modifier
+      </button>
+      <button class="btn btn-danger" (click)="onDelete()">
+        Supprimer
+      </button>
+    </div>
+  </div>
+} @else {
+  <div class="editor-card empty">
+    <p>Aucun éditeur</p>
+  </div>
+}
