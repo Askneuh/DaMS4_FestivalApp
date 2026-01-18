@@ -2,6 +2,7 @@ import { Injectable, signal, inject } from '@angular/core';
 import { Festival } from '../interfaces/festival';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { tap } from 'rxjs/operators';
 
 @Injectable({
   providedIn: 'root'
@@ -44,8 +45,13 @@ export class FestivalService {
   }
 
 
-  updateFestivalByName(name: string, festival: Festival): Observable<Festival> {
-    return this.http.post<Festival>(`${this.apiUrl}/festivals/update/${name}`, festival, { withCredentials: true });
+  updateFestivalByName(name: string, festival: Festival): void {
+    this.http.post<Festival>(`${this.apiUrl}/festivals/update/${name}`, festival, { withCredentials: true }).subscribe({
+      next: (updatedFestival) => {
+        this._currentFestival.set(updatedFestival);
+        this.loadFestivalsFromBD();
+      }
+    });
   }
 
 

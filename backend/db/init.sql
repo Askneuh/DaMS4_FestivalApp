@@ -183,6 +183,7 @@ CREATE TABLE IF NOT EXISTS editor_planArea (
 CREATE TABLE IF NOT EXISTS game_planArea (
     idGame INTEGER REFERENCES game("id"),
     idPA INTEGER REFERENCES planArea("id"),
+    quantity INTEGER DEFAULT 1,
     PRIMARY KEY(idGame, idPA)
 );
 

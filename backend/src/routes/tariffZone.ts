@@ -131,7 +131,7 @@ router.delete('/:tzId', verifyToken, requireOrganizer, async (req, res) => {
     const tzId = req.params.tzId;
     try {
         // Validation: Vérifier si des réservations sont liées à cette zone
-        const checkQuery = 'SELECT COUNT(*) FROM reservation WHERE "idTZ" = $1';
+        const checkQuery = 'SELECT COUNT(*) FROM reservation WHERE "idtz" = $1';
         const { rows: checkRows } = await pool.query(checkQuery, [tzId]);
         const reservationCount = parseInt(checkRows[0].count, 10);
 
@@ -147,7 +147,13 @@ router.delete('/:tzId', verifyToken, requireOrganizer, async (req, res) => {
         }
         return res.status(200).json({ message: 'Zone tarifaire supprimée' });
     } catch (err: any) {
-        console.error(err);
+        console.error("Erreur lors de la suppression de la zone tarifaire:", err);
+        if (err.code === '23503') {
+            // 23503 is foreign_key_violation
+            return res.status(409).json({
+                error: `Impossible de supprimer cette zone tarifaire car elle est référencée ailleurs (Détail: ${err.detail})`
+            });
+        }
         return res.status(500).json({ error: 'Erreur serveur' });
     }
 });
