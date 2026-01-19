@@ -8,6 +8,25 @@
     }
   </div>
 
+  <div class="filters">
+    <div class="search-box">
+      <input 
+        type="text" 
+        placeholder="Rechercher un éditeur..." 
+        [value]="searchTerm()" 
+        (input)="searchTerm.set($any($event.target).value)">
+    </div>
+    <div class="filter-box">
+      <select 
+        [value]="statusFilter()" 
+        (change)="statusFilter.set($any($event.target).value)">
+        @for (status of availableStatuses; track status) {
+          <option [value]="status">{{ status === 'all' ? 'Tous les statuts' : status }}</option>
+        }
+      </select>
+    </div>
+  </div>
+
   @if (!currentFestival()) {
     <div class="empty-state">
       <p>Veuillez sélectionner un festival courant dans la liste des festivals.</p>
@@ -24,11 +43,23 @@
       <table>
         <thead>
           <tr>
-            <th>Éditeur</th>
-            <th>Statut</th>
+            <th (click)="toggleSort('name')" class="sortable">
+              Éditeur 
+              <span class="sort-icon">{{ sortColumn() === 'name' ? (sortDirection() === 'asc' ? '↑' : '↓') : '↕' }}</span>
+            </th>
+            <th (click)="toggleSort('status')" class="sortable">
+              Statut
+              <span class="sort-icon">{{ sortColumn() === 'status' ? (sortDirection() === 'asc' ? '↑' : '↓') : '↕' }}</span>
+            </th>
             <th>Dernier contact</th>
-            <th>Tables</th>
-            <th>Prix (€)</th>
+            <th (click)="toggleSort('tables')" class="sortable">
+              Tables
+              <span class="sort-icon">{{ sortColumn() === 'tables' ? (sortDirection() === 'asc' ? '↑' : '↓') : '↕' }}</span>
+            </th>
+            <th (click)="toggleSort('price')" class="sortable">
+              Budget (€)
+              <span class="sort-icon">{{ sortColumn() === 'price' ? (sortDirection() === 'asc' ? '↑' : '↓') : '↕' }}</span>
+            </th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -63,9 +94,16 @@
               </td>
               <td class="actions">
                 <button 
+                  class="btn btn-secondary btn-sm" 
+                  title="Marquer comme contacté"
+                  (click)="markContacted(item)"
+                  [disabled]="!item.reservation">
+                  📞
+                </button>
+                <button 
                   class="btn btn-primary btn-sm" 
                   (click)="openWorkflow(item.editor.id, item.reservation?.idReservation)">
-                  {{ item.reservation ? 'Gérer' : 'Créer réservation' }}
+                  {{ item.reservation ? 'Gérer' : 'Réserver' }}
                 </button>
               </td>
             </tr>
