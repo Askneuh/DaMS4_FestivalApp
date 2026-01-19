@@ -10,15 +10,14 @@ import { AuthService } from './shared/auth/auth-services';
   styleUrl: './app.css'
 })
 export class App {
- protected readonly title = signal('frontend');
-  readonly auth = inject(AuthService)
-  readonly auth_svc = inject(AuthService)
+  protected readonly title = signal('frontend');
+  readonly authSvc = inject(AuthService);
 
   ngOnInit() {
-    this.auth.whoami();
+    this.authSvc.whoami();
   }
 
   logout() {
-    this.auth_svc.logout();
+    this.authSvc.logout();
   }
 }

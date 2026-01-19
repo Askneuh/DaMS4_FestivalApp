@@ -95,16 +95,24 @@
               <td class="actions">
                 <button 
                   class="btn btn-secondary btn-sm" 
-                  title="Marquer comme contacté"
-                  (click)="markContacted(item)"
-                  [disabled]="!item.reservation">
-                  📞
+                  title="Ajouter un contact"
+                  (click)="markContacted(item)">
+                  Contacter
                 </button>
-                <button 
-                  class="btn btn-primary btn-sm" 
-                  (click)="openWorkflow(item.editor.id, item.reservation?.idReservation)">
-                  {{ item.reservation ? 'Gérer' : 'Réserver' }}
-                </button>
+
+                @if (item.reservation) {
+                  <button 
+                    class="btn btn-primary btn-sm" 
+                    (click)="openWorkflow(item.editor.id, item.reservation.idReservation)">
+                    Gérer
+                  </button>
+                } @else {
+                  <button 
+                    class="btn btn-primary btn-sm" 
+                    (click)="createReservation(item.editor.id)">
+                    Réserver
+                  </button>
+                }
               </td>
             </tr>
           }

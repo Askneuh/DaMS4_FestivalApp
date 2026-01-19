@@ -28,7 +28,7 @@ export class ReservationService {
     return this.http.get<ReservationDAO>(`${this.API_URL}/reservation/${idReservation}`, { withCredentials: true });
   }
 
-  createReservation(reservation: Reservation): Observable<any> {
+  createReservation(reservation: Partial<Reservation>): Observable<any> {
     return this.http.post<any>(`${this.API_URL}/reservation`, reservation, { withCredentials: true });
   }
 
@@ -58,6 +58,10 @@ export class ReservationService {
 
   updateStatus(idReservation: number, newStatus: string): Observable<any> {
     return this.http.post<any>(`${this.API_URL}/reservation/update/${idReservation}`, { status: newStatus }, { withCredentials: true });
+  }
+
+  getSuiviHistory(idReservation: number): Observable<any[]> {
+    return this.http.get<any[]>(`${this.API_URL}/suiviReservation/reservation/${idReservation}`, { withCredentials: true });
   }
 }
 

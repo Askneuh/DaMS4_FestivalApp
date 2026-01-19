@@ -11,6 +11,7 @@ import { EditorList } from './components/editor-list/editor-list';
 import { EditorGamesComponent } from './components/editor-games/editor-games';
 import { EditorContactsComponent } from './components/editor-contacts/editor-contacts';
 import { ReservationList } from './components/reservation-list/reservation-list';
+import { ReservationWorkflow } from './components/reservation-workflow/reservation-workflow';
 
 export const routes: Routes = [
     { path: 'editor-list', component: EditorList, canActivate: [authGuardInterceptor] },
@@ -20,6 +21,7 @@ export const routes: Routes = [
     { path: 'login', component: Login },
     { path: 'festival_list', component: FestivalList, canActivate: [authGuardInterceptor] },
     { path: 'reservations', component: ReservationList, canActivate: [authGuardInterceptor] },
+    { path: 'reservation-workflow/:id', component: ReservationWorkflow, canActivate: [authGuardInterceptor] },
     { path: 'test-service', component: TestService, canActivate: [authGuardInterceptor] },
     { path: 'admin', component: Admin, canActivate: [authGuardInterceptor, adminGuard] },
     { path: 'forbidden', component: ForbiddenPage },

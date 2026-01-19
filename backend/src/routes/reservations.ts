@@ -77,10 +77,10 @@ router.post('/', verifyToken, requireOrganizer, async (req, res) => {
 
     try {
         const { rows } = await pool.query(
-            'INSERT INTO reservation (idEditor, status, nbSmallTables, nbLargeTables, nbCityHallTables, remise, typeAnimateur, listeDemandee, listeRecue, jeuxRecus, festivalName, idTZ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING idReservation',
+            'INSERT INTO reservation (idEditor, status, nbSmallTables, nbLargeTables, nbCityHallTables, remise, typeAnimateur, listeDemandee, listeRecue, jeuxRecus, festivalName, idTZ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING idreservation',
             [idEditor, status, nbSmallTables, nbLargeTables, nbCityHallTables, remise, typeAnimateur, listeDemandee, listeRecue, jeuxRecus, festivalName, idTZ]
         )
-        return res.status(201).json({ message: 'Réservation créée', id: rows[0].idReservation })
+        return res.status(201).json({ message: 'Réservation créée', id: rows[0].idreservation })
     } catch (err: any) {
         //Catch les erreurs d'unicité, ici de la clé primaire 
         if (err.code === '23505') {
@@ -250,12 +250,12 @@ router.get('/:reservationId/games', verifyToken, requireOrganizer, async (req, r
     const reservationId = req.params.reservationId
     try {
         const query = `
-            SELECT g.*, rg.isGamePlaced, rg.quantity, rg.idReservation,
-                   gt.id as gameType_id, gt."gameTypeLabel"
+            SELECT g.*, rg.isgameplaced, rg.quantity, rg.idreservation,
+                   gt.id as gametype_id, gt."gameTypeLabel" as gametypelabel
             FROM game g
-            JOIN reservation_game rg ON g.id = rg.idGame
-            LEFT JOIN gameType gt ON g."idGameType" = gt.id
-            WHERE rg.idReservation = $1
+            JOIN reservation_game rg ON g.id = rg.idgame
+            LEFT JOIN gametype gt ON g."idGameType" = gt.id
+            WHERE rg.idreservation = $1
         `
         const { rows } = await pool.query(query, [reservationId])
 
@@ -405,9 +405,9 @@ async function checkTableCapacity(idTZ: number, excludeResId: number, newSmall: 
             tz."nbSmallTables" as total_small,
             tz."nbLargeTables" as total_large,
             tz."nbCityHallTables" as total_city_hall,
-            (SELECT COALESCE(SUM("nbSmallTables"), 0) FROM reservation WHERE "idTZ" = $1 AND "idReservation" != $2) as used_small,
-            (SELECT COALESCE(SUM("nbLargeTables"), 0) FROM reservation WHERE "idTZ" = $1 AND "idReservation" != $2) as used_large,
-            (SELECT COALESCE(SUM("nbCityHallTables"), 0) FROM reservation WHERE "idTZ" = $1 AND "idReservation" != $2) as used_city_hall
+            (SELECT COALESCE(SUM(nbsmalltables), 0) FROM reservation WHERE idtz = $1 AND idreservation != $2) as used_small,
+            (SELECT COALESCE(SUM(nblargetables), 0) FROM reservation WHERE idtz = $1 AND idreservation != $2) as used_large,
+            (SELECT COALESCE(SUM(nbcityhalltables), 0) FROM reservation WHERE idtz = $1 AND idreservation != $2) as used_city_hall
         FROM "tariffZone" tz
         WHERE tz."idTZ" = $1
     `;

@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { FestivalService } from '../../services/festival-service';
@@ -34,14 +34,13 @@ interface TestResult {
     styleUrls: ['./test-service.css']
 })
 export class TestService {
-    // Services
-    private festivalService = inject(FestivalService);
-    private gameService = inject(GameService);
-    private reservationService = inject(ReservationService);
-    private editorService = inject(EditorService);
-    private tariffZoneService = inject(TariffZoneService);
-    private festivalGameService = inject(FestivalGameService);
-    private contactService = inject(ContactService);
+  readonly festivalSvc = inject(FestivalService);
+  readonly gameSvc = inject(GameService);
+  readonly reservationSvc = inject(ReservationService);
+  readonly editorSvc = inject(EditorService);
+  readonly tariffZoneSvc = inject(TariffZoneService);
+  readonly festivalGameSvc = inject(FestivalGameService);
+  readonly contactSvc = inject(ContactService);
 
     // Test results and logs
     testResults = signal<TestResult[]>([]);
@@ -58,18 +57,9 @@ export class TestService {
     lastTestData = signal<any>(null);
     isLoading = signal<boolean>(false);
 
-    // Statistics
-    get totalTests(): number {
-        return this.testResults().length;
-    }
-
-    get passedTests(): number {
-        return this.testResults().filter(r => r.success).length;
-    }
-
-    get failedTests(): number {
-        return this.testResults().filter(r => !r.success).length;
-    }
+    totalTests = computed(() => this.testResults().length);
+    passedTests = computed(() => this.testResults().filter(r => r.success).length);
+    failedTests = computed(() => this.testResults().filter(r => !r.success).length);
 
     setActiveSection(section: string) {
         this.activeSection.set(section);
@@ -102,7 +92,7 @@ export class TestService {
         this.isLoading.set(true);
         const startTime = Date.now();
 
-        this.festivalService.findByName(name).subscribe({
+        this.festivalSvc.findByName(name).subscribe({
             next: (data) => {
                 const duration = Date.now() - startTime;
                 this.logTestResult('FestivalService', 'findByName', true, data, undefined, duration);
@@ -120,11 +110,11 @@ export class TestService {
         this.isLoading.set(true);
         const startTime = Date.now();
 
-        this.festivalService.loadFestivalsFromBD();
+        this.festivalSvc.loadFestivalsFromBD();
 
         // Wait a bit for the data to load
         setTimeout(() => {
-            const data = this.festivalService.festivalList();
+            const data = this.festivalSvc.festivalList();
             const duration = Date.now() - startTime;
             this.logTestResult('FestivalService', 'loadFestivalsFromBD', true, data, undefined, duration);
             this.isLoading.set(false);
@@ -138,7 +128,7 @@ export class TestService {
         this.isLoading.set(true);
         const startTime = Date.now();
 
-        this.gameService.findById(id).subscribe({
+        this.gameSvc.findById(id).subscribe({
             next: (data) => {
                 const duration = Date.now() - startTime;
                 this.logTestResult('GameService', 'findById', true, data, undefined, duration);
@@ -157,7 +147,7 @@ export class TestService {
         this.isLoading.set(true);
         const startTime = Date.now();
 
-        this.gameService.getGamesByEditor(idEditor).subscribe({
+        this.gameSvc.getGamesByEditor(idEditor).subscribe({
             next: (data) => {
                 const duration = Date.now() - startTime;
                 this.logTestResult('GameService', 'getGamesByEditor', true, data, undefined, duration);
@@ -176,7 +166,7 @@ export class TestService {
         this.isLoading.set(true);
         const startTime = Date.now();
 
-        this.gameService.getGamesThatEditorDontHave(idEditor).subscribe({
+        this.gameSvc.getGamesThatEditorDontHave(idEditor).subscribe({
             next: (data) => {
                 const duration = Date.now() - startTime;
                 this.logTestResult('GameService', 'getGamesThatEditorDontHave', true, data, undefined, duration);
@@ -195,7 +185,7 @@ export class TestService {
         this.isLoading.set(true);
         const startTime = Date.now();
 
-        this.gameService.getMechanismsByGame(idGame).subscribe({
+        this.gameSvc.getMechanismsByGame(idGame).subscribe({
             next: (data) => {
                 const duration = Date.now() - startTime;
                 this.logTestResult('GameService', 'getMechanismsByGame', true, data, undefined, duration);
@@ -214,7 +204,7 @@ export class TestService {
         this.isLoading.set(true);
         const startTime = Date.now();
 
-        this.gameService.getGameTypeLabel(idGameType).subscribe({
+        this.gameSvc.getGameTypeLabel(idGameType).subscribe({
             next: (data) => {
                 const duration = Date.now() - startTime;
                 this.logTestResult('GameService', 'getGameTypeLabel', true, data, undefined, duration);
@@ -232,10 +222,10 @@ export class TestService {
         this.isLoading.set(true);
         const startTime = Date.now();
 
-        this.gameService.loadGamesFromBD();
+        this.gameSvc.loadGamesFromBD();
 
         setTimeout(() => {
-            const data = this.gameService.gameList();
+            const data = this.gameSvc.gameList();
             const duration = Date.now() - startTime;
             this.logTestResult('GameService', 'loadGamesFromBD', true, data, undefined, duration);
             this.isLoading.set(false);
@@ -249,7 +239,7 @@ export class TestService {
         this.isLoading.set(true);
         const startTime = Date.now();
 
-        this.editorService.findById(id).subscribe({
+        this.editorSvc.findById(id).subscribe({
             next: (data) => {
                 const duration = Date.now() - startTime;
                 this.logTestResult('EditorService', 'findById', true, data, undefined, duration);
@@ -267,10 +257,10 @@ export class TestService {
         this.isLoading.set(true);
         const startTime = Date.now();
 
-        this.editorService.loadEditorsFromBD();
+        this.editorSvc.loadEditorsFromBD();
 
         setTimeout(() => {
-            const data = this.editorService.editors();
+            const data = this.editorSvc.editors();
             const duration = Date.now() - startTime;
             this.logTestResult('EditorService', 'loadEditorsFromBD', true, data, undefined, duration);
             this.isLoading.set(false);
@@ -284,7 +274,7 @@ export class TestService {
         this.isLoading.set(true);
         const startTime = Date.now();
 
-        this.reservationService.getReservationById(id).subscribe({
+        this.reservationSvc.getReservationById(id).subscribe({
             next: (data) => {
                 const duration = Date.now() - startTime;
                 this.logTestResult('ReservationService', 'getReservationById', true, data, undefined, duration);
@@ -303,7 +293,7 @@ export class TestService {
         this.isLoading.set(true);
         const startTime = Date.now();
 
-        this.reservationService.getReservationsByEditor(idEditor).subscribe({
+        this.reservationSvc.getReservationsByEditor(idEditor).subscribe({
             next: (data) => {
                 const duration = Date.now() - startTime;
                 this.logTestResult('ReservationService', 'getReservationsByEditor', true, data, undefined, duration);
@@ -322,7 +312,7 @@ export class TestService {
         this.isLoading.set(true);
         const startTime = Date.now();
 
-        this.reservationService.getReservationsByFestival(festivalName).subscribe({
+        this.reservationSvc.getReservationsByFestival(festivalName).subscribe({
             next: (data) => {
                 const duration = Date.now() - startTime;
                 this.logTestResult('ReservationService', 'getReservationsByFestival', true, data, undefined, duration);
@@ -343,7 +333,7 @@ export class TestService {
         this.isLoading.set(true);
         const startTime = Date.now();
 
-        this.tariffZoneService.findById(id).subscribe({
+        this.tariffZoneSvc.findById(id).subscribe({
             next: (data) => {
                 const duration = Date.now() - startTime;
                 this.logTestResult('TariffZoneService', 'findById', true, data, undefined, duration);
@@ -362,7 +352,7 @@ export class TestService {
         this.isLoading.set(true);
         const startTime = Date.now();
 
-        this.tariffZoneService.findByFestivalName(festivalName).subscribe({
+        this.tariffZoneSvc.findByFestivalName(festivalName).subscribe({
             next: (data) => {
                 const duration = Date.now() - startTime;
                 this.logTestResult('TariffZoneService', 'findByFestivalName', true, data, undefined, duration);
@@ -381,10 +371,10 @@ export class TestService {
         this.isLoading.set(true);
         const startTime = Date.now();
 
-        this.tariffZoneService.loadTariffZonesByFestival(festivalName);
+        this.tariffZoneSvc.loadTariffZonesByFestival(festivalName);
 
         setTimeout(() => {
-            const data = this.tariffZoneService.tariffZoneList();
+            const data = this.tariffZoneSvc.tariffZoneList();
             const duration = Date.now() - startTime;
             this.logTestResult('TariffZoneService', 'loadTariffZonesByFestival', true, data, undefined, duration);
             this.isLoading.set(false);
@@ -398,7 +388,7 @@ export class TestService {
         this.isLoading.set(true);
         const startTime = Date.now();
 
-        this.festivalGameService.getGamesByFestival(festivalName).subscribe({
+        this.festivalGameSvc.getGamesByFestival(festivalName).subscribe({
             next: (data) => {
                 const duration = Date.now() - startTime;
                 this.logTestResult('FestivalGameService', 'getGamesByFestival', true, data, undefined, duration);
@@ -417,7 +407,7 @@ export class TestService {
         this.isLoading.set(true);
         const startTime = Date.now();
 
-        this.festivalGameService.getGamesByReservation(reservationId).subscribe({
+        this.festivalGameSvc.getGamesByReservation(reservationId).subscribe({
             next: (data) => {
                 const duration = Date.now() - startTime;
                 this.logTestResult('FestivalGameService', 'getGamesByReservation', true, data, undefined, duration);
@@ -437,7 +427,7 @@ export class TestService {
         this.isLoading.set(true);
         const startTime = Date.now();
 
-        this.festivalGameService.addGameToReservation(reservationId, gameId).subscribe({
+        this.festivalGameSvc.addGameToReservation(reservationId, gameId).subscribe({
             next: (data) => {
                 const duration = Date.now() - startTime;
                 this.logTestResult('FestivalGameService', 'addGameToReservation', true, data, undefined, duration);
@@ -457,7 +447,7 @@ export class TestService {
         this.isLoading.set(true);
         const startTime = Date.now();
 
-        this.festivalGameService.removeGameFromReservation(reservationId, gameId).subscribe({
+        this.festivalGameSvc.removeGameFromReservation(reservationId, gameId).subscribe({
             next: (data) => {
                 const duration = Date.now() - startTime;
                 this.logTestResult('FestivalGameService', 'removeGameFromReservation', true, data, undefined, duration);
@@ -478,10 +468,10 @@ export class TestService {
         this.isLoading.set(true);
         const startTime = Date.now();
 
-        this.contactService.getContactsByEditor(idEditor);
+        this.contactSvc.getContactsByEditor(idEditor);
 
         setTimeout(() => {
-            const data = this.contactService.contacts();
+            const data = this.contactSvc.contacts();
             const duration = Date.now() - startTime;
             this.logTestResult('ContactService', 'getContactsByEditor', true, data, undefined, duration);
             this.isLoading.set(false);
@@ -493,7 +483,7 @@ export class TestService {
         this.isLoading.set(true);
         const startTime = Date.now();
 
-        this.contactService.getPriorityContact(idEditor).subscribe({
+        this.contactSvc.getPriorityContact(idEditor).subscribe({
             next: (data) => {
                 const duration = Date.now() - startTime;
                 this.logTestResult('ContactService', 'getPriorityContact', true, data, undefined, duration);

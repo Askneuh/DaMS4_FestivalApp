@@ -3,7 +3,7 @@ import { Router } from '@angular/router';
 import { ReservationService } from '../../services/reservation-service';
 import { EditorService } from '../../services/editor-service';
 import { FestivalService } from '../../services/festival-service';
-import { ReservationDAO } from '../../interfaces/reservationDAO';
+import { EditorWithReservationStatus } from '../../interfaces/editor-with-reservation-status';
 
 @Component({
   selector: 'app-reservation-list',
@@ -12,23 +12,20 @@ import { ReservationDAO } from '../../interfaces/reservationDAO';
   styleUrl: './reservation-list.css',
 })
 export class ReservationList {
-  readonly reservationService = inject(ReservationService);
-  readonly editorService = inject(EditorService);
-  readonly festivalService = inject(FestivalService);
+  readonly reservationSvc = inject(ReservationService);
+  readonly editorSvc = inject(EditorService);
+  readonly festivalSvc = inject(FestivalService);
   readonly router = inject(Router);
 
-  currentFestival = this.festivalService.currentFestival;
-  allEditors = this.editorService.editors;
-  reservations = signal<ReservationDAO[]>([]);
+  currentFestival = this.festivalSvc.currentFestival;
+  editorsData = signal<EditorWithReservationStatus[]>([]);
   loading = signal(true);
 
-  // Filtres et Tri
   searchTerm = signal('');
   statusFilter = signal<string>('all');
   sortColumn = signal<string>('name');
   sortDirection = signal<'asc' | 'desc'>('asc');
 
-  // Liste des statuts pour le filtre
   availableStatuses = [
     'all',
     'Pas encore de contact',
@@ -41,66 +38,43 @@ export class ReservationList {
     'Facture payée'
   ];
 
-  // Filtrer uniquement les exposants (peuvent réserver)
-  exposantEditors = computed(() => {
-    return this.allEditors().filter(e => e.exposant === true);
-  });
-
-  // Associer chaque exposant avec sa réservation et appliquer filtres/tri
   editorsWithReservations = computed(() => {
-    const editors = this.exposantEditors();
-    const reservations = this.reservations();
+    const editors = this.editorsData().filter(e => e.exposant);
     const search = this.searchTerm().toLowerCase();
     const status = this.statusFilter();
     const col = this.sortColumn();
     const dir = this.sortDirection();
     
-    // 1. Association et premier filtrage (recherche + statut)
     let result = editors
-      .map(editor => {
-        const reservation = reservations.find(r => r.idEditor === editor.id);
-        return {
-          editor,
-          reservation: reservation || null,
-          status: reservation?.status || 'Pas encore de contact',
-          lastContact: null, // TODO: récupérer depuis suiviReservation
-          totalPrice: reservation ? this.calculatePrice(reservation) : 0,
-          totalTables: reservation ? 
-            (reservation.nbSmallTables || 0) + 
-            (reservation.nbLargeTables || 0) +  
-            (reservation.nbCityHallTables || 0) : 0
-        };
-      })
+      .map(editor => ({
+        editor: { id: editor.id, name: editor.name, logo: editor.logo, exposant: editor.exposant, distributeur: editor.distributeur },
+        reservation: editor.reservation,
+        status: editor.reservation?.status || 'Pas encore de contact',
+        lastContact: editor.reservation?.lastContactDate 
+          ? this.formatDate(editor.reservation.lastContactDate) 
+          : null,
+        totalPrice: editor.reservation?.totalPrice || 0,
+        totalTables: editor.reservation 
+          ? (editor.reservation.nbSmallTables || 0) + 
+            (editor.reservation.nbLargeTables || 0) + 
+            (editor.reservation.nbCityHallTables || 0) 
+          : 0
+      }))
       .filter(item => {
         const matchesSearch = item.editor.name.toLowerCase().startsWith(search);
         const matchesStatus = status === 'all' || item.status === status;
         return matchesSearch && matchesStatus;
       });
 
-    // 2. Tri
     result.sort((a, b) => {
       let valA: any, valB: any;
       
       switch(col) {
-        case 'name': 
-          valA = a.editor.name; 
-          valB = b.editor.name; 
-          break;
-        case 'status': 
-          valA = a.status; 
-          valB = b.status; 
-          break;
-        case 'price': 
-          valA = a.totalPrice; 
-          valB = b.totalPrice; 
-          break;
-        case 'tables': 
-          valA = a.totalTables; 
-          valB = b.totalTables; 
-          break;
-        default: 
-          valA = a.editor.name; 
-          valB = b.editor.name;
+        case 'name': valA = a.editor.name; valB = b.editor.name; break;
+        case 'status': valA = a.status; valB = b.status; break;
+        case 'price': valA = a.totalPrice; valB = b.totalPrice; break;
+        case 'tables': valA = a.totalTables; valB = b.totalTables; break;
+        default: valA = a.editor.name; valB = b.editor.name;
       }
 
       if (valA < valB) return dir === 'asc' ? -1 : 1;
@@ -112,50 +86,75 @@ export class ReservationList {
   });
 
   constructor() {
-    const festival = this.currentFestival();
-    if (festival) {
-      this.loadReservations(festival.name);
+    if (this.currentFestival()) {
+      this.loadData();
     } else {
       this.loading.set(false);
     }
   }
 
-  loadReservations(festivalName: string) {
-    this.reservationService.getReservationsByFestival(festivalName).subscribe({
+  loadData() {
+    this.editorSvc.getEditorsWithReservationStatusForCurrentFestival().subscribe({
       next: (data) => {
-        this.reservations.set(data);
+        this.editorsData.set(data);
         this.loading.set(false);
       },
       error: (err) => {
-        console.error('Erreur chargement réservations:', err);
+        console.error('Erreur chargement données:', err);
         this.loading.set(false);
       }
     });
   }
 
-  calculatePrice(reservation: ReservationDAO): number {
-    // TODO: récupérer les prix depuis tariffZone
-    // Pour l'instant, prix fictif
-    const smallPrice = 80;
-    const largePrice = 120;
-    const cityHallPrice = 150;
-    
-    const total = 
-      (reservation.nbSmallTables || 0) * smallPrice +
-      (reservation.nbLargeTables || 0) * largePrice +
-      (reservation.nbCityHallTables || 0) * cityHallPrice -
-      (reservation.remise || 0);
-    
-    return Math.max(0, total);
+  formatDate(date: Date | string): string {
+    const d = new Date(date);
+    return d.toLocaleDateString('fr-FR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   }
 
-  openWorkflow(editorId: number, reservationId?: number) {
-    if (reservationId) {
-      this.router.navigate(['/reservation-workflow', reservationId]);
-    } else {
-      // TODO: créer une réservation puis rediriger vers workflow
-      console.log('Création réservation pour éditeur', editorId);
+  openWorkflow(editorId: number, reservationId: number) {
+    this.router.navigate(['/reservation-workflow', reservationId]);
+  }
+
+  createReservation(editorId: number) {
+    const festival = this.currentFestival();
+    if (!festival) {
+      alert('Veuillez sélectionner un festival courant.');
+      return;
     }
+
+    const newReservation = {
+      idEditor: editorId,
+      status: 'Contact pris',
+      nbSmallTables: 0,
+      nbLargeTables: 0,
+      nbCityHallTables: 0,
+      remise: 0,
+      typeAnimateur: 0,
+      listeDemandee: false,
+      listeRecue: false,
+      jeuxRecus: false,
+      festivalName: festival.name,
+      idTZ: 1
+    };
+
+    this.reservationSvc.createReservation(newReservation).subscribe({
+      next: (response) => {
+        this.loadData();
+        if (response.id) {
+          this.router.navigate(['/reservation-workflow', response.id]);
+        }
+      },
+      error: (err) => {
+        console.error('Erreur création réservation:', err);
+        alert('Erreur lors de la création de la réservation.');
+      }
+    });
   }
 
   toggleSort(column: string) {
@@ -168,8 +167,6 @@ export class ReservationList {
   }
 
   markContacted(item: any) {
-    // Si pas de réservation, on ne peut pas encore ajouter de suivi (besoin d'idReservation)
-    // Mais on pourrait imaginer créer la réservation automatiquement en "Discussion"
     if (!item.reservation) {
       alert("Veuillez d'abord créer la réservation pour ajouter un suivi.");
       return;
@@ -177,8 +174,11 @@ export class ReservationList {
 
     const comment = prompt("Commentaire pour ce contact (optionnel) :");
     if (comment !== null) {
-      this.reservationService.addSuivi(item.reservation.idReservation, item.status, comment).subscribe({
-        next: () => alert("Contact enregistré !"),
+      this.reservationSvc.addSuivi(item.reservation.idReservation, item.status, comment).subscribe({
+        next: () => {
+          alert("Contact enregistré !");
+          this.loadData();
+        },
         error: (err) => console.error("Erreur addSuivi", err)
       });
     }

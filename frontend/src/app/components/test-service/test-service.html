@@ -5,9 +5,9 @@
         <div class="header-actions">
             <button class="btn-refresh" (click)="clearResults()">🗑️ Effacer les résultats</button>
             <div class="stats">
-                <span class="stat-item success">✅ Réussis: {{ passedTests }}</span>
-                <span class="stat-item error">❌ Échoués: {{ failedTests }}</span>
-                <span class="stat-item total">📊 Total: {{ totalTests }}</span>
+                <span class="stat-item success">✅ Réussis: {{ passedTests() }}</span>
+                <span class="stat-item error">❌ Échoués: {{ failedTests() }}</span>
+                <span class="stat-item total">📊 Total: {{ totalTests() }}</span>
             </div>
         </div>
     </header>

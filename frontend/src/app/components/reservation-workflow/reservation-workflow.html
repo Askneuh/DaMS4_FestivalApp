@@ -1,0 +1,253 @@
+<div class="workflow-container">
+  <div class="header">
+    <button class="btn btn-back" (click)="goBack()">← Retour</button>
+    <h1>Workflow de Réservation</h1>
+    <div class="header-actions">
+      @if (reservation()!.status === 'Présent' || reservation()!.status === 'Discussion en cours' || reservation()!.status === 'Contact pris') {
+        <button class="btn btn-secondary" (click)="generateInvoice()">Générer Facture</button>
+      }
+      @if (reservation()!.status === 'Facturé') {
+        <button class="btn btn-success" (click)="markPaid()">Marquer Payée</button>
+      }
+    </div>
+  </div>
+
+  @if (loading()) {
+    <div class="loading">
+      <p>Chargement...</p>
+    </div>
+  } @else if (!reservation()) {
+    <div class="empty-state">
+      <p>Réservation introuvable.</p>
+      <button class="btn btn-primary" (click)="goBack()">Retour à la liste</button>
+    </div>
+  } @else {
+    <div class="workflow-content">
+      <!-- Section Éditeur -->
+      <section class="editor-section">
+        <h2>Éditeur</h2>
+        <div class="editor-info">
+          @if (editor()) {
+            <span class="editor-name">{{ editor()!.name }}</span>
+            @if (editor()!.exposant) {
+              <span class="badge exposant">Exposant</span>
+            }
+            @if (editor()!.distributeur) {
+              <span class="badge distributeur">Distributeur</span>
+            }
+          }
+        </div>
+      </section>
+
+      <!-- Section Statut -->
+      <section class="status-section">
+        <h2>Statut actuel</h2>
+        <div class="status-selector">
+          <select 
+            [value]="reservation()!.status" 
+            (change)="onStatusChange($any($event.target).value)">
+            @for (status of availableStatuses; track status) {
+              <option [value]="status">{{ status }}</option>
+            }
+          </select>
+        </div>
+      </section>
+
+      <!-- Section Historique Suivi -->
+      <section class="suivi-section">
+        <app-suivi-history
+          [reservationId]="reservationId()!"
+          [currentStatus]="reservation()!.status"
+          [history]="suiviHistory()"
+          (suiviAdded)="onSuiviAdded()">
+        </app-suivi-history>
+      </section>
+
+      <!-- Section Logistique (Phase 4) -->
+      <section class="logistique-section">
+        <div class="section-top">
+          <h2>Logistique</h2>
+          <div class="total-price-badge">
+            Total: <strong>{{ totalPrice() }} €</strong>
+          </div>
+        </div>
+
+        @if (errorMessage()) {
+          <div class="alert alert-danger">{{ errorMessage() }}</div>
+        }
+
+        <form (submit)="onLogisticsUpdate(); $event.preventDefault()" class="logistique-form">
+          <div class="form-grid">
+            <!-- Zone Tarifaire -->
+            <div class="form-group full-width">
+              <label>Zone Tarifaire</label>
+              <select 
+                [value]="reservation()!.idTZ" 
+                (change)="updateField('idTZ', +$any($event.target).value)">
+                @for (zone of availableZones(); track zone.idTZ) {
+                  <option [value]="zone.idTZ">{{ zone.name }}</option>
+                }
+              </select>
+            </div>
+
+            <!-- Tables -->
+            <div class="form-group">
+              <label>Petites tables</label>
+              <input 
+                type="number" 
+                min="0"
+                [max]="selectedZone()?.remainingSmallTables ?? 0"
+                [value]="reservation()!.nbSmallTables" 
+                (input)="updateField('nbSmallTables', +$any($event.target).value)">
+              <span class="available-hint">{{ selectedZone()?.remainingSmallTables ?? 0 }} disponibles</span>
+            </div>
+
+            <div class="form-group">
+              <label>Grandes tables</label>
+              <input 
+                type="number" 
+                min="0"
+                [max]="selectedZone()?.remainingLargeTables ?? 0"
+                [value]="reservation()!.nbLargeTables" 
+                (input)="updateField('nbLargeTables', +$any($event.target).value)">
+              <span class="available-hint">{{ selectedZone()?.remainingLargeTables ?? 0 }} disponibles</span>
+            </div>
+
+            <div class="form-group">
+              <label>Tables mairie</label>
+              <input 
+                type="number" 
+                min="0"
+                [max]="selectedZone()?.remainingCityHallTables ?? 0"
+                [value]="reservation()!.nbCityHallTables" 
+                (input)="updateField('nbCityHallTables', +$any($event.target).value)">
+              <span class="available-hint">{{ selectedZone()?.remainingCityHallTables ?? 0 }} disponibles</span>
+            </div>
+
+            <!-- Remise -->
+            <div class="form-group">
+              <label>Remise (€)</label>
+              <input 
+                type="number" 
+                min="0"
+                [value]="reservation()!.remise" 
+                (input)="updateField('remise', +$any($event.target).value)">
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary" [disabled]="savingLogistics()">
+              {{ savingLogistics() ? 'Chargement...' : 'Enregistrer Logistique' }}
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <!-- Section Organisation (Suivi Technique) -->
+      <section class="organisation-section">
+        <h2>Organisation & Suivi</h2>
+        <div class="organisation-grid">
+          <div class="org-item">
+            <label>Animation</label>
+            <div class="radio-group">
+              <label>
+                <input type="radio" [checked]="reservation()!.typeAnimateur === 0" (change)="updateField('typeAnimateur', 0)">
+                Besoin de bénévoles
+              </label>
+              <label>
+                <input type="radio" [checked]="reservation()!.typeAnimateur === 1" (change)="updateField('typeAnimateur', 1)">
+                N'a pas besoin de bénévoles
+              </label>
+            </div>
+          </div>
+
+          <div class="org-item checkboxes">
+            <label class="checkbox-label">
+              <input type="checkbox" [checked]="reservation()!.listeDemandee" (change)="updateField('listeDemandee', $any($event.target).checked)">
+              Liste demandée
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" [checked]="reservation()!.listeRecue" (change)="updateField('listeRecue', $any($event.target).checked)">
+              Liste reçue
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" [checked]="reservation()!.jeuxRecus" (change)="updateField('jeuxRecus', $any($event.target).checked)">
+              Jeux reçus
+            </label>
+          </div>
+        </div>
+        <div class="form-actions mt-1">
+          <button (click)="onLogisticsUpdate()" class="btn btn-primary" [disabled]="savingLogistics()">
+            {{ savingLogistics() ? 'Chargement...' : 'Enregistrer Organisation' }}
+          </button>
+        </div>
+      </section>
+
+      <!-- Section Jeux (Phase 5) -->
+      <section class="games-section">
+        <div class="section-top">
+          <h2>Jeux dans la réservation</h2>
+          <button class="btn btn-secondary btn-sm" (click)="showGameSelector.set(true)">
+            + Ajouter des jeux
+          </button>
+        </div>
+
+        <div class="games-table-container">
+          <table class="games-table">
+            <thead>
+              <tr>
+                <th>Jeu</th>
+                <th>Type</th>
+                <th>Quantité</th>
+                <th>Placé ?</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (game of reservationGames(); track game.id) {
+                <tr>
+                  <td>
+                    <div class="game-cell">
+                      <strong>{{ game.name }}</strong>
+                      <span class="subtext">{{ game.author }}</span>
+                    </div>
+                  </td>
+                  <td>{{ game.gameType?.gameTypeLabel || '-' }}</td>
+                  <td>
+                    <input 
+                      type="number" 
+                      min="1" 
+                      [value]="game.quantity"
+                      (change)="updateGameQuantity(game.id, +$any($event.target).value)"
+                      class="qty-input">
+                  </td>
+                  <td>
+                    <input 
+                      type="checkbox" 
+                      [checked]="game.isGamePlaced"
+                      (change)="toggleGamePlaced(game)">
+                  </td>
+                  <td>
+                    <button class="btn btn-danger btn-sm" (click)="removeGame(game.id)">Retirer</button>
+                  </td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="5" class="empty-row">Aucun jeu dans cette réservation.</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    @if (showGameSelector()) {
+      <app-reservation-game-selector
+        [editorId]="reservationId()!"
+        (close)="showGameSelector.set(false)"
+        (gameSelected)="addGameToReservation($event)">
+      </app-reservation-game-selector>
+    }
+  }
+</div>

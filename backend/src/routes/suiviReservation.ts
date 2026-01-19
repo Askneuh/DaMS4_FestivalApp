@@ -10,7 +10,7 @@ router.get('/reservation/:reservationId', verifyToken, requireOrganizer, async (
     const reservationId = req.params.reservationId
     try {
         const { rows } = await pool.query(
-            'SELECT * FROM suiviReservation WHERE idReservation = $1 ORDER BY date DESC',
+            'SELECT * FROM suivireservation WHERE idreservation = $1 ORDER BY date DESC',
             [reservationId]
         )
         res.json(rows)
@@ -24,7 +24,7 @@ router.get('/reservation/:reservationId', verifyToken, requireOrganizer, async (
 router.get('/:suiviId', verifyToken, requireOrganizer, async (req, res) => {
     const suiviId = req.params.suiviId
     try {
-        const { rows } = await pool.query('SELECT * FROM suiviReservation WHERE idSuivi = $1', [suiviId])
+        const { rows } = await pool.query('SELECT * FROM suivireservation WHERE id = $1', [suiviId])
         res.json(rows)
     } catch (err: any) {
         console.error(err)
@@ -34,23 +34,17 @@ router.get('/:suiviId', verifyToken, requireOrganizer, async (req, res) => {
 
 // Route de création d'un suivi de réservation
 router.post('/', verifyToken, requireOrganizer, async (req, res) => {
-    const { status, idReservation } = req.body
-    const dateActuelle: Date = new Date()
-    // Gestion du fuseau horaire
-    const decalageFuseauHoraire_ms: number = dateActuelle.getTimezoneOffset() * 60 * 1000
-    const dateAjustee: Date = new Date(dateActuelle.getTime() - decalageFuseauHoraire_ms)
-    const modification_date: string = dateAjustee.toISOString().substring(0, 10)
+    const { status, idReservation, commentaire } = req.body
 
     if (!status || !idReservation) {
         return res.status(400).json({ error: "Statut et ID de réservation obligatoires pour la création de suivi" })
     }
     try {
         const { rows } = await pool.query(
-            'INSERT INTO suiviReservation (status, modification_date, idReservation) VALUES ($1, $2, $3) RETURNING idSuivi',
-            [status, modification_date, idReservation]
+            'INSERT INTO suivireservation (status, date, idreservation, commentaire) VALUES ($1, NOW(), $2, $3) RETURNING id',
+            [status, idReservation, commentaire]
         )
-        // Note: La modification_date est enregistrée automatiquement à l'instant de la création
-        return res.status(201).json({ message: 'Suivi de réservation créé', id: rows[0].idsuivi })
+        return res.status(201).json({ message: 'Suivi de réservation créé', id: rows[0].id })
     } catch (err: any) {
         //Catch les erreurs d'unicité, ici de la clé primaire 
         if (err.code === '23505') {
@@ -66,11 +60,11 @@ router.post('/', verifyToken, requireOrganizer, async (req, res) => {
 // Il est plus logique de créer un NOUVEAU suivi pour refléter un historique, mais si l'objectif est de modifier le DERNIER statut...
 router.post('/update/:suiviId', verifyToken, requireOrganizer, async (req, res) => {
     const suiviId = req.params.suiviId
-    const { status } = req.body
+    const { status, commentaire } = req.body
     const dateActuelle: Date = new Date()
     const decalageFuseauHoraire_ms: number = dateActuelle.getTimezoneOffset() * 60 * 1000
     const dateAjustee: Date = new Date(dateActuelle.getTime() - decalageFuseauHoraire_ms)
-    const modification_date: string = dateAjustee.toISOString().substring(0, 10)
+    const date: string = dateAjustee.toISOString().substring(0, 10)
 
     if (!status) {
         return res.status(400).json({ error: "Statut obligatoire pour la mise à jour" })
@@ -78,9 +72,9 @@ router.post('/update/:suiviId', verifyToken, requireOrganizer, async (req, res) 
 
     try {
         const { rowCount } = await pool.query(
-            // Mise à jour du statut et de la date de modification
-            'UPDATE suiviReservation SET status = $1, modification_date = $2 WHERE idSuivi = $3',
-            [status, modification_date, suiviId]
+            // Mise à jour du statut et de la date (qui sert de date de modification ici)
+            'UPDATE suivireservation SET status = $1, date = $2, commentaire = $3 WHERE id = $4',
+            [status, date, commentaire, suiviId]
         )
         if (rowCount === 0) {
             return res.status(404).json({ error: "Suivi non trouvé" })
@@ -97,7 +91,7 @@ router.delete('/:suiviId', verifyToken, requireOrganizer, async (req, res) => {
     const suiviId = req.params.suiviId
     try {
         const { rowCount } = await pool.query(
-            'DELETE FROM suiviReservation WHERE id = $1',
+            'DELETE FROM suivireservation WHERE id = $1',
             [suiviId]
         )
         if (rowCount === 0) {
