@@ -1,45 +1,42 @@
 import { Router } from 'express'
 import jwt from 'jsonwebtoken'
 import bcrypt from 'bcryptjs'
-//import pool from '../db/database.ts'
-//import { JWT_SECRET } from '../config/env.ts'
-//import type { TokenPayload } from '../types/token-payload.ts'
-//import { verifyToken, createAccessToken, createRefreshToken } from '../middleware/token-management.ts'
-
-
 import pool from '../db/database.js'
 import { JWT_SECRET } from '../config/env.js'
 import type { TokenPayload } from '../types/token-payload.js'
 import { verifyToken, createAccessToken, createRefreshToken } from '../middleware/token-management.js'
+import { authLimiter } from '../middleware/rate-limit.js'
+import { validateStringLengths } from '../middleware/validation.js'
 
 const router = Router()
 
-router.post('/login', async (req, res) => {
+router.post('/login', authLimiter, validateStringLengths({ login: 255, password: 255 }), async (req, res) => {
     // --- LOGIN ---
     const { login, password } = req.body
-    if (!login || !password) // si pas de login ou password dans la requête => ERREUR : fin du login
+    if (!login || !password)
         return res.status(400).json({ error: 'Identifiants manquants' })
 
+    try {
+        const { rows } = await pool.query('SELECT * FROM "users" WHERE "login"=$1', [login])
+        const user = rows[0]
+        if (!user) return res.status(401).json({ error: 'Utilisateur inconnu' })
 
-    const { rows } = await pool.query('SELECT * FROM "users" WHERE "login"=$1', [login])// on récupère le user dans la BD
-    const user = rows[0]
-    if (!user) return res.status(401).json({ error: 'Utilisateur inconnu' }) // pas dans la base => ERREUR : fin du login
+        const match = await bcrypt.compare(password, user.password_hash)
+        if (!match) return res.status(401).json({ error: 'Mot de passe incorrect' })
 
-
-    const match = await bcrypt.compare(password, user.password_hash) // on vérifie le password
-    if (!match) return res.status(401).json({ error: 'Mot de passe incorrect' })// si pas de match => ERREUR : fin du login
-
-
-    const accessToken = createAccessToken({ id: user.id, role: user.role }) // création du token d'accès
-    const refreshToken = createRefreshToken({ id: user.id, role: user.role }) // création du refresh token
-    res.cookie('access_token', accessToken, { // --------------------------------- Cookies sécurisés pour le token d'accès
-        httpOnly: true, secure: true, sameSite: 'strict', maxAge: 15 * 60 * 1000,
-    })
-    res.cookie('refresh_token', refreshToken, {
-        // --------------------------------- Cookies sécurisés pour le refresh token
-        httpOnly: true, secure: true, sameSite: 'strict', maxAge: 7 * 24 * 60 * 60 * 1000,
-    })
-    return res.json({ message: 'Authentification réussie', user: { login: user.login, role: user.role } })//connexion successful
+        const accessToken = createAccessToken({ id: user.id, role: user.role })
+        const refreshToken = createRefreshToken({ id: user.id, role: user.role })
+        res.cookie('access_token', accessToken, {
+            httpOnly: true, secure: true, sameSite: 'strict', maxAge: 15 * 60 * 1000,
+        })
+        res.cookie('refresh_token', refreshToken, {
+            httpOnly: true, secure: true, sameSite: 'strict', maxAge: 7 * 24 * 60 * 60 * 1000,
+        })
+        return res.json({ message: 'Authentification réussie', user: { login: user.login, role: user.role } })
+    } catch (err: any) {
+        console.error(err)
+        return res.status(500).json({ error: 'Erreur serveur' })
+    }
 })
 
 
@@ -54,12 +51,13 @@ router.get('/me', verifyToken, (req: Express.Request, res) => {
     res.json({ message: 'Utilisateur authentifié', user: req.user, }) // req typée automatiquement => pas d'erreur dans VSCode
 })
 
-router.post('/register', async (req, res) => {
+router.post('/register', authLimiter, validateStringLengths({ login: 255, password: 255 }), async (req, res) => {
     const { login, password } = req.body
     if (!login || !password)
         return res.status(400).json({ error: 'Champs manquants' })
-    const hashed = await bcrypt.hash(password, 10)
+
     try {
+        const hashed = await bcrypt.hash(password, 10)
         const { rows } = await pool.query(
             `INSERT INTO "users" ("login", "password_hash", "role")
         VALUES ($1, $2, 'user')
@@ -68,7 +66,7 @@ router.post('/register', async (req, res) => {
         )
         return res.status(201).json({ message: 'Utilisateur créé', user: rows[0] })
     } catch (err: any) {
-        if (err.code === '23505') // doublon PostgreSQL
+        if (err.code === '23505')
             return res.status(409).json({ error: 'Login déjà utilisé' })
         console.error(err)
         return res.status(500).json({ error: 'Erreur serveur' })

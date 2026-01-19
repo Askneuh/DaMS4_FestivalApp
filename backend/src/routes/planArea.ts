@@ -2,15 +2,19 @@ import { Router } from 'express'
 import pool from '../db/database.js'
 import { requireAdmin } from '../middleware/auth-admin.js'
 import { verifyToken } from '../middleware/token-management.js'
+import { validateNumericParam, validateStringLengths, normalizeBooleans } from '../middleware/validation.js'
 
 const router = Router()
 
 // Route pour récupérer une zone de plan par son ID
-router.get('/:planAreaId', verifyToken, async (req, res) => {
+router.get('/:planAreaId', verifyToken, validateNumericParam('planAreaId'), async (req, res) => {
     const planAreaId = req.params.planAreaId
     try {
         const { rows } = await pool.query('SELECT * FROM "planArea" WHERE "id" = $1', [planAreaId])
-        res.json(rows)
+        if (rows.length === 0) {
+            return res.status(404).json({ error: 'Zone de plan non trouvée' })
+        }
+        res.json(rows[0])
     } catch (err: any) {
         console.error(err)
         res.status(500).json({ error: 'Erreur serveur' })
@@ -18,7 +22,7 @@ router.get('/:planAreaId', verifyToken, async (req, res) => {
 })
 
 // Route de création d'une zone de plan
-router.post('/', verifyToken, requireAdmin, async (req, res) => {
+router.post('/', verifyToken, requireAdmin, validateStringLengths({ name: 255, festivalName: 255 }), async (req, res) => {
     const { name, nbSmallTables, nbLargeTables, nbCityHallTables, festivalName, idTZ } = req.body
 
     if (!name || !festivalName) {
@@ -39,15 +43,17 @@ router.post('/', verifyToken, requireAdmin, async (req, res) => {
         //Catch les erreurs d'unicité, ici de la clé primaire 
         if (err.code === '23505') {
             return res.status(409).json({ error: 'Id de la zone du plan déjà existant' })
-        } else {
-            console.error(err);
-            return res.status(500).json({ error: 'Erreur serveur' })
         }
+        if (err.code === '23503') {
+            return res.status(400).json({ error: 'Référence invalide (festival ou zone tarifaire inexistant)' })
+        }
+        console.error(err);
+        return res.status(500).json({ error: 'Erreur serveur' })
     }
 })
 
 // Route de mise à jour d'une zone de plan
-router.post('/update/:planAreaId', verifyToken, requireAdmin, async (req, res) => {
+router.post('/update/:planAreaId', verifyToken, requireAdmin, validateNumericParam('planAreaId'), validateStringLengths({ name: 255, festivalName: 255 }), async (req, res) => {
     const planAreaId = req.params.planAreaId
     const { name, nbSmallTables, nbLargeTables, nbCityHallTables, festivalName, idTZ } = req.body
     try {
@@ -88,7 +94,7 @@ router.get('/festival/:festivalName', verifyToken, async (req, res) => {
 })
 
 // Route pour récupérer les jeux d'une zone de plan
-router.get('/:planAreaId/games', verifyToken, async (req, res) => {
+router.get('/:planAreaId/games', verifyToken, validateNumericParam('planAreaId'), async (req, res) => {
     const planAreaId = req.params.planAreaId
     try {
         const query = `
@@ -128,7 +134,7 @@ router.get('/:planAreaId/games', verifyToken, async (req, res) => {
 })
 
 // Route pour ajouter un jeu à une zone de plan
-router.post('/:planAreaId/games', verifyToken, requireAdmin, async (req, res) => {
+router.post('/:planAreaId/games', verifyToken, requireAdmin, validateNumericParam('planAreaId'), async (req, res) => {
     const planAreaId = req.params.planAreaId
     const { idGame, quantity } = req.body
 
@@ -153,7 +159,7 @@ router.post('/:planAreaId/games', verifyToken, requireAdmin, async (req, res) =>
 
 
 // Route pour récupérer les éditeurs d'une zone de plan
-router.get('/:planAreaId/editors', verifyToken, async (req, res) => {
+router.get('/:planAreaId/editors', verifyToken, validateNumericParam('planAreaId'), async (req, res) => {
     const planAreaId = req.params.planAreaId
     try {
         const query = `
@@ -183,7 +189,7 @@ router.get('/:planAreaId/editors', verifyToken, async (req, res) => {
 })
 
 // Route pour ajouter un éditeur à une zone de plan
-router.post('/:planAreaId/editors', verifyToken, requireAdmin, async (req, res) => {
+router.post('/:planAreaId/editors', verifyToken, requireAdmin, validateNumericParam('planAreaId'), async (req, res) => {
     const planAreaId = req.params.planAreaId
     const { idEditor } = req.body
 
@@ -207,7 +213,7 @@ router.post('/:planAreaId/editors', verifyToken, requireAdmin, async (req, res) 
 })
 
 // Route pour assigner un exemplaire de jeu à une zone du plan
-router.post('/:planAreaId/assign-game', verifyToken, requireAdmin, async (req, res) => {
+router.post('/:planAreaId/assign-game', verifyToken, requireAdmin, validateNumericParam('planAreaId'), validateStringLengths({ festivalName: 255 }), async (req, res) => {
     const planAreaId = req.params.planAreaId;
     const { idGame, idReservation, festivalName } = req.body;
 
@@ -222,7 +228,7 @@ router.post('/:planAreaId/assign-game', verifyToken, requireAdmin, async (req, r
         await validateGameAssignment(
             parseInt(idGame),
             parseInt(idReservation),
-            parseInt(planAreaId),
+            parseInt(planAreaId as string),
             festivalName
         );
 
@@ -249,7 +255,7 @@ router.post('/:planAreaId/assign-game', verifyToken, requireAdmin, async (req, r
 });
 
 // Route pour retirer un exemplaire de jeu d'une zone du plan
-router.delete('/:planAreaId/games/:gameId/reservation/:reservationId', verifyToken, requireAdmin, async (req, res) => {
+router.delete('/:planAreaId/games/:gameId/reservation/:reservationId', verifyToken, requireAdmin, validateNumericParam('planAreaId'), validateNumericParam('gameId'), validateNumericParam('reservationId'), async (req, res) => {
     const { planAreaId, gameId, reservationId } = req.params;
 
     try {
@@ -273,7 +279,7 @@ router.delete('/:planAreaId/games/:gameId/reservation/:reservationId', verifyTok
 });
 
 // Route pour récupérer les jeux assignés à une zone du plan (avec détails de réservation)
-router.get('/:planAreaId/assigned-games', verifyToken, async (req, res) => {
+router.get('/:planAreaId/assigned-games', verifyToken, validateNumericParam('planAreaId'), async (req, res) => {
     const planAreaId = req.params.planAreaId;
     try {
         const query = `
@@ -336,7 +342,7 @@ router.get('/:planAreaId/assigned-games', verifyToken, async (req, res) => {
 });
 
 // Route pour récupérer les éditeurs présents dans une zone du plan (via les jeux assignés)
-router.get('/:planAreaId/editors-from-games', verifyToken, async (req, res) => {
+router.get('/:planAreaId/editors-from-games', verifyToken, validateNumericParam('planAreaId'), async (req, res) => {
     const planAreaId = req.params.planAreaId;
     try {
         const query = `
@@ -370,7 +376,7 @@ router.get('/:planAreaId/editors-from-games', verifyToken, async (req, res) => {
 });
 
 // Route de suppression d'une zone de plan
-router.delete('/:planAreaId', verifyToken, requireAdmin, async (req, res) => {
+router.delete('/:planAreaId', verifyToken, requireAdmin, validateNumericParam('planAreaId'), async (req, res) => {
     const planAreaId = req.params.planAreaId
     try {
         // Vérifier si des jeux ou éditeurs sont associés à cette zone

@@ -2,6 +2,7 @@ import { Router } from 'express'
 import pool from '../db/database.js'
 import { requireOrganizer } from '../middleware/auth-organizer.js'
 import { verifyToken } from '../middleware/token-management.js'
+import { validateNumericParam, normalizeBooleans } from '../middleware/validation.js'
 
 const router = Router()
 
@@ -48,7 +49,7 @@ router.get('/byFestival/:festivalName', verifyToken, async (req, res) => {
 })
 
 // Route pour récupérer tous les jeux d'une réservation
-router.get('/byReservation/:reservationId', verifyToken, async (req, res) => {
+router.get('/byReservation/:reservationId', verifyToken, validateNumericParam('reservationId'), async (req, res) => {
     const reservationId = req.params.reservationId
     try {
         const query = `
@@ -89,7 +90,7 @@ router.get('/byReservation/:reservationId', verifyToken, async (req, res) => {
 })
 
 // Route pour ajouter un jeu à une réservation
-router.post('/add', verifyToken, requireOrganizer, async (req, res) => {
+router.post('/add', verifyToken, requireOrganizer, normalizeBooleans(['isGamePlaced']), async (req, res) => {
     const { idReservation, idGame, isGamePlaced } = req.body
     if (!idReservation || !idGame) {
         return res.status(400).json({ error: 'ID de réservation et ID de jeu obligatoires' })
@@ -115,7 +116,7 @@ router.post('/add', verifyToken, requireOrganizer, async (req, res) => {
 })
 
 // Route pour retirer un jeu d'une réservation
-router.delete('/remove/:reservationId/:gameId', verifyToken, requireOrganizer, async (req, res) => {
+router.delete('/remove/:reservationId/:gameId', verifyToken, requireOrganizer, validateNumericParam('reservationId'), validateNumericParam('gameId'), async (req, res) => {
     const { reservationId, gameId } = req.params
     try {
         const { rowCount } = await pool.query(
@@ -133,7 +134,7 @@ router.delete('/remove/:reservationId/:gameId', verifyToken, requireOrganizer, a
 })
 
 // Route pour mettre à jour le statut de placement d'un jeu
-router.post('/updatePlacement', verifyToken, requireOrganizer, async (req, res) => {
+router.post('/updatePlacement', verifyToken, requireOrganizer, normalizeBooleans(['isGamePlaced']), async (req, res) => {
     const { idReservation, idGame, isGamePlaced } = req.body
     if (!idReservation || !idGame || isGamePlaced === undefined) {
         return res.status(400).json({ error: 'ID de réservation, ID de jeu et statut de placement obligatoires' })
