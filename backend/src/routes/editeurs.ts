@@ -2,6 +2,7 @@ import { Router } from 'express'
 import pool from '../db/database.js'
 import { requireAdmin } from '../middleware/auth-admin.js'
 import { verifyToken } from '../middleware/token-management.js'
+import { validateNumericParam, validateStringLengths, normalizeBooleans } from '../middleware/validation.js'
 
 const router = Router()
 
@@ -200,7 +201,7 @@ router.get('/festival/:festivalName/withReservationStatus', verifyToken, async (
 });
 
 // Route pour récupérer un éditeur par son ID
-router.get('/:editorId', verifyToken, async (req, res) => {
+router.get('/:editorId', verifyToken, validateNumericParam('editorId'), async (req, res) => {
     const idE = req.params.editorId
     try {
         const { rows } = await pool.query('SELECT * FROM "editor" WHERE "id" = $1', [idE])
@@ -228,7 +229,7 @@ router.get('/:editorId', verifyToken, async (req, res) => {
 })
 
 // Route de création d'un editeur
-router.post('/', verifyToken, requireAdmin, async (req, res) => {
+router.post('/', verifyToken, requireAdmin, validateStringLengths({ name: 255, logo: 500 }), normalizeBooleans(['exposant', 'distributeur']), async (req, res) => {
     const { name, exposant, distributeur, logo } = req.body
     if (!name) {
         return res.status(400).json({ error: "Nom de l'éditeur obligatoire pour la création" })
@@ -238,20 +239,22 @@ router.post('/', verifyToken, requireAdmin, async (req, res) => {
             'INSERT INTO "editor" ("name", "exposant", "distributeur", "logo") VALUES ($1, $2, $3, $4) RETURNING "id"',
             [name, exposant || false, distributeur || false, logo]
         )
-        return res.status(201).json(rows[0]);
+        return res.status(201).json({ message: 'Éditeur créé', id: rows[0].id });
     }
     catch (err: any) {
         //Catch les erreurs d'unicité, ici de la clé primaire 
         if (err.code === '23505') {
             return res.status(409).json({ error: 'Id de l\'éditeur déjà existant' })
-        } else {
-            console.error(err);
-            return res.status(500).json({ error: 'Erreur serveur' })
         }
+        if (err.code === '23503') {
+            return res.status(400).json({ error: 'Référence invalide' })
+        }
+        console.error(err);
+        return res.status(500).json({ error: 'Erreur serveur' })
     }
 })
 
-router.post('/update/:editorId', verifyToken, requireAdmin, async (req, res) => {
+router.post('/update/:editorId', verifyToken, requireAdmin, validateNumericParam('editorId'), validateStringLengths({ name: 255, logo: 500 }), normalizeBooleans(['exposant', 'distributeur']), async (req, res) => {
     const editeurId = req.params.editorId;
     const { name, exposant, distributeur, logo } = req.body;
 
@@ -309,7 +312,7 @@ router.get('/festival/:festivalName', verifyToken, async (req, res) => {
 });
 
 // Route de suppression d'un éditeur par ID
-router.delete('/:editorId', verifyToken, requireAdmin, async (req, res) => {
+router.delete('/:editorId', verifyToken, requireAdmin, validateNumericParam('editorId'), async (req, res) => {
     const editorId = req.params.editorId;
     const client = await pool.connect();
 

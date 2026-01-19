@@ -3,6 +3,7 @@ import pool from '../db/database.js'
 import { requireOrganizer } from '../middleware/auth-organizer.js'
 import { validateTariffZoneTableLimits } from '../middleware/validate-tariff-zone.js'
 import { verifyToken } from '../middleware/token-management.js'
+import { validateNumericParam, validateStringLengths } from '../middleware/validation.js'
 
 const router = Router()
 
@@ -23,11 +24,14 @@ router.get('/festival/:festivalName', verifyToken, async (req, res) => {
 });
 
 // Route pour récupérer une zone tarifaire par son ID
-router.get('/:tzId', verifyToken, async (req, res) => {
+router.get('/:tzId', verifyToken, validateNumericParam('tzId'), async (req, res) => {
     const tzId = req.params.tzId
     try {
         const { rows } = await pool.query('SELECT * FROM "tariffZone" WHERE "idTZ" = $1', [tzId])
-        res.json(rows)
+        if (rows.length === 0) {
+            return res.status(404).json({ error: 'Zone tarifaire non trouvée' })
+        }
+        res.json(rows[0])
     } catch (err: any) {
         console.error(err)
         res.status(500).json({ error: 'Erreur serveur' })
@@ -35,7 +39,7 @@ router.get('/:tzId', verifyToken, async (req, res) => {
 })
 
 // Route de création d'une zone tarifaire
-router.post('/', verifyToken, requireOrganizer, async (req, res) => {
+router.post('/', verifyToken, requireOrganizer, validateStringLengths({ name: 255, festivalName: 255 }), async (req, res) => {
     const { name, nbSmallTables, nbLargeTables, nbCityHallTables, smallTablePrice, largeTablePrice, cityHallTablePrice, squareMeterPrice, festivalName } = req.body
     if (!festivalName) {
         return res.status(400).json({ error: "Nom du festival obligatoire pour la création de zone tarifaire" })
@@ -66,15 +70,17 @@ router.post('/', verifyToken, requireOrganizer, async (req, res) => {
         //Catch les erreurs d'unicité, ici de la clé primaire 
         if (err.code === '23505') {
             return res.status(409).json({ error: 'Id de la zone tariffaire déjà existant' })
-        } else {
-            console.error(err);
-            return res.status(500).json({ error: 'Erreur serveur' })
         }
+        if (err.code === '23503') {
+            return res.status(400).json({ error: 'Référence invalide (festival inexistant)' })
+        }
+        console.error(err);
+        return res.status(500).json({ error: 'Erreur serveur' })
     }
 })
 
 // Route de mise à jour d'une zone tarifaire
-router.post('/update/:tzId', verifyToken, requireOrganizer, async (req, res) => {
+router.post('/update/:tzId', verifyToken, requireOrganizer, validateNumericParam('tzId'), validateStringLengths({ name: 255 }), async (req, res) => {
     const tzId = req.params.tzId
     const { name, nbSmallTables, nbLargeTables, nbCityHallTables, remainingSmallTables, remainingLargeTables, remainingCityHallTables, smallTablePrice, largeTablePrice, cityHallTablePrice, squareMeterPrice } = req.body
     try {
@@ -127,7 +133,7 @@ router.post('/update/:tzId', verifyToken, requireOrganizer, async (req, res) => 
 })
 
 // Route pour récupérer les jeux d'une zone tarifaire (avec détails de réservation)
-router.get('/:tzId/games', verifyToken, async (req, res) => {
+router.get('/:tzId/games', verifyToken, validateNumericParam('tzId'), async (req, res) => {
     const tzId = req.params.tzId;
     try {
         const query = `
@@ -199,7 +205,7 @@ router.get('/:tzId/games', verifyToken, async (req, res) => {
 });
 
 // Route de suppression d'une zone tarifaire par ID
-router.delete('/:tzId', verifyToken, requireOrganizer, async (req, res) => {
+router.delete('/:tzId', verifyToken, requireOrganizer, validateNumericParam('tzId'), async (req, res) => {
     const tzId = req.params.tzId;
     try {
         // Validation: Vérifier si des réservations sont liées à cette zone

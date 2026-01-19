@@ -2,11 +2,13 @@ import { Router } from 'express'
 import pool from '../db/database.js'
 import { requireOrganizer } from '../middleware/auth-organizer.js'
 import { verifyToken } from '../middleware/token-management.js'
+import { getCurrentDate } from '../utils/date.js'
+import { validateNumericParam, validateStringLengths } from '../middleware/validation.js'
 
 const router = Router()
 
 // Route pour récupérer l'historique complet des suivis pour une réservation
-router.get('/reservation/:reservationId', verifyToken, requireOrganizer, async (req, res) => {
+router.get('/reservation/:reservationId', verifyToken, requireOrganizer, validateNumericParam('reservationId'), async (req, res) => {
     const reservationId = req.params.reservationId
     try {
         const { rows } = await pool.query(
@@ -21,11 +23,14 @@ router.get('/reservation/:reservationId', verifyToken, requireOrganizer, async (
 })
 
 // Route pour récupérer un suivi de réservation par son ID
-router.get('/:suiviId', verifyToken, requireOrganizer, async (req, res) => {
+router.get('/:suiviId', verifyToken, requireOrganizer, validateNumericParam('suiviId'), async (req, res) => {
     const suiviId = req.params.suiviId
     try {
         const { rows } = await pool.query('SELECT * FROM "suiviReservation" WHERE "id" = $1', [suiviId])
-        res.json(rows)
+        if (rows.length === 0) {
+            return res.status(404).json({ error: 'Suivi de réservation non trouvé' })
+        }
+        res.json(rows[0])
     } catch (err: any) {
         console.error(err)
         res.status(500).json({ error: 'Erreur serveur' })
@@ -33,17 +38,17 @@ router.get('/:suiviId', verifyToken, requireOrganizer, async (req, res) => {
 })
 
 // Route de création d'un suivi de réservation
-router.post('/', verifyToken, requireOrganizer, async (req, res) => {
+router.post('/', verifyToken, requireOrganizer, validateStringLengths({ status: 255 }), async (req, res) => {
     const { status, idReservation } = req.body
-    const dateActuelle: Date = new Date()
-    // Gestion du fuseau horaire
-    const decalageFuseauHoraire_ms: number = dateActuelle.getTimezoneOffset() * 60 * 1000
-    const dateAjustee: Date = new Date(dateActuelle.getTime() - decalageFuseauHoraire_ms)
-    const modification_date: string = dateAjustee.toISOString().substring(0, 10)
 
     if (!status || !idReservation) {
         return res.status(400).json({ error: "Statut et ID de réservation obligatoires pour la création de suivi" })
     }
+    if (typeof idReservation !== 'number' || idReservation < 1) {
+        return res.status(400).json({ error: "ID de réservation invalide" })
+    }
+
+    const modification_date = getCurrentDate()
     try {
         const { rows } = await pool.query(
             'INSERT INTO "suiviReservation" ("status", "date", "idReservation") VALUES ($1, $2, $3) RETURNING "id"',
@@ -55,22 +60,21 @@ router.post('/', verifyToken, requireOrganizer, async (req, res) => {
         //Catch les erreurs d'unicité, ici de la clé primaire 
         if (err.code === '23505') {
             return res.status(409).json({ error: 'Id du suivi déjà existant' })
-        } else {
-            console.error(err);
-            return res.status(500).json({ error: 'Erreur serveur' })
         }
+        if (err.code === '23503') {
+            return res.status(400).json({ error: 'Réservation inexistante' })
+        }
+        console.error(err);
+        return res.status(500).json({ error: 'Erreur serveur' })
     }
 })
 
 // Route de mise à jour du statut d'un suivi de réservation (met à jour le statut et la date)
 // Il est plus logique de créer un NOUVEAU suivi pour refléter un historique, mais si l'objectif est de modifier le DERNIER statut...
-router.post('/update/:suiviId', verifyToken, requireOrganizer, async (req, res) => {
+router.post('/update/:suiviId', verifyToken, requireOrganizer, validateNumericParam('suiviId'), validateStringLengths({ status: 255 }), async (req, res) => {
     const suiviId = req.params.suiviId
     const { status } = req.body
-    const dateActuelle: Date = new Date()
-    const decalageFuseauHoraire_ms: number = dateActuelle.getTimezoneOffset() * 60 * 1000
-    const dateAjustee: Date = new Date(dateActuelle.getTime() - decalageFuseauHoraire_ms)
-    const modification_date: string = dateAjustee.toISOString().substring(0, 10)
+    const modification_date = getCurrentDate()
 
     if (!status) {
         return res.status(400).json({ error: "Statut obligatoire pour la mise à jour" })
@@ -93,7 +97,7 @@ router.post('/update/:suiviId', verifyToken, requireOrganizer, async (req, res) 
 })
 
 // Route de suppression d'un suivi de réservation
-router.delete('/:suiviId', verifyToken, requireOrganizer, async (req, res) => {
+router.delete('/:suiviId', verifyToken, requireOrganizer, validateNumericParam('suiviId'), async (req, res) => {
     const suiviId = req.params.suiviId
     try {
         const { rowCount } = await pool.query(

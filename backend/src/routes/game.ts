@@ -2,6 +2,7 @@ import { Router } from 'express'
 import pool from '../db/database.js'
 import { requireAdmin } from '../middleware/auth-admin.js'
 import { verifyToken } from '../middleware/token-management.js'
+import { validateNumericParam, validateStringLengths, normalizeBooleans } from '../middleware/validation.js'
 
 const router = Router()
 
@@ -34,7 +35,7 @@ router.get('/byDistributeurs', verifyToken, async (req, res) => {
     }
 })
 
-router.get('/byEditor/:idEditor', verifyToken, async (req, res) => {
+router.get('/byEditor/:idEditor', verifyToken, validateNumericParam('idEditor'), async (req, res) => {
     const idEditor = req.params.idEditor
     try {
         const { rows } = await pool.query('SELECT * FROM "game" WHERE "idEditor" = $1', [idEditor])
@@ -46,7 +47,7 @@ router.get('/byEditor/:idEditor', verifyToken, async (req, res) => {
 })
 
 // Route pour récupérer les jeux qu'un éditeur N'A PAS
-router.get('/notByEditor/:idEditor', verifyToken, async (req, res) => {
+router.get('/notByEditor/:idEditor', verifyToken, validateNumericParam('idEditor'), async (req, res) => {
     const idEditor = req.params.idEditor;
     try {
         const { rows } = await pool.query(
@@ -61,7 +62,7 @@ router.get('/notByEditor/:idEditor', verifyToken, async (req, res) => {
 });
 
 // Route pour récupérer le libellé du type de jeu
-router.get('/gameType/:idGameType/label', verifyToken, async (req, res) => {
+router.get('/gameType/:idGameType/label', verifyToken, validateNumericParam('idGameType'), async (req, res) => {
     const idGameType = req.params.idGameType;
     try {
         const { rows } = await pool.query(
@@ -80,7 +81,7 @@ router.get('/gameType/:idGameType/label', verifyToken, async (req, res) => {
 
 // Route pour récupérer les mécanismes d'un jeu
 // IMPORTANT: Cette route doit être AVANT /:gameId
-router.get('/:gameId/mechanisms', verifyToken, async (req, res) => {
+router.get('/:gameId/mechanisms', verifyToken, validateNumericParam('gameId'), async (req, res) => {
     const gameId = req.params.gameId;
     try {
         const { rows } = await pool.query(
@@ -98,7 +99,7 @@ router.get('/:gameId/mechanisms', verifyToken, async (req, res) => {
 
 // Route pour récupérer un jeu par son ID
 // IMPORTANT: Cette route générique doit être APRÈS les routes spécifiques
-router.get('/:gameId', verifyToken, async (req, res) => {
+router.get('/:gameId', verifyToken, validateNumericParam('gameId'), async (req, res) => {
     const gameId = req.params.gameId
     try {
         const { rows } = await pool.query('SELECT * FROM "game" WHERE "id" = $1', [gameId])
@@ -113,12 +114,31 @@ router.get('/:gameId', verifyToken, async (req, res) => {
 })
 
 // Route de création d'un jeu
-router.post('/', verifyToken, requireAdmin, async (req, res) => {
+router.post('/', verifyToken, requireAdmin, validateStringLengths({ name: 255, author: 255, gameNotice: 1000, theme: 255, description: 2000, gameImage: 500, rulesTutorial: 500, edition: 255 }), normalizeBooleans(['prototype']), async (req, res) => {
     const { name, author, nbMinPlayer, nbMaxPlayer, gameNotice, idGameType, minimumAge, prototype, duration, theme, description, gameImage, rulesTutorial, edition, idEditor } = req.body
-    //On suppose que toutes les données sont obligatoires
-    if (!name || !author || !idGameType || !idEditor || !nbMinPlayer || !nbMaxPlayer || !minimumAge || !duration) {
+
+    // Validation des champs obligatoires
+    if (!name || !author || !idGameType || !idEditor || nbMinPlayer === undefined || nbMaxPlayer === undefined || minimumAge === undefined || !duration) {
         return res.status(400).json({ error: "Informations de jeu obligatoires manquantes" })
     }
+
+    // Validation des types et valeurs
+    if (typeof nbMinPlayer !== 'number' || nbMinPlayer < 1) {
+        return res.status(400).json({ error: "Le nombre minimum de joueurs doit être un entier positif" })
+    }
+    if (typeof nbMaxPlayer !== 'number' || nbMaxPlayer < 1) {
+        return res.status(400).json({ error: "Le nombre maximum de joueurs doit être un entier positif" })
+    }
+    if (nbMinPlayer > nbMaxPlayer) {
+        return res.status(400).json({ error: "Le nombre minimum de joueurs ne peut pas être supérieur au nombre maximum" })
+    }
+    if (typeof minimumAge !== 'number' || minimumAge < 0) {
+        return res.status(400).json({ error: "L'âge minimum doit être un entier positif ou zéro" })
+    }
+    if (typeof duration !== 'number' || duration < 1) {
+        return res.status(400).json({ error: "La durée doit être un entier positif (en minutes)" })
+    }
+
     try {
         const { rows } = await pool.query(
             'INSERT INTO "game" ("name", "author", "nbMinPlayer", "nbMaxPlayer", "gameNotice", "idGameType", "minimumAge", "prototype", "duration", "theme", "description", "gameImage", "rulesTutorial", "edition", "idEditor") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15) RETURNING "id"',
@@ -126,18 +146,19 @@ router.post('/', verifyToken, requireAdmin, async (req, res) => {
         )
         return res.status(201).json({ message: 'Jeu créé', id: rows[0].id })
     } catch (err: any) {
-        //Catch les erreurs d'unicité, ici de la clé primaire 
         if (err.code === '23505') {
             return res.status(409).json({ error: 'Id du jeu déjà existant' })
-        } else {
-            console.error(err);
-            return res.status(500).json({ error: 'Erreur serveur' })
         }
+        if (err.code === '23503') {
+            return res.status(400).json({ error: 'Référence invalide (éditeur ou type de jeu inexistant)' })
+        }
+        console.error(err);
+        return res.status(500).json({ error: 'Erreur serveur' })
     }
 })
 
 // Route de mise à jour d'un jeu
-router.post('/update/:gameId', verifyToken, requireAdmin, async (req, res) => {
+router.post('/update/:gameId', verifyToken, requireAdmin, validateNumericParam('gameId'), validateStringLengths({ name: 255, author: 255, gameNotice: 1000, theme: 255, description: 2000, gameImage: 500, rulesTutorial: 500, edition: 255 }), normalizeBooleans(['prototype']), async (req, res) => {
     const gameId = req.params.gameId
     const { name, author, nbMinPlayer, nbMaxPlayer, gameNotice, idGameType, minimumAge, prototype, duration, theme, description, gameImage, rulesTutorial, edition, idEditor } = req.body
     try {
@@ -172,15 +193,49 @@ router.post('/update/:gameId', verifyToken, requireAdmin, async (req, res) => {
 })
 
 // Route de suppression d'un jeu
-router.delete('/:gameId', verifyToken, requireAdmin, async (req, res) => {
+router.delete('/:gameId', verifyToken, requireAdmin, validateNumericParam('gameId'), async (req, res) => {
     const gameId = req.params.gameId
     try {
+        // Vérifier si le jeu est utilisé dans d'autres tables
+        const { rows: mechanismCheck } = await pool.query(
+            'SELECT COUNT(*) as "count" FROM "game_mechanism" WHERE "idGame" = $1',
+            [gameId]
+        );
+        if (parseInt(mechanismCheck[0].count) > 0) {
+            return res.status(409).json({
+                error: 'Impossible de supprimer ce jeu car il est lié à des mécanismes'
+            });
+        }
+
+        const { rows: planAreaCheck } = await pool.query(
+            'SELECT COUNT(*) as "count" FROM "game_planArea" WHERE "idGame" = $1',
+            [gameId]
+        );
+        if (parseInt(planAreaCheck[0].count) > 0) {
+            return res.status(409).json({
+                error: 'Impossible de supprimer ce jeu car il est assigné à des zones de plan'
+            });
+        }
+
+        const { rows: reservationCheck } = await pool.query(
+            'SELECT COUNT(*) as "count" FROM "reservation_game" WHERE "idGame" = $1',
+            [gameId]
+        );
+        if (parseInt(reservationCheck[0].count) > 0) {
+            return res.status(409).json({
+                error: 'Impossible de supprimer ce jeu car il est dans des réservations'
+            });
+        }
+
         const { rowCount } = await pool.query('DELETE FROM "game" WHERE "id" = $1', [gameId])
         if (rowCount === 0) {
             return res.status(404).json({ error: "Jeu non trouvé" })
         }
         return res.status(200).json({ message: 'Jeu supprimé' })
     } catch (err: any) {
+        if (err.code === '23503') {
+            return res.status(409).json({ error: 'Impossible de supprimer ce jeu car il est référencé ailleurs' });
+        }
         console.error(err)
         return res.status(500).json({ error: 'Erreur serveur' })
     }
