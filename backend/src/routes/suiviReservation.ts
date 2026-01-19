@@ -10,7 +10,7 @@ router.get('/reservation/:reservationId', verifyToken, requireOrganizer, async (
     const reservationId = req.params.reservationId
     try {
         const { rows } = await pool.query(
-            'SELECT * FROM suiviReservation WHERE idReservation = $1 ORDER BY date DESC',
+            'SELECT * FROM "suiviReservation" WHERE "idReservation" = $1 ORDER BY "date" DESC',
             [reservationId]
         )
         res.json(rows)
@@ -24,7 +24,7 @@ router.get('/reservation/:reservationId', verifyToken, requireOrganizer, async (
 router.get('/:suiviId', verifyToken, requireOrganizer, async (req, res) => {
     const suiviId = req.params.suiviId
     try {
-        const { rows } = await pool.query('SELECT * FROM suiviReservation WHERE idSuivi = $1', [suiviId])
+        const { rows } = await pool.query('SELECT * FROM "suiviReservation" WHERE "id" = $1', [suiviId])
         res.json(rows)
     } catch (err: any) {
         console.error(err)
@@ -46,11 +46,11 @@ router.post('/', verifyToken, requireOrganizer, async (req, res) => {
     }
     try {
         const { rows } = await pool.query(
-            'INSERT INTO suiviReservation (status, modification_date, idReservation) VALUES ($1, $2, $3) RETURNING idSuivi',
+            'INSERT INTO "suiviReservation" ("status", "date", "idReservation") VALUES ($1, $2, $3) RETURNING "id"',
             [status, modification_date, idReservation]
         )
         // Note: La modification_date est enregistrée automatiquement à l'instant de la création
-        return res.status(201).json({ message: 'Suivi de réservation créé', id: rows[0].idsuivi })
+        return res.status(201).json({ message: 'Suivi de réservation créé', id: rows[0].id })
     } catch (err: any) {
         //Catch les erreurs d'unicité, ici de la clé primaire 
         if (err.code === '23505') {
@@ -79,7 +79,7 @@ router.post('/update/:suiviId', verifyToken, requireOrganizer, async (req, res) 
     try {
         const { rowCount } = await pool.query(
             // Mise à jour du statut et de la date de modification
-            'UPDATE suiviReservation SET status = $1, modification_date = $2 WHERE idSuivi = $3',
+            'UPDATE "suiviReservation" SET "status" = $1, "date" = $2 WHERE "id" = $3',
             [status, modification_date, suiviId]
         )
         if (rowCount === 0) {
@@ -97,7 +97,7 @@ router.delete('/:suiviId', verifyToken, requireOrganizer, async (req, res) => {
     const suiviId = req.params.suiviId
     try {
         const { rowCount } = await pool.query(
-            'DELETE FROM suiviReservation WHERE id = $1',
+            'DELETE FROM "suiviReservation" WHERE "id" = $1',
             [suiviId]
         )
         if (rowCount === 0) {

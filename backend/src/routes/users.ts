@@ -14,7 +14,7 @@ router.get('/:userId', verifyToken, async (req, res) => {
     const userId = req.params.userId
     console.log("userid", userId)
     try {
-        const { rows } = await pool.query('SELECT id, login, role FROM users WHERE id = $1', [userId])
+        const { rows } = await pool.query('SELECT "id", "login", "role" FROM "users" WHERE "id" = $1', [userId])
         res.json(rows)
     }
     catch (err: any) {
@@ -37,7 +37,7 @@ router.post('/', verifyToken, requireAdmin, async (req, res) => {
         console.log('Body reçu :', req.body);
         const hash = await bcrypt.hash(password, 10)
         await pool.query(
-            'INSERT INTO users (login, password_hash, role) VALUES ($1, $2, $3)',
+            'INSERT INTO "users" ("login", "password_hash", "role") VALUES ($1, $2, $3)',
             [login, hash, userRole]
         );
         return res.status(201).json({ message: 'Utilisateur créé', role: userRole })
@@ -67,7 +67,7 @@ router.put('/:userId/role', verifyToken, requireAdmin, async (req, res) => {
 
     try {
         const result = await pool.query(
-            'UPDATE users SET role = $1 WHERE id = $2 RETURNING id, login, role',
+            'UPDATE "users" SET "role" = $1 WHERE "id" = $2 RETURNING "id", "login", "role"',
             [role, userId]
         )
 
@@ -88,7 +88,7 @@ router.delete('/:userId', verifyToken, requireAdmin, async (req, res) => {
 
     try {
         const result = await pool.query(
-            'DELETE FROM users WHERE id = $1 RETURNING id, login',
+            'DELETE FROM "users" WHERE "id" = $1 RETURNING "id", "login"',
             [userId]
         )
 
@@ -106,14 +106,14 @@ router.delete('/:userId', verifyToken, requireAdmin, async (req, res) => {
 // Récupération du profil utilisateur (authentifié)
 router.get('/me', verifyToken, async (req, res) => {
     const user = req.user
-    const { rows } = await pool.query('SELECT id, login, role FROM users WHERE id=$1', [user?.id])
+    const { rows } = await pool.query('SELECT "id", "login", "role" FROM "users" WHERE "id"=$1', [user?.id])
     res.json(rows[0]);
 })
 
 
 // Liste de tous les utilisateurs (réservée aux admins)
 router.get('/', verifyToken, requireAdmin, async (_req, res) => {
-    const { rows } = await pool.query('SELECT id, login, role FROM users ORDER BY id')
+    const { rows } = await pool.query('SELECT "id", "login", "role" FROM "users" ORDER BY "id"')
     res.json(rows)
 })
 

@@ -8,7 +8,7 @@ const router = Router()
 // Route pour récupérer tous les types de jeux
 router.get('/', verifyToken, async (req, res) => {
     try {
-        const { rows } = await pool.query('SELECT * FROM gameType ORDER BY "gameTypeLabel"');
+        const { rows } = await pool.query('SELECT * FROM "gameType" ORDER BY "gameTypeLabel"');
         res.json(rows);
     } catch (err: any) {
         console.error(err);
@@ -20,7 +20,7 @@ router.get('/', verifyToken, async (req, res) => {
 router.get('/:gameTypeId', verifyToken, async (req, res) => {
     const gameTypeId = req.params.gameTypeId
     try {
-        const { rows } = await pool.query('SELECT * FROM gameType WHERE id = $1', [gameTypeId])
+        const { rows } = await pool.query('SELECT * FROM "gameType" WHERE "id" = $1', [gameTypeId])
         res.json(rows)
     } catch (err: any) {
         console.error(err)
@@ -36,7 +36,7 @@ router.post('/', verifyToken, requireAdmin, async (req, res) => {
     }
     try {
         const { rows } = await pool.query(
-            'INSERT INTO gameType (gameTypeLabel, idZone) VALUES ($1, $2) RETURNING id',
+            'INSERT INTO "gameType" ("gameTypeLabel", "idZone") VALUES ($1, $2) RETURNING "id"',
             [gameTypeLabel, idZone]
         )
         return res.status(201).json({ message: 'Type de jeu créé', id: rows[0].id })
@@ -56,10 +56,10 @@ router.post('/update/:gameTypeId', verifyToken, requireAdmin, async (req, res) =
     const { gameTypeLabel, idZone } = req.body
     try {
         const { rowCount } = await pool.query(
-            `UPDATE gameType SET 
-                gameTypeLabel = COALESCE($1, gameTypeLabel), 
-                idZone = COALESCE($2, idZone) 
-            WHERE id = $3`,
+            `UPDATE "gameType" SET 
+                "gameTypeLabel" = COALESCE($1, "gameTypeLabel"), 
+                "idZone" = COALESCE($2, "idZone") 
+            WHERE "id" = $3`,
             [gameTypeLabel, idZone, gameTypeId]
         )
         if (rowCount === 0) {
@@ -78,7 +78,7 @@ router.delete('/:gameTypeId', verifyToken, requireAdmin, async (req, res) => {
     try {
         // Vérifier si des jeux utilisent ce type
         const { rows: gamesUsingType } = await pool.query(
-            'SELECT COUNT(*) as count FROM game WHERE "idGameType" = $1',
+            'SELECT COUNT(*) as "count" FROM "game" WHERE "idGameType" = $1',
             [gameTypeId]
         );
 
@@ -88,7 +88,7 @@ router.delete('/:gameTypeId', verifyToken, requireAdmin, async (req, res) => {
             });
         }
 
-        const { rowCount } = await pool.query('DELETE FROM gameType WHERE id = $1', [gameTypeId])
+        const { rowCount } = await pool.query('DELETE FROM "gameType" WHERE "id" = $1', [gameTypeId])
         if (rowCount === 0) {
             return res.status(404).json({ error: "Type de jeu non trouvé" })
         }

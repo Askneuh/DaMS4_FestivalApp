@@ -8,7 +8,7 @@ const router = Router()
 // Route pour récupérer tous les mécanismes
 router.get('/', verifyToken, async (req, res) => {
     try {
-        const { rows } = await pool.query('SELECT * FROM mechanism ORDER BY name');
+        const { rows } = await pool.query('SELECT * FROM "mechanism" ORDER BY "name"');
         res.json(rows);
     } catch (err: any) {
         console.error(err);
@@ -20,7 +20,7 @@ router.get('/', verifyToken, async (req, res) => {
 router.get('/:mechanismId', verifyToken, async (req, res) => {
     const mechanismId = req.params.mechanismId
     try {
-        const { rows } = await pool.query('SELECT * FROM mechanism WHERE id = $1', [mechanismId])
+        const { rows } = await pool.query('SELECT * FROM "mechanism" WHERE "id" = $1', [mechanismId])
         res.json(rows)
     } catch (err: any) {
         console.error(err)
@@ -36,7 +36,7 @@ router.post('/', verifyToken, requireAdmin, async (req, res) => {
     }
     try {
         const { rows } = await pool.query(
-            'INSERT INTO mechanism (name, description) VALUES ($1, $2) RETURNING id',
+            'INSERT INTO "mechanism" ("name", "description") VALUES ($1, $2) RETURNING "id"',
             [name, description]
         )
         return res.status(201).json({ message: 'Mécanisme créé', id: rows[0].id })
@@ -57,10 +57,10 @@ router.post('/update/:mechanismId', verifyToken, requireAdmin, async (req, res) 
     const { name, description } = req.body
     try {
         const { rowCount } = await pool.query(
-            `UPDATE mechanism SET 
-                name = COALESCE($1, name), 
-                description = $2 
-            WHERE id = $3`,
+            `UPDATE "mechanism" SET 
+                "name" = COALESCE($1, "name"), 
+                "description" = $2 
+            WHERE "id" = $3`,
             [name, description, mechanismId]
         )
         if (rowCount === 0) {
@@ -79,7 +79,7 @@ router.delete('/:mechanismId', verifyToken, requireAdmin, async (req, res) => {
     try {
         // Vérifier si des jeux utilisent ce mécanisme
         const { rows: gamesUsingMechanism } = await pool.query(
-            'SELECT COUNT(*) as count FROM game_mechanism WHERE "idMechanism" = $1',
+            'SELECT COUNT(*) as "count" FROM "game_mechanism" WHERE "idMechanism" = $1',
             [mechanismId]
         );
 
@@ -89,7 +89,7 @@ router.delete('/:mechanismId', verifyToken, requireAdmin, async (req, res) => {
             });
         }
 
-        const { rowCount } = await pool.query('DELETE FROM mechanism WHERE id = $1', [mechanismId])
+        const { rowCount } = await pool.query('DELETE FROM "mechanism" WHERE "id" = $1', [mechanismId])
         if (rowCount === 0) {
             return res.status(404).json({ error: "Mécanisme non trouvé" })
         }

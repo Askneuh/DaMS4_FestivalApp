@@ -8,7 +8,7 @@ const router = Router()
 // Route pour récupérer tous les jeux
 router.get('/', verifyToken, async (req, res) => {
     try {
-        const { rows } = await pool.query('SELECT * FROM game ORDER BY name');
+        const { rows } = await pool.query('SELECT * FROM "game" ORDER BY "name"');
         res.json(rows);
     } catch (err: any) {
         console.error(err);
@@ -22,10 +22,10 @@ router.get('/byDistributeurs', verifyToken, async (req, res) => {
     try {
         const { rows } = await pool.query(
             `SELECT g.* 
-             FROM game g
-             INNER JOIN editor e ON g."idEditor" = e.id
-             WHERE e.distributeur = TRUE
-             ORDER BY g.name`
+             FROM "game" g
+             INNER JOIN "editor" e ON g."idEditor" = e."id"
+             WHERE e."distributeur" = TRUE
+             ORDER BY g."name"`
         )
         res.json(rows)
     } catch (err: any) {
@@ -37,7 +37,7 @@ router.get('/byDistributeurs', verifyToken, async (req, res) => {
 router.get('/byEditor/:idEditor', verifyToken, async (req, res) => {
     const idEditor = req.params.idEditor
     try {
-        const { rows } = await pool.query('SELECT * FROM game WHERE "idEditor" = $1', [idEditor])
+        const { rows } = await pool.query('SELECT * FROM "game" WHERE "idEditor" = $1', [idEditor])
         res.json(rows)
     } catch (err: any) {
         console.error(err)
@@ -50,7 +50,7 @@ router.get('/notByEditor/:idEditor', verifyToken, async (req, res) => {
     const idEditor = req.params.idEditor;
     try {
         const { rows } = await pool.query(
-            'SELECT * FROM game WHERE "idEditor" != $1 ORDER BY name',
+            'SELECT * FROM "game" WHERE "idEditor" != $1 ORDER BY "name"',
             [idEditor]
         );
         res.json(rows);
@@ -65,7 +65,7 @@ router.get('/gameType/:idGameType/label', verifyToken, async (req, res) => {
     const idGameType = req.params.idGameType;
     try {
         const { rows } = await pool.query(
-            'SELECT "gameTypeLabel" FROM gameType WHERE id = $1',
+            'SELECT "gameTypeLabel" FROM "gameType" WHERE "id" = $1',
             [idGameType]
         );
         if (rows.length === 0) {
@@ -84,8 +84,8 @@ router.get('/:gameId/mechanisms', verifyToken, async (req, res) => {
     const gameId = req.params.gameId;
     try {
         const { rows } = await pool.query(
-            `SELECT m.* FROM mechanism m
-             INNER JOIN game_mechanism gm ON m.id = gm."idMechanism"
+            `SELECT m.* FROM "mechanism" m
+             INNER JOIN "game_mechanism" gm ON m."id" = gm."idMechanism"
              WHERE gm."idGame" = $1`,
             [gameId]
         );
@@ -101,7 +101,7 @@ router.get('/:gameId/mechanisms', verifyToken, async (req, res) => {
 router.get('/:gameId', verifyToken, async (req, res) => {
     const gameId = req.params.gameId
     try {
-        const { rows } = await pool.query('SELECT * FROM game WHERE "id" = $1', [gameId])
+        const { rows } = await pool.query('SELECT * FROM "game" WHERE "id" = $1', [gameId])
         if (rows.length === 0) {
             return res.status(404).json({ error: "Jeu non trouvé" });
         }
@@ -121,7 +121,7 @@ router.post('/', verifyToken, requireAdmin, async (req, res) => {
     }
     try {
         const { rows } = await pool.query(
-            'INSERT INTO game ("name", "author", "nbMinPlayer", "nbMaxPlayer", "gameNotice", "idGameType", "minimumAge", "prototype", "duration", "theme", "description", "gameImage", "rulesTutorial", "edition", "idEditor") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15) RETURNING "id"',
+            'INSERT INTO "game" ("name", "author", "nbMinPlayer", "nbMaxPlayer", "gameNotice", "idGameType", "minimumAge", "prototype", "duration", "theme", "description", "gameImage", "rulesTutorial", "edition", "idEditor") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15) RETURNING "id"',
             [name, author, nbMinPlayer, nbMaxPlayer, gameNotice, idGameType, minimumAge, prototype || false, duration, theme, description, gameImage, rulesTutorial, edition, idEditor]
         )
         return res.status(201).json({ message: 'Jeu créé', id: rows[0].id })
@@ -142,7 +142,7 @@ router.post('/update/:gameId', verifyToken, requireAdmin, async (req, res) => {
     const { name, author, nbMinPlayer, nbMaxPlayer, gameNotice, idGameType, minimumAge, prototype, duration, theme, description, gameImage, rulesTutorial, edition, idEditor } = req.body
     try {
         const { rowCount } = await pool.query(
-            `UPDATE game SET 
+            `UPDATE "game" SET 
                 "name" = COALESCE($1, "name"), 
                 "author" = COALESCE($2, "author"), 
                 "nbMinPlayer" = COALESCE($3, "nbMinPlayer"), 
@@ -175,7 +175,7 @@ router.post('/update/:gameId', verifyToken, requireAdmin, async (req, res) => {
 router.delete('/:gameId', verifyToken, requireAdmin, async (req, res) => {
     const gameId = req.params.gameId
     try {
-        const { rowCount } = await pool.query('DELETE FROM game WHERE "id" = $1', [gameId])
+        const { rowCount } = await pool.query('DELETE FROM "game" WHERE "id" = $1', [gameId])
         if (rowCount === 0) {
             return res.status(404).json({ error: "Jeu non trouvé" })
         }

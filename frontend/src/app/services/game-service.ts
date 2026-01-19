@@ -66,4 +66,8 @@ export class GameService {
   deleteGame(id: number): Observable<{ message: string }> {
     return this.http.delete<{ message: string }>(`${this.apiUrl}/games/${id}`, { withCredentials: true });
   }
+
+  getGamesByTariffZone(tariffZone: string): Observable<Game[]> {
+    return this.http.get<Game[]>(`${this.apiUrl}/games/byTariffZone/${tariffZone}`, { withCredentials: true });
+  }
 }
