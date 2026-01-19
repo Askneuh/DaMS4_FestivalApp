@@ -5,7 +5,6 @@
     <a routerLink="festival_list" routerLinkActive="active">Festivals</a>
     <a routerLink="editor-list" routerLinkActive="active">Éditeurs</a>
     <a routerLink="reservations" routerLinkActive="active">Réservations</a>
-    <a routerLink="test-service" routerLinkActive="active">Test des services</a>
     @if (authSvc.isLoggedIn() && authSvc.currentUser()?.role == 'admin') {
     <a routerLink="admin" routerLinkActive="active">Admin</a>
     }

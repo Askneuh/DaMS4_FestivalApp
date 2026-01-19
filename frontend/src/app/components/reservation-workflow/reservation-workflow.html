@@ -96,10 +96,10 @@
               <input 
                 type="number" 
                 min="0"
-                [max]="selectedZone()?.remainingSmallTables ?? 0"
+                [max]="dynamicRemainingSmallTables()"
                 [value]="reservation()!.nbSmallTables" 
                 (input)="updateField('nbSmallTables', +$any($event.target).value)">
-              <span class="available-hint">{{ selectedZone()?.remainingSmallTables ?? 0 }} disponibles</span>
+              <span class="available-hint">{{ dynamicRemainingSmallTables() }} disponibles</span>
             </div>
 
             <div class="form-group">
@@ -107,10 +107,10 @@
               <input 
                 type="number" 
                 min="0"
-                [max]="selectedZone()?.remainingLargeTables ?? 0"
+                [max]="dynamicRemainingLargeTables()"
                 [value]="reservation()!.nbLargeTables" 
                 (input)="updateField('nbLargeTables', +$any($event.target).value)">
-              <span class="available-hint">{{ selectedZone()?.remainingLargeTables ?? 0 }} disponibles</span>
+              <span class="available-hint">{{ dynamicRemainingLargeTables() }} disponibles</span>
             </div>
 
             <div class="form-group">
@@ -118,10 +118,10 @@
               <input 
                 type="number" 
                 min="0"
-                [max]="selectedZone()?.remainingCityHallTables ?? 0"
+                [max]="dynamicRemainingCityHallTables()"
                 [value]="reservation()!.nbCityHallTables" 
                 (input)="updateField('nbCityHallTables', +$any($event.target).value)">
-              <span class="available-hint">{{ selectedZone()?.remainingCityHallTables ?? 0 }} disponibles</span>
+              <span class="available-hint">{{ dynamicRemainingCityHallTables() }} disponibles</span>
             </div>
 
             <!-- Remise -->

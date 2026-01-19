@@ -4,7 +4,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ReservationService } from '../../services/reservation-service';
 import { EditorService } from '../../services/editor-service';
-import { ReservationDAO } from '../../interfaces/reservationDAO';
+import { Reservation } from '../../interfaces/reservation';
 import { SuiviReservation } from '../../interfaces/suivi-reservation';
 import { SuiviHistoryComponent } from '../suivi-history/suivi-history';
 import { TariffZoneService } from '../../services/tariff-zone-service';
@@ -30,7 +30,8 @@ export class ReservationWorkflow {
   readonly gameSvc = inject(GameService);
 
   reservationId = signal<number | null>(null);
-  reservation = signal<ReservationDAO | null>(null);
+  reservation = signal<Reservation | null>(null);
+  initialReservation = signal<Reservation | null>(null);
   suiviHistory = signal<SuiviReservation[]>([]);
   reservationGames = signal<ReservationGame[]>([]);
   availableZones = signal<TariffZone[]>([]);
@@ -74,6 +75,33 @@ export class ReservationWorkflow {
     return Math.max(0, smallPrice + largePrice + cityHallPrice - Number(res.remise || 0));
   });
 
+  dynamicRemainingSmallTables = computed(() => {
+    const initial = this.initialReservation();
+    const current = this.reservation();
+    const zone = this.selectedZone();
+    if (!zone || !current) return 0;
+    const initialVal = (initial && initial.idTZ === current.idTZ) ? (initial.nbSmallTables || 0) : 0;
+    return zone.remainingSmallTables + initialVal - (current.nbSmallTables || 0);
+  });
+
+  dynamicRemainingLargeTables = computed(() => {
+    const initial = this.initialReservation();
+    const current = this.reservation();
+    const zone = this.selectedZone();
+    if (!zone || !current) return 0;
+    const initialVal = (initial && initial.idTZ === current.idTZ) ? (initial.nbLargeTables || 0) : 0;
+    return zone.remainingLargeTables + initialVal - (current.nbLargeTables || 0);
+  });
+
+  dynamicRemainingCityHallTables = computed(() => {
+    const initial = this.initialReservation();
+    const current = this.reservation();
+    const zone = this.selectedZone();
+    if (!zone || !current) return 0;
+    const initialVal = (initial && initial.idTZ === current.idTZ) ? (initial.nbCityHallTables || 0) : 0;
+    return zone.remainingCityHallTables + initialVal - (current.nbCityHallTables || 0);
+  });
+
   constructor() {
     const id = Number(this.route.snapshot.paramMap.get('id'));
     if (id) {
@@ -90,6 +118,7 @@ export class ReservationWorkflow {
     this.reservationSvc.getReservationById(id).subscribe({
       next: (data) => {
         this.reservation.set(data);
+        this.initialReservation.set(JSON.parse(JSON.stringify(data)));
         if (data.festivalName) {
           this.loadTariffZones(data.festivalName);
         }
@@ -151,6 +180,7 @@ export class ReservationWorkflow {
     this.reservationSvc.updateReservation(res.idReservation, res as any).subscribe({
       next: () => {
         this.savingLogistics.set(false);
+        this.loadReservation(res.idReservation); // Recharge et met à jour initialReservation
         alert("Logistique mise à jour avec succès !");
       },
       error: (err) => {
@@ -161,7 +191,7 @@ export class ReservationWorkflow {
     });
   }
 
-  updateField(field: keyof ReservationDAO, value: any) {
+  updateField(field: keyof Reservation, value: any) {
     this.reservation.update(r => r ? { ...r, [field]: value } : null);
   }
 

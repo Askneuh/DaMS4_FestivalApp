@@ -2,7 +2,6 @@ import { Injectable, inject } from '@angular/core';
 import { Reservation } from '../interfaces/reservation';
 import { Contact } from '../interfaces/contact';
 import { HttpClient } from '@angular/common/http';
-import { ReservationDAO } from '../interfaces/reservationDAO';
 import { Observable } from 'rxjs';
 
 import { ReservationGame } from '../interfaces/reservation-game';
@@ -16,16 +15,16 @@ export class ReservationService {
   public readonly API_URL = 'https://localhost:4000/api';
   public readonly http = inject(HttpClient);
 
-  getReservationsByEditor(idEditor: number): Observable<ReservationDAO[]> {
-    return this.http.get<ReservationDAO[]>(`${this.API_URL}/reservation/byEditor/${idEditor}`, { withCredentials: true });
+  getReservationsByEditor(idEditor: number): Observable<Reservation[]> {
+    return this.http.get<Reservation[]>(`${this.API_URL}/reservation/byEditor/${idEditor}`, { withCredentials: true });
   }
 
-  getReservationsByFestival(festivalName: string): Observable<ReservationDAO[]> {
-    return this.http.get<ReservationDAO[]>(`${this.API_URL}/reservation/byFestival/${festivalName}`, { withCredentials: true });
+  getReservationsByFestival(festivalName: string): Observable<Reservation[]> {
+    return this.http.get<Reservation[]>(`${this.API_URL}/reservation/byFestival/${festivalName}`, { withCredentials: true });
   }
 
-  getReservationById(idReservation: number): Observable<ReservationDAO> {
-    return this.http.get<ReservationDAO>(`${this.API_URL}/reservation/${idReservation}`, { withCredentials: true });
+  getReservationById(idReservation: number): Observable<Reservation> {
+    return this.http.get<Reservation>(`${this.API_URL}/reservation/${idReservation}`, { withCredentials: true });
   }
 
   createReservation(reservation: Partial<Reservation>): Observable<any> {
