@@ -13,13 +13,13 @@ router.get('/:reservationId', verifyToken, requireOrganizer, async (req, res) =>
                    e."id" as editor_id, e."name" as editor_name, e."exposant", e."distributeur", e."logo",
                    COALESCE(
                        (SELECT json_agg(g.*) 
-                        FROM game g 
+                        FROM "game" g 
                         WHERE g."idEditor" = e."id"), 
                        '[]'
                    ) as editor_games
-            FROM reservation r
-            JOIN editor e ON r.idEditor = e."id"
-            WHERE r.idReservation = $1
+            FROM "reservation" r
+            JOIN "editor" e ON r."idEditor" = e."id"
+            WHERE r."idReservation" = $1
         `;
         const { rows } = await pool.query(query, [reservationId])
 
@@ -77,7 +77,7 @@ router.post('/', verifyToken, requireOrganizer, async (req, res) => {
 
     try {
         const { rows } = await pool.query(
-            'INSERT INTO reservation (idEditor, status, nbSmallTables, nbLargeTables, nbCityHallTables, remise, typeAnimateur, listeDemandee, listeRecue, jeuxRecus, festivalName, idTZ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING idReservation',
+            'INSERT INTO "reservation" ("idEditor", "status", "nbSmallTables", "nbLargeTables", "nbCityHallTables", "remise", "typeAnimateur", "listeDemandee", "listeRecue", "jeuxRecus", "festivalName", "idTZ") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING "idReservation"',
             [idEditor, status, nbSmallTables, nbLargeTables, nbCityHallTables, remise, typeAnimateur, listeDemandee, listeRecue, jeuxRecus, festivalName, idTZ]
         )
         return res.status(201).json({ message: 'Réservation créée', id: rows[0].idReservation })
@@ -98,7 +98,7 @@ router.post('/update/:reservationId', verifyToken, requireOrganizer, async (req,
     const { status, nbSmallTables, nbLargeTables, nbCityHallTables, remise, typeAnimateur, listeDemandee, listeRecue, jeuxRecus, idTZ } = req.body
     try {
         // 1. Récupérer la réservation actuelle pour avoir les valeurs courantes si non fournies
-        const currentRes = await pool.query('SELECT * FROM reservation WHERE idReservation = $1', [reservationId]);
+        const currentRes = await pool.query('SELECT * FROM "reservation" WHERE "idReservation" = $1', [reservationId]);
         if (currentRes.rows.length === 0) {
             return res.status(404).json({ error: "Réservation non trouvée" });
         }
@@ -118,18 +118,18 @@ router.post('/update/:reservationId', verifyToken, requireOrganizer, async (req,
 
         // 4. Update
         const { rowCount } = await pool.query(
-            `UPDATE reservation SET 
-                status = COALESCE($1, status), 
-                nbSmallTables = COALESCE($2, nbSmallTables), 
-                nbLargeTables = COALESCE($3, nbLargeTables), 
-                nbCityHallTables = COALESCE($4, nbCityHallTables), 
-                remise = COALESCE($5, remise), 
-                typeAnimateur = COALESCE($6, typeAnimateur), 
-                listeDemandee = COALESCE($7, listeDemandee), 
-                listeRecue = COALESCE($8, listeRecue), 
-                jeuxRecus = COALESCE($9, jeuxRecus), 
-                idTZ = COALESCE($10, idTZ) 
-            WHERE idReservation = $11`,
+            `UPDATE "reservation" SET 
+                "status" = COALESCE($1, "status"), 
+                "nbSmallTables" = COALESCE($2, "nbSmallTables"), 
+                "nbLargeTables" = COALESCE($3, "nbLargeTables"), 
+                "nbCityHallTables" = COALESCE($4, "nbCityHallTables"), 
+                "remise" = COALESCE($5, "remise"), 
+                "typeAnimateur" = COALESCE($6, "typeAnimateur"), 
+                "listeDemandee" = COALESCE($7, "listeDemandee"), 
+                "listeRecue" = COALESCE($8, "listeRecue"), 
+                "jeuxRecus" = COALESCE($9, "jeuxRecus"), 
+                "idTZ" = COALESCE($10, "idTZ") 
+            WHERE "idReservation" = $11`,
             [status, nbSmallTables, nbLargeTables, nbCityHallTables, remise, typeAnimateur, listeDemandee, listeRecue, jeuxRecus, idTZ, reservationId]
         )
         if (rowCount === 0) {
@@ -154,13 +154,13 @@ router.get('/byEditor/:idEditor', verifyToken, requireOrganizer, async (req, res
                    e."id" as editor_id, e."name" as editor_name, e."exposant", e."distributeur", e."logo",
                    COALESCE(
                        (SELECT json_agg(g.*) 
-                        FROM game g 
+                        FROM "game" g 
                         WHERE g."idEditor" = e."id"), 
                        '[]'
                    ) as editor_games
-            FROM reservation r
-            JOIN editor e ON r.idEditor = e."id"
-            WHERE r.idEditor = $1
+            FROM "reservation" r
+            JOIN "editor" e ON r."idEditor" = e."id"
+            WHERE r."idEditor" = $1
         `;
         const { rows } = await pool.query(query, [idEditor])
 
@@ -204,13 +204,13 @@ router.get('/byFestival/:festivalName', verifyToken, requireOrganizer, async (re
                    e."id" as editor_id, e."name" as editor_name, e."exposant", e."distributeur", e."logo",
                    COALESCE(
                        (SELECT json_agg(g.*) 
-                        FROM game g 
+                        FROM "game" g 
                         WHERE g."idEditor" = e."id"), 
                        '[]'
                    ) as editor_games
-            FROM reservation r
-            JOIN editor e ON r.idEditor = e."id"
-            WHERE r.festivalName = $1
+            FROM "reservation" r
+            JOIN "editor" e ON r."idEditor" = e."id"
+            WHERE r."festivalName" = $1
         `;
         const { rows } = await pool.query(query, [festivalName])
 
@@ -250,12 +250,12 @@ router.get('/:reservationId/games', verifyToken, requireOrganizer, async (req, r
     const reservationId = req.params.reservationId
     try {
         const query = `
-            SELECT g.*, rg.isGamePlaced, rg.quantity, rg.idReservation,
-                   gt.id as gameType_id, gt."gameTypeLabel"
-            FROM game g
-            JOIN reservation_game rg ON g.id = rg.idGame
-            LEFT JOIN gameType gt ON g."idGameType" = gt.id
-            WHERE rg.idReservation = $1
+            SELECT g.*, rg."isGamePlaced", rg."quantity", rg."idReservation",
+                   gt."id" as gameType_id, gt."gameTypeLabel"
+            FROM "game" g
+            JOIN "reservation_game" rg ON g."id" = rg."idGame"
+            LEFT JOIN "gameType" gt ON g."idGameType" = gt."id"
+            WHERE rg."idReservation" = $1
         `
         const { rows } = await pool.query(query, [reservationId])
 
@@ -303,7 +303,7 @@ router.post('/:reservationId/games', verifyToken, requireOrganizer, async (req, 
 
     try {
         await pool.query(
-            'INSERT INTO reservation_game (idReservation, idGame, isGamePlaced, quantity) VALUES ($1, $2, $3, $4)',
+            'INSERT INTO "reservation_game" ("idReservation", "idGame", "isGamePlaced", "quantity") VALUES ($1, $2, $3, $4)',
             [reservationId, idGame, false, quantity || 1]
         )
         return res.status(201).json({ message: 'Jeu ajouté à la réservation' })
@@ -323,10 +323,10 @@ router.put('/:reservationId/games/:gameId', verifyToken, requireOrganizer, async
 
     try {
         const { rowCount } = await pool.query(
-            `UPDATE reservation_game 
-             SET quantity = COALESCE($1, quantity), 
-                 isGamePlaced = COALESCE($2, isGamePlaced)
-             WHERE idReservation = $3 AND idGame = $4`,
+            `UPDATE "reservation_game" 
+             SET "quantity" = COALESCE($1, "quantity"), 
+                 "isGamePlaced" = COALESCE($2, "isGamePlaced")
+             WHERE "idReservation" = $3 AND "idGame" = $4`,
             [quantity, isGamePlaced, reservationId, gameId]
         )
 
@@ -347,7 +347,7 @@ router.delete('/:reservationId/games/:gameId', verifyToken, requireOrganizer, as
 
     try {
         const { rowCount } = await pool.query(
-            'DELETE FROM reservation_game WHERE idReservation = $1 AND idGame = $2',
+            'DELETE FROM "reservation_game" WHERE "idReservation" = $1 AND "idGame" = $2',
             [reservationId, gameId]
         )
 
@@ -371,13 +371,13 @@ router.delete('/:reservationId', verifyToken, requireOrganizer, async (req, res)
         await client.query('BEGIN')
 
         // Supprimer les jeux de la réservation
-        await client.query('DELETE FROM reservation_game WHERE idReservation = $1', [reservationId])
+        await client.query('DELETE FROM "reservation_game" WHERE "idReservation" = $1', [reservationId])
 
         // Supprimer les suivis
-        await client.query('DELETE FROM suiviReservation WHERE idReservation = $1', [reservationId])
+        await client.query('DELETE FROM "suiviReservation" WHERE "idReservation" = $1', [reservationId])
 
         // Supprimer la réservation
-        const { rowCount } = await client.query('DELETE FROM reservation WHERE idReservation = $1', [reservationId])
+        const { rowCount } = await client.query('DELETE FROM "reservation" WHERE "idReservation" = $1', [reservationId])
 
         if (rowCount === 0) {
             await client.query('ROLLBACK')
@@ -405,9 +405,9 @@ async function checkTableCapacity(idTZ: number, excludeResId: number, newSmall: 
             tz."nbSmallTables" as total_small,
             tz."nbLargeTables" as total_large,
             tz."nbCityHallTables" as total_city_hall,
-            (SELECT COALESCE(SUM("nbSmallTables"), 0) FROM reservation WHERE "idTZ" = $1 AND "idReservation" != $2) as used_small,
-            (SELECT COALESCE(SUM("nbLargeTables"), 0) FROM reservation WHERE "idTZ" = $1 AND "idReservation" != $2) as used_large,
-            (SELECT COALESCE(SUM("nbCityHallTables"), 0) FROM reservation WHERE "idTZ" = $1 AND "idReservation" != $2) as used_city_hall
+            (SELECT COALESCE(SUM("nbSmallTables"), 0) FROM "reservation" WHERE "idTZ" = $1 AND "idReservation" != $2) as used_small,
+            (SELECT COALESCE(SUM("nbLargeTables"), 0) FROM "reservation" WHERE "idTZ" = $1 AND "idReservation" != $2) as used_large,
+            (SELECT COALESCE(SUM("nbCityHallTables"), 0) FROM "reservation" WHERE "idTZ" = $1 AND "idReservation" != $2) as used_city_hall
         FROM "tariffZone" tz
         WHERE tz."idTZ" = $1
     `;

@@ -10,11 +10,11 @@ router.get('/byFestival/:festivalName', verifyToken, async (req, res) => {
     const festivalName = req.params.festivalName
     try {
         const query = `
-            SELECT DISTINCT g.*, rg.isGamePlaced
-            FROM game g
-            INNER JOIN reservation_game rg ON g."id" = rg.idGame
-            INNER JOIN reservation r ON rg.idReservation = r.idReservation
-            WHERE r.festivalName = $1
+            SELECT DISTINCT g.*, rg."isGamePlaced"
+            FROM "game" g
+            INNER JOIN "reservation_game" rg ON g."id" = rg."idGame"
+            INNER JOIN "reservation" r ON rg."idReservation" = r."idReservation"
+            WHERE r."festivalName" = $1
             ORDER BY g."name"
         `;
         const { rows } = await pool.query(query, [festivalName])
@@ -52,10 +52,10 @@ router.get('/byReservation/:reservationId', verifyToken, async (req, res) => {
     const reservationId = req.params.reservationId
     try {
         const query = `
-            SELECT g.*, rg.isGamePlaced
-            FROM game g
-            INNER JOIN reservation_game rg ON g."id" = rg.idGame
-            WHERE rg.idReservation = $1
+            SELECT g.*, rg."isGamePlaced"
+            FROM "game" g
+            INNER JOIN "reservation_game" rg ON g."id" = rg."idGame"
+            WHERE rg."idReservation" = $1
             ORDER BY g."name"
         `;
         const { rows } = await pool.query(query, [reservationId])
@@ -96,7 +96,7 @@ router.post('/add', verifyToken, requireOrganizer, async (req, res) => {
     }
     try {
         await pool.query(
-            'INSERT INTO reservation_game (idReservation, idGame, isGamePlaced) VALUES ($1, $2, $3)',
+            'INSERT INTO "reservation_game" ("idReservation", "idGame", "isGamePlaced") VALUES ($1, $2, $3)',
             [idReservation, idGame, isGamePlaced || false]
         )
         return res.status(201).json({ message: 'Jeu ajouté à la réservation' })
@@ -119,7 +119,7 @@ router.delete('/remove/:reservationId/:gameId', verifyToken, requireOrganizer, a
     const { reservationId, gameId } = req.params
     try {
         const { rowCount } = await pool.query(
-            'DELETE FROM reservation_game WHERE idReservation = $1 AND idGame = $2',
+            'DELETE FROM "reservation_game" WHERE "idReservation" = $1 AND "idGame" = $2',
             [reservationId, gameId]
         )
         if (rowCount === 0) {
@@ -140,7 +140,7 @@ router.post('/updatePlacement', verifyToken, requireOrganizer, async (req, res) 
     }
     try {
         const { rowCount } = await pool.query(
-            'UPDATE reservation_game SET isGamePlaced = $1 WHERE idReservation = $2 AND idGame = $3',
+            'UPDATE "reservation_game" SET "isGamePlaced" = $1 WHERE "idReservation" = $2 AND "idGame" = $3',
             [isGamePlaced, idReservation, idGame]
         )
         if (rowCount === 0) {

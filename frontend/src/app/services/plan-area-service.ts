@@ -4,6 +4,9 @@ import { Observable } from 'rxjs';
 import { PlanArea } from '../interfaces/plan-area';
 import { Editor } from '../interfaces/editor';
 import { PlanAreaGame } from '../interfaces/plan-area-game';
+import { AssignedGame } from '../interfaces/assigned-game';
+import { EditorWithGameCount } from '../interfaces/editor-with-game-count';
+import { GameAssignmentRequest } from '../interfaces/game-assignment-request';
 
 @Injectable({
   providedIn: 'root',
@@ -47,5 +50,34 @@ export class PlanAreaService {
 
   addEditorToPlanArea(idPA: number, idEditor: number): Observable<{ message: string }> {
     return this.http.post<{ message: string }>(`${this.API_URL}/${idPA}/editors`, { idEditor }, { withCredentials: true });
+  }
+
+  assignGameToPlanArea(planAreaId: number, assignment: GameAssignmentRequest): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(
+      `${this.API_URL}/${planAreaId}/assign-game`,
+      assignment,
+      { withCredentials: true }
+    );
+  }
+
+  unassignGameFromPlanArea(planAreaId: number, gameId: number, reservationId: number): Observable<{ message: string }> {
+    return this.http.delete<{ message: string }>(
+      `${this.API_URL}/${planAreaId}/games/${gameId}/reservation/${reservationId}`,
+      { withCredentials: true }
+    );
+  }
+
+  getAssignedGames(planAreaId: number): Observable<AssignedGame[]> {
+    return this.http.get<AssignedGame[]>(
+      `${this.API_URL}/${planAreaId}/assigned-games`,
+      { withCredentials: true }
+    );
+  }
+
+  getEditorsFromAssignedGames(planAreaId: number): Observable<EditorWithGameCount[]> {
+    return this.http.get<EditorWithGameCount[]>(
+      `${this.API_URL}/${planAreaId}/editors-from-games`,
+      { withCredentials: true }
+    );
   }
 }

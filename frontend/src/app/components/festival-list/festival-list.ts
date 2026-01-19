@@ -7,7 +7,7 @@ import { FestivalFormComponent } from '../festival-form/festival-form';
 
 @Component({
   selector: 'app-festival-list',
-  imports: [FestivalCardComponent,FestivalFormComponent],
+  imports: [FestivalCardComponent, FestivalFormComponent],
   templateUrl: './festival-list.html',
   styleUrl: './festival-list.css',
 })
@@ -42,8 +42,15 @@ export class FestivalList {
     const lastRemTemp = this.svc.findByName(name).subscribe(festival => {
       this.lastRemoved.set(festival);
     });
-    // 2. Supprimer du service
-    this.svc.removeFestivalByName(name);
+    this.svc.removeFestivalByName(name).subscribe({
+      next: () => {
+        this.svc.loadFestivalsFromBD();
+      },
+      error: (err) => {
+        console.error('Erreur lors de la suppression du festival', err);
+        console.error('Détails:', err.error);
+      }
+    });
   }
 
   onMakeCurrent(festivalName: string) {

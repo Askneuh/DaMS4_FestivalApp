@@ -1,28 +1,30 @@
-DROP TABLE IF EXISTS game_planArea CASCADE;
-DROP TABLE IF EXISTS editor_planArea CASCADE;
-DROP TABLE IF EXISTS reservation_game CASCADE;
-DROP TABLE IF EXISTS reservation_tariffZone CASCADE;
-DROP TABLE IF EXISTS festival_tariffZone CASCADE;
-DROP TABLE IF EXISTS game_festival CASCADE;
-DROP TABLE IF EXISTS suiviReservation CASCADE;
-DROP TABLE IF EXISTS contact CASCADE;
-DROP TABLE IF EXISTS planArea CASCADE;
-DROP TABLE IF EXISTS reservation CASCADE;
-DROP TABLE IF EXISTS mechanism CASCADE;
-DROP TABLE IF EXISTS gameType CASCADE;
-DROP TABLE IF EXISTS game CASCADE;
-DROP TABLE IF EXISTS editor CASCADE;
-DROP TABLE IF EXISTS tariffZone CASCADE;
-DROP TABLE IF EXISTS festival CASCADE;
-DROP TABLE IF EXISTS users CASCADE;
+DROP TABLE IF EXISTS "game_planArea" CASCADE;
+DROP TABLE IF EXISTS "editor_planArea" CASCADE;
+DROP TABLE IF EXISTS "reservation_game" CASCADE;
+DROP TABLE IF EXISTS "reservation_tariffZone" CASCADE;
+DROP TABLE IF EXISTS "festival_tariffZone" CASCADE;
+DROP TABLE IF EXISTS "game_festival" CASCADE;
+DROP TABLE IF EXISTS "game_mechanism" CASCADE;
+DROP TABLE IF EXISTS "suiviReservation" CASCADE;
+DROP TABLE IF EXISTS "contact" CASCADE;
+DROP TABLE IF EXISTS "planArea" CASCADE;
+DROP TABLE IF EXISTS "reservation" CASCADE;
+DROP TABLE IF EXISTS "mechanism" CASCADE;
+DROP TABLE IF EXISTS "gameType" CASCADE;
+DROP TABLE IF EXISTS "game" CASCADE;
+DROP TABLE IF EXISTS "editor" CASCADE;
+DROP TABLE IF EXISTS "tariffZone" CASCADE;
+DROP TABLE IF EXISTS "festival" CASCADE;
+DROP TABLE IF EXISTS "users" CASCADE;
 
 
 
-CREATE TABLE IF NOT EXISTS users (
-    id SERIAL PRIMARY KEY,
-    login TEXT UNIQUE NOT NULL,
-    password_hash TEXT NOT NULL,
-    role TEXT DEFAULT 'user'
+
+CREATE TABLE IF NOT EXISTS "users" (
+    "id" SERIAL PRIMARY KEY,
+    "login" TEXT UNIQUE NOT NULL,
+    "password_hash" TEXT NOT NULL,
+    "role" TEXT DEFAULT 'user'
 );
 
 CREATE TABLE IF NOT EXISTS "festival" (
@@ -40,7 +42,7 @@ CREATE TABLE IF NOT EXISTS "festival" (
 );
 
 -- Index unique partiel pour garantir qu'un seul festival peut être courant
-CREATE UNIQUE INDEX unique_current_festival_idx ON "festival" ("isCurrent") WHERE "isCurrent" = TRUE;
+CREATE UNIQUE INDEX "unique_current_festival_idx" ON "festival" ("isCurrent") WHERE "isCurrent" = TRUE;
 
 
 CREATE TABLE IF NOT EXISTS "mechanism" (
@@ -49,13 +51,13 @@ CREATE TABLE IF NOT EXISTS "mechanism" (
     "description" TEXT
 );
 
-CREATE TABLE IF NOT EXISTS gameType (
+CREATE TABLE IF NOT EXISTS "gameType" (
     "id" SERIAL PRIMARY KEY,
     "gameTypeLabel" TEXT NOT NULL,
     "idZone" INTEGER -- idZone dans l'interface, mais la FK n'est pas claire, donc laissé comme simple colonne
 );
 
-CREATE TABLE IF NOT EXISTS editor (
+CREATE TABLE IF NOT EXISTS "editor" (
     "id" SERIAL PRIMARY KEY,
     "name" TEXT NOT NULL,
     "exposant" BOOLEAN NOT NULL DEFAULT FALSE,
@@ -81,14 +83,14 @@ CREATE TABLE IF NOT EXISTS "tariffZone" (
     "festivalName" TEXT REFERENCES "festival"("name") NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS game (
+CREATE TABLE IF NOT EXISTS "game" (
     "id" SERIAL PRIMARY KEY,
     "name" TEXT NOT NULL, 
     "author" TEXT NOT NULL,
     "nbMinPlayer" INTEGER NOT NULL,
     "nbMaxPlayer" INTEGER NOT NULL,
     "gameNotice" TEXT,
-    "idGameType" INTEGER REFERENCES gameType("id") NOT NULL,
+    "idGameType" INTEGER REFERENCES "gameType"("id") NOT NULL,
     "minimumAge" INTEGER NOT NULL,
     "prototype" BOOLEAN NOT NULL DEFAULT FALSE,
     "duration" INTEGER NOT NULL, --A voir
@@ -97,104 +99,104 @@ CREATE TABLE IF NOT EXISTS game (
     "gameImage" TEXT, --a voir
     "rulesTutorial" TEXT,
     "edition" INTEGER,
-    "idEditor" INTEGER REFERENCES editor("id") NOT NULL
+    "idEditor" INTEGER REFERENCES "editor"("id") NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS reservation (
-    idReservation SERIAL PRIMARY KEY,
-    idEditor INTEGER REFERENCES editor("id") NOT NULL,
-    status TEXT NOT NULL,
-    nbSmallTables INTEGER,
-    nbLargeTables INTEGER,
-    nbCityHallTables INTEGER,
-    remise FLOAT,
-    typeAnimateur INTEGER, -- 0 = a besoin de bénévoles, 1 = n'a pas besoin de bénévoles
-    listeDemandee BOOLEAN,
-    listeRecue BOOLEAN,
-    jeuxRecus BOOLEAN,
-    festivalName TEXT REFERENCES festival(name) NOT NULL,
-    idTZ INTEGER REFERENCES "tariffZone"("idTZ") NOT NULL
+CREATE TABLE IF NOT EXISTS "reservation" (
+    "idReservation" SERIAL PRIMARY KEY,
+    "idEditor" INTEGER REFERENCES "editor"("id") NOT NULL,
+    "status" TEXT NOT NULL,
+    "nbSmallTables" INTEGER,
+    "nbLargeTables" INTEGER,
+    "nbCityHallTables" INTEGER,
+    "remise" FLOAT,
+    "typeAnimateur" INTEGER, -- 0 = a besoin de bénévoles, 1 = n'a pas besoin de bénévoles
+    "listeDemandee" BOOLEAN,
+    "listeRecue" BOOLEAN,
+    "jeuxRecus" BOOLEAN,
+    "festivalName" TEXT REFERENCES "festival"("name") NOT NULL,
+    "idTZ" INTEGER REFERENCES "tariffZone"("idTZ") NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS planArea (
+CREATE TABLE IF NOT EXISTS "planArea" (
     "id" SERIAL PRIMARY KEY,
     "name" TEXT NOT NULL,
     "nbSmallTables" INTEGER NOT NULL,
     "nbLargeTables" INTEGER NOT NULL,
     "nbCityHallTables" INTEGER NOT NULL,
-    "festivalName" TEXT REFERENCES festival("name") NOT NULL,
+    "festivalName" TEXT REFERENCES "festival"("name") NOT NULL,
     "idTZ" INTEGER REFERENCES "tariffZone"("idTZ")
 );
 
-CREATE TABLE IF NOT EXISTS contact (
+CREATE TABLE IF NOT EXISTS "contact" (
     "id" SERIAL PRIMARY KEY,
     "name" TEXT NOT NULL,
     "email" TEXT NOT NULL CHECK ("email" ~ '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'),
     "phone" TEXT, -- phone dans Contact.ts est optionnel ???
     "role" TEXT, -- role dans Contact.ts est optionnel ???
     "priority" BOOLEAN,
-    "idEditor" INTEGER REFERENCES editor("id") NOT NULL
+    "idEditor" INTEGER REFERENCES "editor"("id") NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS suiviReservation (
-    id SERIAL PRIMARY KEY,
-    status TEXT NOT NULL,
-    commentaire TEXT,
-    date DATE NOT NULL,
-    idReservation INTEGER REFERENCES reservation(idReservation) NOT NULL
+CREATE TABLE IF NOT EXISTS "suiviReservation" (
+    "id" SERIAL PRIMARY KEY,
+    "status" TEXT NOT NULL,
+    "commentaire" TEXT,
+    "date" DATE NOT NULL,
+    "idReservation" INTEGER REFERENCES "reservation"("idReservation") NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS "editor_festival" (
-    "idEditor" INTEGER REFERENCES editor("id") NOT NULL,
-    "festivalName" TEXT REFERENCES festival("name") NOT NULL,
+    "idEditor" INTEGER REFERENCES "editor"("id") NOT NULL,
+    "festivalName" TEXT REFERENCES "festival"("name") NOT NULL,
     PRIMARY KEY("idEditor", "festivalName")
 );
 
 
 CREATE TABLE IF NOT EXISTS "game_mechanism" (
     "id" SERIAL PRIMARY KEY,
-    "idGame" INTEGER REFERENCES game("id"),
-    "idMechanism" INTEGER REFERENCES mechanism("id")
+    "idGame" INTEGER REFERENCES "game"("id"),
+    "idMechanism" INTEGER REFERENCES "mechanism"("id")
 );
 
-CREATE TABLE IF NOT EXISTS festival_tariffZone (
-    festivalName TEXT REFERENCES festival(name),
-    idTZ INTEGER REFERENCES "tariffZone"("idTZ"),
-    PRIMARY KEY(festivalName, idTZ)
+CREATE TABLE IF NOT EXISTS "festival_tariffZone" (
+    "festivalName" TEXT REFERENCES "festival"("name"),
+    "idTZ" INTEGER REFERENCES "tariffZone"("idTZ"),
+    PRIMARY KEY("festivalName", "idTZ")
 );
 
 
-CREATE TABLE IF NOT EXISTS reservation_game (
-    idReservation INTEGER REFERENCES reservation(idReservation),
-    idGame INTEGER REFERENCES game("id"),
-    isGamePlaced BOOLEAN DEFAULT FALSE,
-    quantity INTEGER DEFAULT 1,
-    PRIMARY KEY(idReservation, idGame)
+CREATE TABLE IF NOT EXISTS "reservation_game" (
+    "idReservation" INTEGER REFERENCES "reservation"("idReservation"),
+    "idGame" INTEGER REFERENCES "game"("id"),
+    "isGamePlaced" BOOLEAN DEFAULT FALSE,
+    "quantity" INTEGER DEFAULT 1,
+    PRIMARY KEY("idReservation", "idGame")
 );
 
 -- Représente les éditeurs qui animent sur une zone
-CREATE TABLE IF NOT EXISTS editor_planArea (
-    idEditor INTEGER REFERENCES editor("id"),
-    idPA INTEGER REFERENCES planArea("id"),
-    PRIMARY KEY(idEditor, idPA)
+CREATE TABLE IF NOT EXISTS "editor_planArea" (
+    "idEditor" INTEGER REFERENCES "editor"("id"),
+    "idPA" INTEGER REFERENCES "planArea"("id"),
+    PRIMARY KEY("idEditor", "idPA")
 );
 
 -- Représente les jeux présentés sur une zone
-CREATE TABLE IF NOT EXISTS game_planArea (
-    idGame INTEGER REFERENCES game("id"),
-    idPA INTEGER REFERENCES planArea("id"),
-    quantity INTEGER DEFAULT 1,
-    PRIMARY KEY(idGame, idPA)
+CREATE TABLE IF NOT EXISTS "game_planArea" (
+    "idGame" INTEGER REFERENCES "game"("id"),
+    "idPA" INTEGER REFERENCES "planArea"("id"),
+    "quantity" INTEGER DEFAULT 1,
+    PRIMARY KEY("idGame", "idPA")
 );
 
 -- Représente un jeu présenté lors d'un festival, lié à une réservation et une zone
-CREATE TABLE IF NOT EXISTS game_festival (
-    idGame INTEGER REFERENCES game("id"),
-    festivalName TEXT REFERENCES festival("name"),
-    idReservation INTEGER REFERENCES reservation(idReservation),
-    idPA INTEGER REFERENCES planArea("id"),
-    isGamePlaced BOOLEAN DEFAULT FALSE,
-    PRIMARY KEY(idGame, festivalName, idReservation, idPA)
+CREATE TABLE IF NOT EXISTS "game_festival" (
+    "idGame" INTEGER REFERENCES "game"("id"),
+    "festivalName" TEXT REFERENCES "festival"("name"),
+    "idReservation" INTEGER REFERENCES "reservation"("idReservation"),
+    "idPA" INTEGER REFERENCES "planArea"("id"),
+    "isGamePlaced" BOOLEAN DEFAULT FALSE,
+    PRIMARY KEY("idGame", "festivalName", "idReservation", "idPA")
 );
 
 -- ============================================
@@ -202,12 +204,12 @@ CREATE TABLE IF NOT EXISTS game_festival (
 -- ============================================
 
 -- Insérer les festivals de test
-INSERT INTO festival ("name", "nbSmallTables", "nbLargeTables", "nbCityHallTables", "remainingSmallTables", "remainingLargeTables", "remainingCityHallTables", "creation_date", "begin_date", "end_date", "isCurrent") VALUES
+INSERT INTO "festival" ("name", "nbSmallTables", "nbLargeTables", "nbCityHallTables", "remainingSmallTables", "remainingLargeTables", "remainingCityHallTables", "creation_date", "begin_date", "end_date", "isCurrent") VALUES
 ('Festival 2025', 50, 30, 20, 50, 30, 20, '2024-01-01', '2025-06-01', '2025-06-03', TRUE),
 ('Festival-Rose', 30, 15, 5, 30, 15, 5, CURRENT_DATE, '2026-05-15', '2026-05-17', FALSE),
 ('Festival-Batman', 60, 30, 10, 60, 30, 10, CURRENT_DATE, '2026-07-10', '2026-07-12', FALSE),
 ('Festival-Nouveau', 40, 20, 10, 40, 20, 10, CURRENT_DATE, '2026-09-20', '2026-09-22', FALSE)
-ON CONFLICT (name) DO NOTHING;
+ON CONFLICT ("name") DO NOTHING;
 
 -- Insérer les zones tarifaires pour chaque festival
 INSERT INTO "tariffZone" ("name", "nbSmallTables", "nbLargeTables", "nbCityHallTables", "remainingSmallTables", "remainingLargeTables", "remainingCityHallTables", "smallTablePrice", "largeTablePrice", "cityHallTablePrice", "squareMeterPrice", "festivalName") VALUES
@@ -223,7 +225,7 @@ INSERT INTO "tariffZone" ("name", "nbSmallTables", "nbLargeTables", "nbCityHallT
 ON CONFLICT DO NOTHING;
 
 -- Insérer les types de jeux
-INSERT INTO gameType ("id", "gameTypeLabel", "idZone") VALUES
+INSERT INTO "gameType" ("id", "gameTypeLabel", "idZone") VALUES
 (1, 'ambiance', 12),
 (2, 'cartes', 13),
 (3, 'stratégie', 14),
@@ -231,7 +233,7 @@ INSERT INTO gameType ("id", "gameTypeLabel", "idZone") VALUES
 ON CONFLICT ("id") DO NOTHING;
 
 -- Insérer les éditeurs
-INSERT INTO editor ("id", "name", "exposant", "distributeur", "logo") VALUES
+INSERT INTO "editor" ("id", "name", "exposant", "distributeur", "logo") VALUES
 (1, 'Asmodee', false, true, 'whatever'),
 (2, 'Days of Wonder', false, false, ''),
 (3, 'Gigamic', false, false, ''),
@@ -240,7 +242,7 @@ INSERT INTO editor ("id", "name", "exposant", "distributeur", "logo") VALUES
 ON CONFLICT ("id") DO NOTHING;
 
 -- Insérer les contacts
-INSERT INTO contact ("id", "name", "email", "phone", "role", "idEditor") VALUES
+INSERT INTO "contact" ("id", "name", "email", "phone", "role", "idEditor") VALUES
 (1, 'Marie Dupont', 'marie.dupont@asmodee.com', '+33 1 23 45 67 89', 'prioritaire', 1),
 (2, 'Pierre Martin', 'pierre.martin@asmodee.com', '+33 1 23 45 67 90', 'Directeur Marketing', 1),
 (3, 'Sophie Bernard', 'sophie.bernard@daysofwonder.com', '+33 1 34 56 78 90', 'prioritaire', 2),
@@ -252,7 +254,7 @@ INSERT INTO contact ("id", "name", "email", "phone", "role", "idEditor") VALUES
 ON CONFLICT ("id") DO NOTHING;
 
 -- Insérer les jeux
-INSERT INTO game ("id", "name", "author", "nbMinPlayer", "nbMaxPlayer", "gameNotice", "idGameType", "minimumAge", "prototype", "duration", "theme", "description", "gameImage", "rulesTutorial", "edition", "idEditor") VALUES
+INSERT INTO "game" ("id", "name", "author", "nbMinPlayer", "nbMaxPlayer", "gameNotice", "idGameType", "minimumAge", "prototype", "duration", "theme", "description", "gameImage", "rulesTutorial", "edition", "idEditor") VALUES
 (1, 'Dobble', 'Denis Blanchot', 2, 8, 'Repérez le symbole commun le plus vite possible !', 1, 6, false, 15, 'Observation', 'Le jeu qui met vos réflexes à rude épreuve.', 'https://exemple.com/dobble.jpg', 'https://youtube.com/video-dobble', 2009, 1),
 (2, 'Dixit', 'Jean-Louis Roubira', 3, 6, 'Une image vaut mille mots.', 2, 8, false, 30, 'Poésie / Onirique', 'Utilisez votre imagination pour deviner la carte du conteur.', 'https://exemple.com/dixit.jpg', 'https://youtube.com/video-dixit', 2008, 1),
 (3, 'Splendor', 'Marc André', 2, 4, 'Devenez le plus riche marchand de la Renaissance.', 3, 10, false, 30, 'Renaissance / Joyaux', 'Collectez des gemmes pour acquérir des développements.', 'https://exemple.com/splendor.jpg', 'https://youtube.com/video-splendor', 2014, 1),
@@ -268,16 +270,16 @@ INSERT INTO game ("id", "name", "author", "nbMinPlayer", "nbMaxPlayer", "gameNot
 ON CONFLICT ("id") DO NOTHING;
 
 -- Insérer des réservations d'exemple
-INSERT INTO reservation (idReservation, idEditor, status, nbSmallTables, nbLargeTables, nbCityHallTables, remise, typeAnimateur, listeDemandee, listeRecue, jeuxRecus, festivalName, idTZ) VALUES
+INSERT INTO "reservation" ("idReservation", "idEditor", "status", "nbSmallTables", "nbLargeTables", "nbCityHallTables", "remise", "typeAnimateur", "listeDemandee", "listeRecue", "jeuxRecus", "festivalName", "idTZ") VALUES
 (1, 1, 'Confirmée', 3, 2, 0, 10.0, 0, true, true, true, 'Festival 2025', 1),
 (2, 2, 'En attente', 2, 1, 1, 5.0, 1, true, false, false, 'Festival 2025', 2),
 (3, 3, 'Confirmée', 4, 0, 0, 0.0, 0, true, true, false, 'Festival 2025', 1),
 (4, 4, 'Discussion', 1, 1, 0, 15.0, 1, false, false, false, 'Festival 2025', 2),
 (5, 5, 'Confirmée', 2, 2, 1, 0.0, 0, true, true, true, 'Festival 2025', 1)
-ON CONFLICT (idReservation) DO NOTHING;
+ON CONFLICT ("idReservation") DO NOTHING;
 
 -- Insérer des jeux dans les réservations (reservation_game)
-INSERT INTO reservation_game (idReservation, idGame) VALUES
+INSERT INTO "reservation_game" ("idReservation", "idGame") VALUES
 -- Réservation 1 (Asmodee) présente 3 jeux
 (1, 1),  -- Dobble
 (1, 2),  -- Dixit
@@ -295,12 +297,13 @@ INSERT INTO reservation_game (idReservation, idGame) VALUES
 (4, 11), -- Biblios
 -- Réservation 5 (Blackrock Games) présente 1 jeu
 (5, 12)  -- Kingdomino
-ON CONFLICT (idReservation, idGame) DO NOTHING;
+ON CONFLICT ("idReservation", "idGame") DO NOTHING;
 
 
 -- Réinitialiser les séquences pour éviter les conflits d'ID
-SELECT setval('editor_id_seq', (SELECT MAX("id") FROM editor));
-SELECT setval('contact_id_seq', (SELECT MAX("id") FROM contact));
-SELECT setval('game_id_seq', (SELECT MAX("id") FROM game));
-SELECT setval('gametype_id_seq', (SELECT MAX("id") FROM gameType));
-SELECT setval('reservation_idreservation_seq', (SELECT MAX(idReservation) FROM reservation));
+SELECT setval(pg_get_serial_sequence('"editor"', 'id'), (SELECT MAX("id") FROM "editor"));
+SELECT setval(pg_get_serial_sequence('"contact"', 'id'), (SELECT MAX("id") FROM "contact"));
+SELECT setval(pg_get_serial_sequence('"game"', 'id'), (SELECT MAX("id") FROM "game"));
+SELECT setval(pg_get_serial_sequence('"gameType"', 'id'), (SELECT MAX("id") FROM "gameType"));
+SELECT setval(pg_get_serial_sequence('"reservation"', 'idReservation'), (SELECT MAX("idReservation") FROM "reservation"));
+SELECT setval(pg_get_serial_sequence('"tariffZone"', 'idTZ'), (SELECT MAX("idTZ") FROM "tariffZone"));

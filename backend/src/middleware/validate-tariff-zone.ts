@@ -29,7 +29,7 @@ export async function validateTariffZoneTableLimits(
     try {
         // Get festival table limits
         const festivalQuery = await pool.query(
-            'SELECT "nbSmallTables", "nbLargeTables", "nbCityHallTables" FROM festival WHERE name = $1',
+            'SELECT "nbSmallTables", "nbLargeTables", "nbCityHallTables" FROM "festival" WHERE "name" = $1',
             [festivalName]
         )
 
@@ -52,9 +52,9 @@ export async function validateTariffZoneTableLimits(
         if (excludeTzId) {
             totalTablesQuery = await pool.query(
                 `SELECT 
-                    COALESCE(SUM("nbSmallTables"), 0) as totalSmall,
-                    COALESCE(SUM("nbLargeTables"), 0) as totalLarge,
-                    COALESCE(SUM("nbCityHallTables"), 0) as totalCity
+                    COALESCE(SUM("nbSmallTables"), 0) as "totalSmall",
+                    COALESCE(SUM("nbLargeTables"), 0) as "totalLarge",
+                    COALESCE(SUM("nbCityHallTables"), 0) as "totalCity"
                  FROM "tariffZone" 
                  WHERE "festivalName" = $1 AND "idTZ" != $2`,
                 [festivalName, excludeTzId]
@@ -62,9 +62,9 @@ export async function validateTariffZoneTableLimits(
         } else {
             totalTablesQuery = await pool.query(
                 `SELECT 
-                    COALESCE(SUM("nbSmallTables"), 0) as totalSmall,
-                    COALESCE(SUM("nbLargeTables"), 0) as totalLarge,
-                    COALESCE(SUM("nbCityHallTables"), 0) as totalCity
+                    COALESCE(SUM("nbSmallTables"), 0) as "totalSmall",
+                    COALESCE(SUM("nbLargeTables"), 0) as "totalLarge",
+                    COALESCE(SUM("nbCityHallTables"), 0) as "totalCity"
                  FROM "tariffZone" 
                  WHERE "festivalName" = $1`,
                 [festivalName]
@@ -75,9 +75,9 @@ export async function validateTariffZoneTableLimits(
 
         // Calculate new totals with the zone being created/updated
         const newTotals = {
-            small: parseInt(currentTotals.totalsmall) + (nbSmallTables || 0),
-            large: parseInt(currentTotals.totallarge) + (nbLargeTables || 0),
-            cityHall: parseInt(currentTotals.totalcity) + (nbCityHallTables || 0)
+            small: parseInt(currentTotals.totalSmall) + (nbSmallTables || 0),
+            large: parseInt(currentTotals.totalLarge) + (nbLargeTables || 0),
+            cityHall: parseInt(currentTotals.totalCity) + (nbCityHallTables || 0)
         }
 
         // Check for violations
@@ -85,19 +85,19 @@ export async function validateTariffZoneTableLimits(
 
         if (newTotals.small > festivalLimits.small) {
             errors.push(
-                `Dépassement de petites tables : ${newTotals.small}/${festivalLimits.small} (vous essayez d'ajouter ${nbSmallTables || 0}, déjà allouées : ${currentTotals.totalsmall})`
+                `Dépassement de petites tables : ${newTotals.small}/${festivalLimits.small} (vous essayez d'ajouter ${nbSmallTables || 0}, déjà allouées : ${currentTotals.totalSmall})`
             )
         }
 
         if (newTotals.large > festivalLimits.large) {
             errors.push(
-                `Dépassement de grandes tables : ${newTotals.large}/${festivalLimits.large} (vous essayez d'ajouter ${nbLargeTables || 0}, déjà allouées : ${currentTotals.totallarge})`
+                `Dépassement de grandes tables : ${newTotals.large}/${festivalLimits.large} (vous essayez d'ajouter ${nbLargeTables || 0}, déjà allouées : ${currentTotals.totalLarge})`
             )
         }
 
         if (newTotals.cityHall > festivalLimits.cityHall) {
             errors.push(
-                `Dépassement de tables mairie : ${newTotals.cityHall}/${festivalLimits.cityHall} (vous essayez d'ajouter ${nbCityHallTables || 0}, déjà allouées : ${currentTotals.totalcity})`
+                `Dépassement de tables mairie : ${newTotals.cityHall}/${festivalLimits.cityHall} (vous essayez d'ajouter ${nbCityHallTables || 0}, déjà allouées : ${currentTotals.totalCity})`
             )
         }
 

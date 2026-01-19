@@ -407,7 +407,49 @@ router.delete('/:festivalName', verifyToken, requireAdmin, async (req, res) => {
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
+
+        // 1. Get all IDs to be deleted to handle dependencies properly
+        const reservationsQuery = await client.query('SELECT "idReservation" FROM "reservation" WHERE "festivalName" = $1', [festivalName]);
+        const reservationIds = reservationsQuery.rows.map(r => r.idReservation);
+
+        const planAreasQuery = await client.query('SELECT "id" FROM "planArea" WHERE "festivalName" = $1', [festivalName]);
+        const planAreaIds = planAreasQuery.rows.map(p => p.id);
+
+        // 2. Clean up 'game_festival' completely
+        // Must delete any reference to the festival, its reservations, or its plan areas
+        await client.query('DELETE FROM "game_festival" WHERE "festivalName" = $1', [festivalName]);
+
+        if (reservationIds.length > 0) {
+            // Clean up table linked to reservations
+            await client.query('DELETE FROM "suiviReservation" WHERE "idReservation" = ANY($1)', [reservationIds]);
+            await client.query('DELETE FROM "reservation_game" WHERE "idReservation" = ANY($1)', [reservationIds]);
+            // Safety clear for mixed data
+            await client.query('DELETE FROM "game_festival" WHERE "idReservation" = ANY($1)', [reservationIds]);
+        }
+
+        if (planAreaIds.length > 0) {
+            // Clean up tables linked to planAreas
+            await client.query('DELETE FROM "editor_planArea" WHERE "idPA" = ANY($1)', [planAreaIds]);
+            await client.query('DELETE FROM "game_planArea" WHERE "idPA" = ANY($1)', [planAreaIds]);
+            // Safety clear for mixed data
+            await client.query('DELETE FROM "game_festival" WHERE "idPA" = ANY($1)', [planAreaIds]);
+        }
+
+        // 3. Delete Reservations
+        // Now safe because game_festival and other dependents are gone
+        await client.query('DELETE FROM "reservation" WHERE "festivalName" = $1', [festivalName]);
+
+        // 4. Delete PlanAreas
+        await client.query('DELETE FROM "planArea" WHERE "festivalName" = $1', [festivalName]);
+
+        // 5. Delete other direct references
+        await client.query('DELETE FROM "editor_festival" WHERE "festivalName" = $1', [festivalName]);
+        await client.query('DELETE FROM "festival_tariffZone" WHERE "festivalName" = $1', [festivalName]);
+
+        // 6. Delete TariffZone (must be after reservation and planArea because they reference idTZ)
         await client.query('DELETE FROM "tariffZone" WHERE "festivalName" = $1', [festivalName]);
+
+        // 7. Delete Festival
         const { rowCount } = await client.query('DELETE FROM "festival" WHERE "name" = $1', [festivalName]);
         if (rowCount === 0) {
             await client.query('ROLLBACK');
@@ -418,7 +460,8 @@ router.delete('/:festivalName', verifyToken, requireAdmin, async (req, res) => {
     } catch (err: any) {
         await client.query('ROLLBACK');
         console.error(err);
-        res.status(500).json({ error: 'Erreur serveur' });
+        // Expose error details for debugging
+        res.status(500).json({ error: 'Erreur serveur', message: err.message, detail: err.detail });
     } finally {
         client.release();
     }
