@@ -1,13 +1,14 @@
 import { Injectable, inject, signal, WritableSignal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { UserDto } from '../interfaces/user-dto';
+import { environment } from '../../environment/environment';
 
 @Injectable({
   providedIn: 'root',
 })
 export class UserService {
   private readonly http = inject(HttpClient)
-  private readonly base = 'https://localhost:4000/api/users'
+  private readonly base = `${environment.apiUrl}/users`
 
   private readonly _users: WritableSignal<UserDto[]> = signal<UserDto[]>([])
   readonly users = this._users.asReadonly();

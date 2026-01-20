@@ -311,3 +311,125 @@
     text-align: center;
     padding: 2rem;
   }
+
+  /* Liste des jeux */
+.games-list {
+  max-height: 250px;
+  overflow-y: auto;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 1rem;
+  background: #f9fafb;
+}
+
+.game-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  margin-bottom: 0.5rem;
+  background: white;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.game-item:hover {
+  background: #eef2ff;
+  transform: translateX(4px);
+}
+
+.game-item input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+}
+
+.game-name {
+  font-weight: 600;
+  color: #1f2937;
+  flex: 1;
+}
+
+.game-editor {
+  color: #6b7280;
+  font-size: 0.9rem;
+}
+
+.game-qty {
+  background: #10b981;
+  color: white;
+  padding: 0.25rem 0.5rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.selection-info {
+  margin-top: 0.5rem;
+  color: #667eea;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.no-games {
+  padding: 2rem;
+  text-align: center;
+  color: #6b7280;
+}
+/* Section jeux assignés */
+.assigned-games-section {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e5e7eb;
+  }
+  
+  .assigned-games-section h6 {
+    margin: 0 0 0.75rem 0;
+    color: #667eea;
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+  
+  .games-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  
+  .game-chip {
+    background: #eef2ff;
+    color: #667eea;
+    padding: 0.35rem 0.75rem;
+    border-radius: 16px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 150px;
+    transition: all 0.2s;
+    cursor: help;
+  }
+  
+  .game-chip:hover {
+    background: #667eea;
+    color: white;
+    transform: scale(1.05);
+  }
+  
+  .no-games-assigned {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    margin-top: 1rem;
+    background: #f9fafb;
+    border-radius: 8px;
+    color: #6b7280;
+    font-size: 0.85rem;
+    border-top: 1px solid #e5e7eb;
+  }
+  
+  .no-games-assigned .icon {
+    font-size: 1.2rem;
+  }

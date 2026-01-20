@@ -6,10 +6,12 @@ import { TariffZoneService } from '../../services/tariff-zone-service';
 import { PlanAreaService } from '../../services/plan-area-service';
 import { PlanArea } from '../../interfaces/plan-area';
 import { TariffZone } from '../../interfaces/tariff-zone';
+import { TariffZoneGame } from '../../interfaces/tariff-zone-game';
+import { forkJoin } from 'rxjs';
 
 @Component({
   selector: 'app-plan-management',
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule,],
   templateUrl: './plan-management.html',
   styleUrl: './plan-management.css',
 })
@@ -30,8 +32,8 @@ export class PlanManagement {
   showForm = signal(false);
   
   planAreas = signal<PlanArea[]>([]);
-  
-  // Zone de plan en cours d'édition
+  availableGames = signal<TariffZoneGame[]>([]);
+  selectedGameIds = signal<Set<number>>(new Set());
   editingPlanArea = signal<PlanArea | null>(null);
 
   planAreaForm: FormGroup = this.fb.group({
@@ -45,7 +47,8 @@ export class PlanManagement {
     effect(() => {
       const festival = this.currentFestival();
       if (festival) {
-        console.log('Festival courant:', festival);
+        this.selectedTariffZone.set(null);
+        this.planAreas.set([]);
       }
     });
   }
@@ -53,7 +56,9 @@ export class PlanManagement {
   selectTariffZone(zone: TariffZone) {
     this.selectedTariffZone.set(zone);
     this.showForm.set(false);
+    this.selectedGameIds.set(new Set());
     this.loadPlanAreas();
+    this.loadAvailableGames(zone.idTZ);
   }
 
   loadPlanAreas() {
@@ -65,6 +70,21 @@ export class PlanManagement {
         const selectedZone = this.selectedTariffZone();
         if (selectedZone) {
           const filteredAreas = areas.filter(area => area.idTZ === selectedZone.idTZ);
+          
+          filteredAreas.forEach(area => {
+            this.planAreaService.getAssignedGames(area.id).subscribe({
+              next: (assignedGames) => {
+                area.presentedGames = assignedGames.map(game => ({
+                  ...game,
+                  quantity: 1
+                }));
+                
+                this.planAreas.set([...this.planAreas()]);
+              },
+              error: (err) => console.error('Erreur chargement jeux:', err)
+            });
+          });
+          
           this.planAreas.set(filteredAreas);
         }
       },
@@ -74,11 +94,36 @@ export class PlanManagement {
     });
   }
 
-  toggleForm() {
-    this.showForm.update(v => !v);
+  loadAvailableGames(tzId: number) {
+    this.tariffZoneService.getGamesFromTariffZone(tzId).subscribe({
+      next: (games) => {
+        const available = games.filter(g => g.remainingQuantity > 0);
+        this.availableGames.set(available);
+      },
+      error: (err) => {
+        console.error('Erreur chargement jeux:', err);
+        this.availableGames.set([]);
+      }
+    });
   }
 
-  // Méthode pour éditer
+  toggleGameSelection(gameId: number) {
+    const current = new Set(this.selectedGameIds());
+    if (current.has(gameId)) {
+      current.delete(gameId);
+    } else {
+      current.add(gameId);
+    }
+    this.selectedGameIds.set(current);
+  }
+
+  toggleForm() {
+    this.showForm.update(v => !v);
+    if (!this.showForm()) {
+      this.cancelForm();
+    }
+  }
+
   editPlanArea(area: PlanArea) {
     this.editingPlanArea.set(area);
     this.planAreaForm.patchValue({
@@ -90,7 +135,6 @@ export class PlanManagement {
     this.showForm.set(true);
   }
 
-  // Méthode pour supprimer
   deletePlanArea(area: PlanArea) {
     if (!confirm(`Êtes-vous sûr de vouloir supprimer la zone "${area.name}" ?`)) {
       return;
@@ -102,8 +146,7 @@ export class PlanManagement {
     this.planAreaService.deletePlanArea(area.id).subscribe({
       next: () => {
         alert('Zone de plan supprimée avec succès !');
-
-        // REMETTRE LES TABLES (MAIS PAS PLUS QUE LE MAXIMUM)
+        
         const newRemainingSmall = Math.min(
           selectedZone.remainingSmallTables + area.nbSmallTables,
           selectedZone.nbSmallTables
@@ -117,7 +160,6 @@ export class PlanManagement {
           selectedZone.nbCityHallTables
         );
 
-        //CRÉER UN OBJET AVEC TOUS LES CHAMPS REQUIS PAR TariffZone
         const updatePayload: TariffZone = {
           idTZ: selectedZone.idTZ,  
           festivalName: selectedZone.festivalName,  
@@ -138,7 +180,6 @@ export class PlanManagement {
           next: () => {
             this.festivalService.loadFestivalsFromBD();
             
-            // ATTENDRE ET RECHARGER
             setTimeout(() => {
               const festival = this.currentFestival();
               if (festival) {
@@ -171,7 +212,6 @@ export class PlanManagement {
 
     const selectedZone = this.selectedTariffZone();
     const festival = this.currentFestival();
-
     if (!selectedZone || !festival) {
       alert('Veuillez sélectionner une zone tarifaire');
       return;
@@ -180,23 +220,20 @@ export class PlanManagement {
     const formValue = this.planAreaForm.value;
     const editingArea = this.editingPlanArea();
 
-    // VALEURS DEMANDÉES
     const requestedSmall = formValue.nbSmallTables || 0;
     const requestedLarge = formValue.nbLargeTables || 0;
     const requestedCityHall = formValue.nbCityHallTables || 0;
 
-    // CALCUL DES DIFFÉRENCES (en édition, on libère les anciennes tables)
     const smallDiff = editingArea 
       ? requestedSmall - editingArea.nbSmallTables 
       : requestedSmall;
-    const largeDiff = editingArea 
+    const largeDiff = editingArea
       ? requestedLarge - editingArea.nbLargeTables 
       : requestedLarge;
     const cityHallDiff = editingArea 
       ? requestedCityHall - editingArea.nbCityHallTables 
       : requestedCityHall;
 
-    // VÉRIFICATION : Les différences ne doivent PAS dépasser les tables disponibles
     if (smallDiff > selectedZone.remainingSmallTables) {
       alert(`Petites tables : Vous demandez ${smallDiff} mais il n'y a que ${selectedZone.remainingSmallTables} disponibles`);
       return;
@@ -210,7 +247,6 @@ export class PlanManagement {
       return;
     }
 
-    // VÉRIFICATION : Les valeurs ne doivent PAS être négatives
     if (requestedSmall < 0 || requestedLarge < 0 || requestedCityHall < 0) {
       alert('Le nombre de tables ne peut pas être négatif');
       return;
@@ -232,39 +268,26 @@ export class PlanManagement {
 
     request$.subscribe({
       next: (response) => {
-        console.log(editingArea ? 'Zone modifiée:' : 'Zone créée:', response);
-
-        // METTRE À JOUR LA ZONE TARIFAIRE (UNIQUEMENT LES DIFFÉRENCES)
         const updatedZone = {
           ...selectedZone,
           remainingSmallTables: selectedZone.remainingSmallTables - smallDiff,
           remainingLargeTables: selectedZone.remainingLargeTables - largeDiff,
           remainingCityHallTables: selectedZone.remainingCityHallTables - cityHallDiff
         };
-
+        
         this.tariffZoneService.updateTariffZoneById(selectedZone.idTZ, updatedZone).subscribe({
           next: () => {
-            alert(editingArea ? 'Zone modifiée avec succès !' : 'Zone créée avec succès !');
-            
-            this.festivalService.loadFestivalsFromBD();
-            setTimeout(() => {
-              const festival = this.currentFestival();
-              if (festival) {
-                const updatedZone = festival.tariffZones?.find(z => z.idTZ === selectedZone.idTZ);
-                if (updatedZone) {
-                  this.selectedTariffZone.set(updatedZone); 
-                }
-              }
-              
-              this.planAreaForm.reset();
-              this.showForm.set(false);
-              this.editingPlanArea.set(null);
-              this.loadPlanAreas();
-            }, 300); 
+            if (editingArea) {
+              alert('Zone modifiée avec succès !');
+              this.finalizeCreation();
+            } else {
+              const planAreaId = (response as { message: string; id: number }).id;
+              this.assignSelectedGames(planAreaId, festival.name);
+            }
           },
           error: (err: any) => {
             console.error('Erreur mise à jour zone tarifaire:', err);
-            alert('Opération réussie mais erreur de mise à jour des tables');
+            alert('Zone créée mais erreur de mise à jour des tables');
           }
         });
       },
@@ -275,9 +298,70 @@ export class PlanManagement {
     });
   }
 
+  assignSelectedGames(planAreaId: number, festivalName: string) {
+    const gameIds = Array.from(this.selectedGameIds());
+    
+    if (gameIds.length === 0) {
+      this.finalizeCreation();
+      return;
+    }
+  
+    const requests = gameIds.map(gameId => {
+      const game = this.availableGames().find(g => g.id === gameId);
+      
+      if (!game || !game.idReservation) {
+        return null;
+      }
+
+      return this.planAreaService.assignGameToPlanArea(planAreaId, {
+        idGame: gameId,
+        idReservation: game.idReservation,
+        festivalName: festivalName
+      });
+    }).filter(r => r !== null);
+
+    if (requests.length > 0) {
+      forkJoin(requests).subscribe({
+        next: () => this.finalizeCreation(),
+        error: (err) => {
+          console.error('Erreur assignation jeux:', err);
+          alert('Zone créée mais erreur d\'assignation des jeux');
+          this.finalizeCreation();
+        }
+      });
+    } else {
+      alert('Aucun jeu valide à assigner');
+      this.finalizeCreation();
+    }
+  }
+
+  finalizeCreation() {
+    alert('Zone de plan créée avec succès !');
+    this.festivalService.loadFestivalsFromBD();
+    
+    setTimeout(() => {
+      const festival = this.currentFestival();
+      const selectedZone = this.selectedTariffZone();
+      
+      if (festival && selectedZone) {
+        const updatedZone = festival.tariffZones?.find(z => z.idTZ === selectedZone.idTZ);
+        if (updatedZone) {
+          this.selectedTariffZone.set(updatedZone);
+        }
+      }
+      
+      this.planAreaForm.reset();
+      this.showForm.set(false);
+      this.editingPlanArea.set(null);
+      this.selectedGameIds.set(new Set());
+      this.loadPlanAreas();
+    }, 300);
+  }
+
   cancelForm() {
     this.planAreaForm.reset();
     this.showForm.set(false);
     this.editingPlanArea.set(null);
+    this.selectedGameIds.set(new Set());
   }
 }

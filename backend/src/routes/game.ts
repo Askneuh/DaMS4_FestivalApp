@@ -114,7 +114,7 @@ router.get('/:gameId', verifyToken, validateNumericParam('gameId'), async (req, 
 })
 
 // Route de création d'un jeu
-router.post('/', verifyToken, requireAdmin, validateStringLengths({ name: 255, author: 255, gameNotice: 1000, theme: 255, description: 2000, gameImage: 500, rulesTutorial: 500, edition: 255 }), normalizeBooleans(['prototype']), async (req, res) => {
+router.post('/', verifyToken, requireAdmin, validateStringLengths({ name: 255, author: 255, gameNotice: 1000, theme: 255, description: 2000, gameImage: 500, rulesTutorial: 500 }), normalizeBooleans(['prototype']), async (req, res) => {
     const { name, author, nbMinPlayer, nbMaxPlayer, gameNotice, idGameType, minimumAge, prototype, duration, theme, description, gameImage, rulesTutorial, edition, idEditor } = req.body
 
     // Validation des champs obligatoires
@@ -158,7 +158,7 @@ router.post('/', verifyToken, requireAdmin, validateStringLengths({ name: 255, a
 })
 
 // Route de mise à jour d'un jeu
-router.post('/update/:gameId', verifyToken, requireAdmin, validateNumericParam('gameId'), validateStringLengths({ name: 255, author: 255, gameNotice: 1000, theme: 255, description: 2000, gameImage: 500, rulesTutorial: 500, edition: 255 }), normalizeBooleans(['prototype']), async (req, res) => {
+router.post('/update/:gameId', verifyToken, requireAdmin, validateNumericParam('gameId'), validateStringLengths({ name: 255, author: 255, gameNotice: 1000, theme: 255, description: 2000, gameImage: 500, rulesTutorial: 500 }), normalizeBooleans(['prototype']), async (req, res) => {
     const gameId = req.params.gameId
     const { name, author, nbMinPlayer, nbMaxPlayer, gameNotice, idGameType, minimumAge, prototype, duration, theme, description, gameImage, rulesTutorial, edition, idEditor } = req.body
     try {
@@ -196,46 +196,12 @@ router.post('/update/:gameId', verifyToken, requireAdmin, validateNumericParam('
 router.delete('/:gameId', verifyToken, requireAdmin, validateNumericParam('gameId'), async (req, res) => {
     const gameId = req.params.gameId
     try {
-        // Vérifier si le jeu est utilisé dans d'autres tables
-        const { rows: mechanismCheck } = await pool.query(
-            'SELECT COUNT(*) as "count" FROM "game_mechanism" WHERE "idGame" = $1',
-            [gameId]
-        );
-        if (parseInt(mechanismCheck[0].count) > 0) {
-            return res.status(409).json({
-                error: 'Impossible de supprimer ce jeu car il est lié à des mécanismes'
-            });
-        }
-
-        const { rows: planAreaCheck } = await pool.query(
-            'SELECT COUNT(*) as "count" FROM "game_planArea" WHERE "idGame" = $1',
-            [gameId]
-        );
-        if (parseInt(planAreaCheck[0].count) > 0) {
-            return res.status(409).json({
-                error: 'Impossible de supprimer ce jeu car il est assigné à des zones de plan'
-            });
-        }
-
-        const { rows: reservationCheck } = await pool.query(
-            'SELECT COUNT(*) as "count" FROM "reservation_game" WHERE "idGame" = $1',
-            [gameId]
-        );
-        if (parseInt(reservationCheck[0].count) > 0) {
-            return res.status(409).json({
-                error: 'Impossible de supprimer ce jeu car il est dans des réservations'
-            });
-        }
-
         const { rowCount } = await pool.query('DELETE FROM "game" WHERE "id" = $1', [gameId])
         if (rowCount === 0) {
             return res.status(404).json({ error: "Jeu non trouvé" })
         }
         return res.status(200).json({ message: 'Jeu supprimé' })
     } catch (err: any) {
-        if (err.code === '23503') {
-            return res.status(409).json({ error: 'Impossible de supprimer ce jeu car il est référencé ailleurs' });
-        }
         console.error(err)
         return res.status(500).json({ error: 'Erreur serveur' })
     }

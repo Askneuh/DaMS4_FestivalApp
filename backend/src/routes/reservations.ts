@@ -30,21 +30,21 @@ router.get('/:reservationId', verifyToken, requireOrganizer, validateNumericPara
 
         const row = rows[0];
 
-        // Map PostgreSQL lowercase column names to camelCase
+        // Map PostgreSQL column names (which are CaseSensitive here because of quotes in creation)
         const reservation = {
-            idReservation: row.idreservation,
-            idEditor: row.ideditor,
+            idReservation: row.idReservation,
+            idEditor: row.idEditor,
             status: row.status,
-            nbSmallTables: row.nbsmalltables,
-            nbLargeTables: row.nblargetables,
-            nbCityHallTables: row.nbcityhalltables,
+            nbSmallTables: row.nbSmallTables,
+            nbLargeTables: row.nbLargeTables,
+            nbCityHallTables: row.nbCityHallTables,
             remise: row.remise,
-            typeAnimateur: row.typeanimateur,
-            listeDemandee: row.listedemandee,
-            listeRecue: row.listerecue,
-            jeuxRecus: row.jeuxrecus,
-            festivalName: row.festivalname,
-            idTZ: row.idtz,
+            typeAnimateur: row.typeAnimateur,
+            listeDemandee: row.listeDemandee,
+            listeRecue: row.listeRecue,
+            jeuxRecus: row.jeuxRecus,
+            festivalName: row.festivalName,
+            idTZ: row.idTZ,
             editor: {
                 id: row.editor_id,
                 name: row.editor_name,
@@ -99,8 +99,16 @@ router.post('/', verifyToken, requireOrganizer, validateStringLengths({ status: 
 
         const { rows } = await client.query(
             'INSERT INTO "reservation" ("idEditor", "status", "nbSmallTables", "nbLargeTables", "nbCityHallTables", "remise", "typeAnimateur", "listeDemandee", "listeRecue", "jeuxRecus", "festivalName", "idTZ") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING "idReservation"',
-            [idEditor, status || 'Contacté', smallTables, largeTables, cityHallTables, discount, typeAnimateur || 0, listeDemandee || false, listeRecue || false, jeuxRecus || false, festivalName, idTZ || null]
+            [idEditor, status || 'Contact pris', smallTables, largeTables, cityHallTables, discount, typeAnimateur || 0, listeDemandee || false, listeRecue || false, jeuxRecus || false, festivalName, idTZ || null]
         )
+
+        // Mettre à jour les tables restantes de la zone tarifaire
+        if (idTZ) {
+            await updateZoneRemainingTables(client, idTZ);
+        }
+
+        // Mettre à jour les tables restantes du festival
+        await updateFestivalRemainingTables(client, festivalName);
 
         await client.query('COMMIT');
         return res.status(201).json({ message: 'Réservation créée', id: rows[0].idReservation })
@@ -141,7 +149,9 @@ router.post('/update/:reservationId', verifyToken, requireOrganizer, validateNum
         const targetCityHall = nbCityHallTables !== undefined ? nbCityHallTables : current.nbcityhalltables;
 
         // 3. Valider la capacité
-        await checkTableCapacity(targetIdTZ, parseInt(reservationId ?? "0"), targetSmall, targetLarge, targetCityHall);
+        if (targetIdTZ) {
+            await checkTableCapacity(targetIdTZ, parseInt(reservationId ?? "0"), targetSmall, targetLarge, targetCityHall);
+        }
 
         // 4. Update
         const { rowCount } = await pool.query(
@@ -162,6 +172,29 @@ router.post('/update/:reservationId', verifyToken, requireOrganizer, validateNum
         if (rowCount === 0) {
             return res.status(404).json({ error: "Réservation non trouvée" })
         }
+
+        // Mettre à jour les tables restantes
+        // Si la zone a changé, mettre à jour les deux zones
+        const updateClient = await pool.connect();
+        try {
+            if (idTZ !== undefined && idTZ !== current.idtz) {
+                // Ancienne zone
+                if (current.idtz) {
+                    await updateZoneRemainingTables(updateClient, current.idtz);
+                }
+                // Nouvelle zone
+                await updateZoneRemainingTables(updateClient, idTZ);
+            } else if (targetIdTZ) {
+                // Même zone, juste mise à jour des quantités
+                await updateZoneRemainingTables(updateClient, targetIdTZ);
+            }
+
+            // Mettre à jour les tables restantes du festival
+            await updateFestivalRemainingTables(updateClient, current.festivalname);
+        } finally {
+            updateClient.release();
+        }
+
         return res.status(200).json({ message: 'Réservation mise à jour' })
     } catch (err: any) {
         if (err.message && err.message.startsWith('Capacité')) {
@@ -192,19 +225,19 @@ router.get('/byEditor/:idEditor', verifyToken, requireOrganizer, validateNumeric
         const { rows } = await pool.query(query, [idEditor])
 
         const reservations = rows.map(row => ({
-            idReservation: row.idreservation,
-            idEditor: row.ideditor,
+            idReservation: row.idReservation,
+            idEditor: row.idEditor,
             status: row.status,
-            nbSmallTables: row.nbsmalltables,
-            nbLargeTables: row.nblargetables,
-            nbCityHallTables: row.nbcityhalltables,
+            nbSmallTables: row.nbSmallTables,
+            nbLargeTables: row.nbLargeTables,
+            nbCityHallTables: row.nbCityHallTables,
             remise: row.remise,
-            typeAnimateur: row.typeanimateur,
-            listeDemandee: row.listedemandee,
-            listeRecue: row.listerecue,
-            jeuxRecus: row.jeuxrecus,
-            festivalName: row.festivalname,
-            idTZ: row.idtz,
+            typeAnimateur: row.typeAnimateur,
+            listeDemandee: row.listeDemandee,
+            listeRecue: row.listeRecue,
+            jeuxRecus: row.jeuxRecus,
+            festivalName: row.festivalName,
+            idTZ: row.idTZ,
             editor: {
                 id: row.editor_id,
                 name: row.editor_name,
@@ -242,19 +275,19 @@ router.get('/byFestival/:festivalName', verifyToken, requireOrganizer, async (re
         const { rows } = await pool.query(query, [festivalName])
 
         const reservations = rows.map(row => ({
-            idReservation: row.idreservation,
-            idEditor: row.ideditor,
+            idReservation: row.idReservation,
+            idEditor: row.idEditor,
             status: row.status,
-            nbSmallTables: row.nbsmalltables,
-            nbLargeTables: row.nblargetables,
-            nbCityHallTables: row.nbcityhalltables,
+            nbSmallTables: row.nbSmallTables,
+            nbLargeTables: row.nbLargeTables,
+            nbCityHallTables: row.nbCityHallTables,
             remise: row.remise,
-            typeAnimateur: row.typeanimateur,
-            listeDemandee: row.listedemandee,
-            listeRecue: row.listerecue,
-            jeuxRecus: row.jeuxrecus,
-            festivalName: row.festivalname,
-            idTZ: row.idtz,
+            typeAnimateur: row.typeAnimateur,
+            listeDemandee: row.listeDemandee,
+            listeRecue: row.listeRecue,
+            jeuxRecus: row.jeuxRecus,
+            festivalName: row.festivalName,
+            idTZ: row.idTZ,
             editor: {
                 id: row.editor_id,
                 name: row.editor_name,
@@ -290,25 +323,25 @@ router.get('/:reservationId/games', verifyToken, requireOrganizer, validateNumer
             id: row.id,
             name: row.name,
             author: row.author,
-            nbMinPlayer: row.nbminplayer,
-            nbMaxPlayer: row.nbmaxplayer,
-            gameNotice: row.gamenotice,
-            idGameType: row.idgametype,
-            minimumAge: row.minimumage,
+            nbMinPlayer: row.nbMinPlayer,
+            nbMaxPlayer: row.nbMaxPlayer,
+            gameNotice: row.gameNotice,
+            idGameType: row.idGameType,
+            minimumAge: row.minimumAge,
             prototype: row.prototype,
             duration: row.duration,
             theme: row.theme,
             description: row.description,
-            gameImage: row.gameimage,
-            rulesTutorial: row.rulestutorial,
+            gameImage: row.gameImage,
+            rulesTutorial: row.rulesTutorial,
             edition: row.edition,
-            idEditor: row.ideditor,
-            isGamePlaced: row.isgameplaced,
+            idEditor: row.idEditor,
+            isGamePlaced: row.isGamePlaced,
             quantity: row.quantity,
-            idReservation: row.idreservation,
+            idReservation: row.idReservation,
             gameType: row.gametype_id ? {
                 id: row.gametype_id,
-                gameTypeLabel: row.gametypelabel
+                gameTypeLabel: row.gameTypeLabel
             } : null
         }))
 
@@ -389,36 +422,20 @@ router.delete('/:reservationId/games/:gameId', verifyToken, requireOrganizer, va
     }
 })
 
-// Route pour supprimer une réservation (avec cascade)
+// Route pour supprimer une réservation
 router.delete('/:reservationId', verifyToken, requireOrganizer, validateNumericParam('reservationId'), async (req, res) => {
     const reservationId = req.params.reservationId
-    const client = await pool.connect()
-
     try {
-        await client.query('BEGIN')
-
-        // Supprimer les jeux de la réservation
-        await client.query('DELETE FROM "reservation_game" WHERE "idReservation" = $1', [reservationId])
-
-        // Supprimer les suivis
-        await client.query('DELETE FROM "suiviReservation" WHERE "idReservation" = $1', [reservationId])
-
-        // Supprimer la réservation
-        const { rowCount } = await client.query('DELETE FROM "reservation" WHERE "idReservation" = $1', [reservationId])
+        const { rowCount } = await pool.query('DELETE FROM "reservation" WHERE "idReservation" = $1', [reservationId])
 
         if (rowCount === 0) {
-            await client.query('ROLLBACK')
             return res.status(404).json({ error: "Réservation non trouvée" })
         }
 
-        await client.query('COMMIT')
         return res.status(200).json({ message: 'Réservation supprimée' })
     } catch (err: any) {
-        await client.query('ROLLBACK')
         console.error(err)
         return res.status(500).json({ error: 'Erreur serveur' })
-    } finally {
-        client.release()
     }
 })
 
@@ -463,4 +480,104 @@ async function checkTableCapacity(idTZ: number, excludeResId: number, newSmall: 
     if (currentUsedCityp + newCityHall > availableTheoreticallyCityp) {
         throw new Error(`Capacité dépassée pour les tables de réception (Max: ${availableTheoreticallyCityp}, Utilisées: ${currentUsedCityp}, Demandées: ${newCityHall})`);
     }
+}
+
+/**
+ * Met à jour les tables restantes d'une zone tarifaire
+ * en recalculant depuis toutes les réservations actives
+ * @param client - Client PostgreSQL (peut être une transaction)
+ * @param idTZ - ID de la zone tarifaire à mettre à jour
+ */
+async function updateZoneRemainingTables(client: any, idTZ: number) {
+    // 1. Récupérer le total de tables de la zone
+    const zoneQuery = `
+        SELECT "nbSmallTables", "nbLargeTables", "nbCityHallTables"
+        FROM "tariffZone"
+        WHERE "idTZ" = $1
+    `;
+    const { rows: zoneRows } = await client.query(zoneQuery, [idTZ]);
+
+    if (zoneRows.length === 0) {
+        throw new Error("Zone tarifaire introuvable");
+    }
+
+    const zone = zoneRows[0];
+
+    // 2. Calculer le total utilisé par les réservations
+    const usedQuery = `
+        SELECT 
+            COALESCE(SUM("nbSmallTables"), 0) as used_small,
+            COALESCE(SUM("nbLargeTables"), 0) as used_large,
+            COALESCE(SUM("nbCityHallTables"), 0) as used_city_hall
+        FROM "reservation"
+        WHERE "idTZ" = $1
+    `;
+    const { rows: usedRows } = await client.query(usedQuery, [idTZ]);
+    const used = usedRows[0];
+
+    // 3. Calculer les tables restantes
+    const remainingSmall = zone.nbsmalltables - parseInt(used.used_small);
+    const remainingLarge = zone.nblargetables - parseInt(used.used_large);
+    const remainingCityHall = zone.nbcityhalltables - parseInt(used.used_city_hall);
+
+    // 4. Mettre à jour la zone tarifaire
+    const updateQuery = `
+        UPDATE "tariffZone"
+        SET 
+            "remainingSmallTables" = $1,
+            "remainingLargeTables" = $2,
+            "remainingCityHallTables" = $3
+        WHERE "idTZ" = $4
+    `;
+    await client.query(updateQuery, [remainingSmall, remainingLarge, remainingCityHall, idTZ]);
+}
+
+/**
+ * Met à jour les tables restantes d'un festival
+ * en recalculant depuis toutes les réservations actives
+ * @param client - Client PostgreSQL (peut être une transaction)
+ * @param festivalName - Nom du festival à mettre à jour
+ */
+async function updateFestivalRemainingTables(client: any, festivalName: string) {
+    // 1. Récupérer le total de tables du festival
+    const festivalQuery = `
+        SELECT "nbSmallTables", "nbLargeTables", "nbCityHallTables"
+        FROM "festival"
+        WHERE "name" = $1
+    `;
+    const { rows: festivalRows } = await client.query(festivalQuery, [festivalName]);
+
+    if (festivalRows.length === 0) {
+        throw new Error("Festival introuvable");
+    }
+
+    const festival = festivalRows[0];
+
+    // 2. Calculer le total utilisé par toutes les réservations du festival
+    const usedQuery = `
+        SELECT 
+            COALESCE(SUM("nbSmallTables"), 0) as used_small,
+            COALESCE(SUM("nbLargeTables"), 0) as used_large,
+            COALESCE(SUM("nbCityHallTables"), 0) as used_city_hall
+        FROM "reservation"
+        WHERE "festivalName" = $1
+    `;
+    const { rows: usedRows } = await client.query(usedQuery, [festivalName]);
+    const used = usedRows[0];
+
+    // 3. Calculer les tables restantes
+    const remainingSmall = festival.nbsmalltables - parseInt(used.used_small);
+    const remainingLarge = festival.nblargetables - parseInt(used.used_large);
+    const remainingCityHall = festival.nbcityhalltables - parseInt(used.used_city_hall);
+
+    // 4. Mettre à jour le festival
+    const updateQuery = `
+        UPDATE "festival"
+        SET 
+            "remainingSmallTables" = $1,
+            "remainingLargeTables" = $2,
+            "remainingCityHallTables" = $3
+        WHERE "name" = $4
+    `;
+    await client.query(updateQuery, [remainingSmall, remainingLarge, remainingCityHall, festivalName]);
 }

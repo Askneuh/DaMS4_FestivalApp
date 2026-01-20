@@ -1,158 +1,204 @@
 <div class="plan-management-container">
-    <h1>Gestion de la Zone du Plan du Festival</h1>
+  <h1>Gestion de la Zone du Plan du Festival</h1>
   
-    @if (currentFestival(); as festival) {
-      <div class="festival-info">
-        <h2>Festival Courant : {{ festival.name }}</h2>
-      </div>
-  
-      <!-- Liste des zones tarifaires -->
-      <div class="tariff-zones-section">
-        <h3>Zones Tarifaires</h3>
-        @if (tariffZones().length > 0) {
-          <div class="zones-grid">
-            @for (zone of tariffZones(); track zone.idTZ) {
-              <div 
-                class="zone-card" 
-                [class.selected]="selectedTariffZone()?.idTZ === zone.idTZ"
-                (click)="selectTariffZone(zone)"
-              >
-                <h4>{{ zone.name }}</h4>
-                <div class="zone-details">
-                  <p>Petites tables : {{ zone.remainingSmallTables }}/{{ zone.nbSmallTables }}</p>
-                  <p>Grandes tables : {{ zone.remainingLargeTables }}/{{ zone.nbLargeTables }}</p>
-                  <p>Tables mairie : {{ zone.remainingCityHallTables }}/{{ zone.nbCityHallTables }}</p>
-                </div>
+  @if (currentFestival(); as festival) {
+    <div class="festival-info">
+      <h2>Festival Courant : {{ festival.name }}</h2>
+    </div>
+    
+    <!-- Liste des zones tarifaires -->
+    <div class="tariff-zones-section">
+      <h3>Zones Tarifaires</h3>
+      @if (tariffZones().length > 0) {
+        <div class="zones-grid">
+          @for (zone of tariffZones(); track zone.idTZ) {
+            <div 
+              class="zone-card" 
+              [class.selected]="selectedTariffZone()?.idTZ === zone.idTZ"
+              (click)="selectTariffZone(zone)"
+            >
+              <h4>{{ zone.name }}</h4>
+              <div class="zone-details">
+                <p>Petites tables : {{ zone.remainingSmallTables }}/{{ zone.nbSmallTables }}</p>
+                <p>Grandes tables : {{ zone.remainingLargeTables }}/{{ zone.nbLargeTables }}</p>
+                <p>Tables mairie : {{ zone.remainingCityHallTables }}/{{ zone.nbCityHallTables }}</p>
               </div>
-            }
-          </div>
-        } @else {
-          <p class="no-zones">Aucune zone tarifaire disponible</p>
-        }
-      </div>
-  
-      <!-- Section pour ajouter une zone de plan -->
-      @if (selectedTariffZone(); as zone) {
-        <div class="plan-area-section">
-          <div class="section-header">
-            <h3>Zones de Plan pour : {{ zone.name }}</h3>
-            <button class="btn btn-primary" (click)="toggleForm()">
-              {{ showForm() ? 'Annuler' : '+ Ajouter une Zone de Plan' }}
-            </button>
-          </div>
-  
-          <!-- Liste des zones de plan existantes -->
-          @if (planAreas().length > 0) {
-            <div class="plan-areas-list">
-              <h4>📋 Zones de plan existantes</h4>
-              <div class="plan-areas-grid">
-                @for (area of planAreas(); track area.id) {
-                  <div class="plan-area-card">
-                    <div class="plan-area-header">
-                      <h5>{{ area.name }}</h5>
-                      <span class="plan-area-badge">ID: {{ area.id }}</span>
-                    </div>
-                    <div class="plan-area-details">
-                      <div class="detail-item">
-                        <span class="icon">🪑</span>
-                        <span class="label">Petites:</span>
-                        <span class="value">{{ area.nbSmallTables }}</span>
-                      </div>
-                      <div class="detail-item">
-                        <span class="icon">🛋️</span>
-                        <span class="label">Grandes:</span>
-                        <span class="value">{{ area.nbLargeTables }}</span>
-                      </div>
-                      <div class="detail-item">
-                        <span class="icon">🏛️</span>
-                        <span class="label">Mairie:</span>
-                        <span class="value">{{ area.nbCityHallTables }}</span>
-                      </div>
-                    </div>
-                    <!-- Boutons d'action -->
-                    <div class="plan-area-actions">
-                      <button class="btn-action btn-edit" (click)="editPlanArea(area)" title="Modifier">
-                        ✏️ Modifier
-                      </button>
-                      <button class="btn-action btn-delete" (click)="deletePlanArea(area)" title="Supprimer">
-                        🗑️ Supprimer
-                      </button>
-                    </div>
-                  </div>
-                }
-              </div>
-            </div>
-          } @else {
-            <div class="no-plan-areas">
-              <p>📭 Aucune zone de plan créée pour cette zone tarifaire</p>
-            </div>
-          }
-  
-          <!-- Formulaire d'ajout/modification -->
-          @if (showForm()) {
-            <div class="form-card">
-              <h3>{{ editingPlanArea() ? '✏️ Modifier' : '➕ Créer' }} une Zone de Plan</h3>
-              <form [formGroup]="planAreaForm" (ngSubmit)="onSubmit()">
-                <div class="form-group">
-                  <label for="name">Nom de la zone de plan *</label>
-                  <input 
-                    id="name" 
-                    type="text" 
-                    formControlName="name"
-                    placeholder="Ex: Zone A1"
-                  />
-                  @if (planAreaForm.get('name')?.invalid && planAreaForm.get('name')?.touched) {
-                    <span class="error">Le nom est requis (min 3 caractères)</span>
-                  }
-                </div>
-  
-                <div class="form-group">
-                  <label>Petites tables (max: {{ zone.remainingSmallTables }})</label>
-                  <input 
-                    type="number" 
-                    formControlName="nbSmallTables" 
-                    min="0" 
-                    [max]="zone.remainingSmallTables + (editingPlanArea()?.nbSmallTables || 0)"
-                  />
-                </div>
-  
-                <div class="form-group">
-                  <label>Grandes tables (max: {{ zone.remainingLargeTables }})</label>
-                  <input 
-                    type="number" 
-                    formControlName="nbLargeTables" 
-                    min="0" 
-                    [max]="zone.remainingLargeTables + (editingPlanArea()?.nbLargeTables || 0)"
-                  />
-                </div>
-  
-                <div class="form-group">
-                  <label>Tables mairie (max: {{ zone.remainingCityHallTables }})</label>
-                  <input 
-                    type="number" 
-                    formControlName="nbCityHallTables"
-                    min="0" 
-                    [max]="zone.remainingCityHallTables + (editingPlanArea()?.nbCityHallTables || 0)"
-                  />
-                </div>
-  
-                <div class="form-actions">
-                  <button type="button" class="btn btn-secondary" (click)="cancelForm()">
-                    Annuler
-                  </button>
-                  <button type="submit" class="btn btn-primary" [disabled]="planAreaForm.invalid">
-                    {{ editingPlanArea() ? '💾 Mettre à jour' : '✨ Créer' }}
-                  </button>
-                </div>
-              </form>
             </div>
           }
         </div>
+      } @else {
+        <p class="no-zones">Aucune zone tarifaire disponible</p>
       }
-    } @else {
-      <div class="no-festival">
-        <p>Aucun festival courant défini</p>
-        <p class="hint">Veuillez sélectionner un festival dans la liste des festivals</p>
+    </div>
+    
+    <!-- Section pour ajouter une zone de plan -->
+    @if (selectedTariffZone(); as zone) {
+      <div class="plan-area-section">
+        <div class="section-header">
+          <h3>Zones de Plan pour : {{ zone.name }}</h3>
+          <button class="btn btn-primary" (click)="toggleForm()">
+            {{ showForm() ? 'Annuler' : '+ Ajouter une Zone de Plan' }}
+          </button>
+        </div>
+        
+        <!-- Liste des zones de plan existantes -->
+        @if (planAreas().length > 0) {
+          <div class="plan-areas-list">
+            <h4>📋 Zones de plan existantes</h4>
+            <div class="plan-areas-grid">
+              @for (area of planAreas(); track area.id) {
+                <div class="plan-area-card">
+                  <div class="plan-area-header">
+                    <h5>{{ area.name }}</h5>
+                    <span class="plan-area-badge">ID: {{ area.id }}</span>
+                  </div>
+                  
+                  <div class="plan-area-details">
+                    <div class="detail-item">
+                      <span class="icon">🪑</span>
+                      <span class="label">Petites:</span>
+                      <span class="value">{{ area.nbSmallTables }}</span>
+                    </div>
+                    <div class="detail-item">
+                      <span class="icon">🛋️</span>
+                      <span class="label">Grandes:</span>
+                      <span class="value">{{ area.nbLargeTables }}</span>
+                    </div>
+                    <div class="detail-item">
+                      <span class="icon">🏛️</span>
+                      <span class="label">Mairie:</span>
+                      <span class="value">{{ area.nbCityHallTables }}</span>
+                    </div>
+                  </div>
+
+                  <!-- 🎮 LISTE DES JEUX ASSIGNÉS -->
+                  @if (area.presentedGames && area.presentedGames.length > 0) {
+                    <div class="assigned-games-section">
+                      <h6>🎮 Jeux assignés ({{ area.presentedGames.length }})</h6>
+                      <div class="games-chips">
+                        @for (game of area.presentedGames; track game.id) {
+                          <span class="game-chip" [title]="game.name">
+                            {{ game.name }}
+                          </span>
+                        }
+                      </div>
+                    </div>
+                  } @else {
+                    <div class="no-games-assigned">
+                      <span class="icon">📭</span>
+                      <span>Aucun jeu assigné</span>
+                    </div>
+                  }
+
+                  <!-- Boutons d'action -->
+                  <div class="plan-area-actions">
+                    <button class="btn-action btn-edit" (click)="editPlanArea(area)" title="Modifier">
+                      ✏️ Modifier
+                    </button>
+                    <button class="btn-action btn-delete" (click)="deletePlanArea(area)" title="Supprimer">
+                      🗑️ Supprimer
+                    </button>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        } @else {
+          <div class="no-plan-areas">
+            <p>📭 Aucune zone de plan créée pour cette zone tarifaire</p>
+          </div>
+        }
+        
+        <!-- Formulaire d'ajout/modification -->
+        @if (showForm()) {
+          <div class="form-card">
+            <h3>{{ editingPlanArea() ? '✏️ Modifier' : '➕ Créer' }} une Zone de Plan</h3>
+            <form [formGroup]="planAreaForm" (ngSubmit)="onSubmit()">
+              <div class="form-group">
+                <label for="name">Nom de la zone de plan *</label>
+                <input 
+                  id="name" 
+                  type="text" 
+                  formControlName="name"
+                  placeholder="Ex: Zone A1"
+                />
+                @if (planAreaForm.get('name')?.invalid && planAreaForm.get('name')?.touched) {
+                  <span class="error">Le nom est requis (min 3 caractères)</span>
+                }
+              </div>
+
+              <div class="form-group">
+                <label>Petites tables (max: {{ zone.remainingSmallTables }})</label>
+                <input 
+                  type="number" 
+                  formControlName="nbSmallTables" 
+                  min="0" 
+                  [max]="zone.remainingSmallTables + (editingPlanArea()?.nbSmallTables || 0)"
+                />
+              </div>
+
+              <div class="form-group">
+                <label>Grandes tables (max: {{ zone.remainingLargeTables }})</label>
+                <input 
+                  type="number" 
+                  formControlName="nbLargeTables" 
+                  min="0" 
+                  [max]="zone.remainingLargeTables + (editingPlanArea()?.nbLargeTables || 0)"
+                />
+              </div>
+
+              <div class="form-group">
+                <label>Tables mairie (max: {{ zone.remainingCityHallTables }})</label>
+                <input 
+                  type="number" 
+                  formControlName="nbCityHallTables"
+                  min="0" 
+                  [max]="zone.remainingCityHallTables + (editingPlanArea()?.nbCityHallTables || 0)"
+                />
+              </div>
+
+              <!-- 🎮 SECTION DE SÉLECTION DES JEUX -->
+              <div class="form-group">
+                <label>🎮 Jeux à assigner à cette zone de plan</label>
+                
+                @if (availableGames().length > 0) {
+                  <div class="games-list">
+                    @for (game of availableGames(); track game.id) {
+                      <label class="game-item">
+                        <input 
+                          type="checkbox" 
+                          [checked]="selectedGameIds().has(game.id)"
+                          (change)="toggleGameSelection(game.id)"
+                        />
+                        <span class="game-name">{{ game.name }}</span>
+                        <span class="game-editor">({{ game.editorName }})</span>
+                        <span class="game-qty">{{ game.remainingQuantity }}/{{ game.totalQuantity }}</span>
+                      </label>
+                    }
+                  </div>
+                  <p class="selection-info">{{ selectedGameIds().size }} jeu(x) sélectionné(s)</p>
+                } @else {
+                  <p class="no-games">📭 Aucun jeu disponible dans cette zone tarifaire</p>
+                }
+              </div>
+
+              <div class="form-actions">
+                <button type="button" class="btn btn-secondary" (click)="cancelForm()">
+                  Annuler
+                </button>
+                <button type="submit" class="btn btn-primary" [disabled]="planAreaForm.invalid">
+                  {{ editingPlanArea() ? '💾 Mettre à jour' : '✨ Créer' }}
+                </button>
+              </div>
+            </form>
+          </div>
+        }
       </div>
     }
-  </div>
+  } @else {
+    <div class="no-festival">
+      <p>Aucun festival courant défini</p>
+      <p class="hint">Veuillez sélectionner un festival dans la liste des festivals</p>
+    </div>
+  }
+</div>

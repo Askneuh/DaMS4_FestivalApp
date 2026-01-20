@@ -39,7 +39,7 @@ router.get('/:suiviId', verifyToken, requireOrganizer, validateNumericParam('sui
 
 // Route de création d'un suivi de réservation
 router.post('/', verifyToken, requireOrganizer, validateStringLengths({ status: 255 }), async (req, res) => {
-    const { status, idReservation } = req.body
+    const { status, idReservation, commentaire } = req.body
 
     if (!status || !idReservation) {
         return res.status(400).json({ error: "Statut et ID de réservation obligatoires pour la création de suivi" })
@@ -51,8 +51,8 @@ router.post('/', verifyToken, requireOrganizer, validateStringLengths({ status: 
     const modification_date = getCurrentDateTime()
     try {
         const { rows } = await pool.query(
-            'INSERT INTO "suiviReservation" ("status", "date", "idReservation") VALUES ($1, $2, $3) RETURNING "id"',
-            [status, modification_date, idReservation]
+            'INSERT INTO "suiviReservation" ("status", "date", "idReservation", "commentaire") VALUES ($1, $2, $3, $4) RETURNING "id"',
+            [status, modification_date, idReservation, commentaire]
         )
         // Note: La modification_date est enregistrée automatiquement à l'instant de la création
         return res.status(201).json({ message: 'Suivi de réservation créé', id: rows[0].id })
