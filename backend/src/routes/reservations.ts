@@ -63,7 +63,7 @@ router.get('/:reservationId', verifyToken, requireOrganizer, validateNumericPara
 })
 
 // Route de création d'une réservation
-router.post('/', verifyToken, requireOrganizer, validateStringLengths({ status: 255, typeAnimateur: 255, festivalName: 255 }), normalizeBooleans(['listeDemandee', 'listeRecue', 'jeuxRecus']), async (req, res) => {
+router.post('/', verifyToken, requireOrganizer, validateStringLengths({ status: 255, festivalName: 255 }), normalizeBooleans(['listeDemandee', 'listeRecue', 'jeuxRecus']), async (req, res) => {
     const { idEditor, status, nbSmallTables, nbLargeTables, nbCityHallTables, remise, typeAnimateur, listeDemandee, listeRecue, jeuxRecus, festivalName, idTZ } = req.body
 
     // Validation des champs obligatoires
@@ -120,7 +120,7 @@ router.post('/', verifyToken, requireOrganizer, validateStringLengths({ status: 
 })
 
 // Route de mise à jour d'une réservation
-router.post('/update/:reservationId', verifyToken, requireOrganizer, validateNumericParam('reservationId'), validateStringLengths({ status: 255, typeAnimateur: 255 }), normalizeBooleans(['listeDemandee', 'listeRecue', 'jeuxRecus']), async (req, res) => {
+router.post('/update/:reservationId', verifyToken, requireOrganizer, validateNumericParam('reservationId'), validateStringLengths({ status: 255 }), normalizeBooleans(['listeDemandee', 'listeRecue', 'jeuxRecus']), async (req, res) => {
     const reservationId = req.params.reservationId
     const { status, nbSmallTables, nbLargeTables, nbCityHallTables, remise, typeAnimateur, listeDemandee, listeRecue, jeuxRecus, idTZ } = req.body
     try {

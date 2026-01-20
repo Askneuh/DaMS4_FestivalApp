@@ -1,0 +1,129 @@
+<div class="reservation-list-container">
+  <div class="header">
+    <h1>Réservations</h1>
+    @if (currentFestival()) {
+      <span class="festival-badge">{{ currentFestival()!.name }}</span>
+    } @else {
+      <span class="warning">⚠️ Aucun festival courant sélectionné</span>
+    }
+  </div>
+
+  <div class="filters">
+    <div class="search-box">
+      <input 
+        type="text" 
+        placeholder="Rechercher un éditeur..." 
+        [value]="searchTerm()" 
+        (input)="searchTerm.set($any($event.target).value)">
+    </div>
+    <div class="filter-box">
+      <select 
+        [value]="statusFilter()" 
+        (change)="statusFilter.set($any($event.target).value)">
+        @for (status of availableStatuses; track status) {
+          <option [value]="status">{{ status === 'all' ? 'Tous les statuts' : status }}</option>
+        }
+      </select>
+    </div>
+  </div>
+
+  @if (!currentFestival()) {
+    <div class="empty-state">
+      <p>Veuillez sélectionner un festival courant dans la liste des festivals.</p>
+      <button class="btn btn-primary" (click)="router.navigate(['/festival_list'])">
+        Aller aux festivals
+      </button>
+    </div>
+  } @else if (loading()) {
+    <div class="loading">
+      <p>Chargement des réservations...</p>
+    </div>
+  } @else {
+    <div class="reservations-table">
+      <table>
+        <thead>
+          <tr>
+            <th (click)="toggleSort('name')" class="sortable">
+              Éditeur 
+              <span class="sort-icon">{{ sortColumn() === 'name' ? (sortDirection() === 'asc' ? '↑' : '↓') : '↕' }}</span>
+            </th>
+            <th (click)="toggleSort('status')" class="sortable">
+              Statut
+              <span class="sort-icon">{{ sortColumn() === 'status' ? (sortDirection() === 'asc' ? '↑' : '↓') : '↕' }}</span>
+            </th>
+            <th>Dernier contact</th>
+            <th (click)="toggleSort('tables')" class="sortable">
+              Tables
+              <span class="sort-icon">{{ sortColumn() === 'tables' ? (sortDirection() === 'asc' ? '↑' : '↓') : '↕' }}</span>
+            </th>
+            <th (click)="toggleSort('price')" class="sortable">
+              Budget (€)
+              <span class="sort-icon">{{ sortColumn() === 'price' ? (sortDirection() === 'asc' ? '↑' : '↓') : '↕' }}</span>
+            </th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (item of editorsWithReservations(); track item.editor.id) {
+            <tr>
+              <td class="editor-cell">
+                @if (item.editor.logo) {
+                  <img [src]="item.editor.logo" [alt]="item.editor.name" class="editor-logo">
+                }
+                <span class="editor-name">{{ item.editor.name }}</span>
+              </td>
+              <td>
+                <span 
+                  class="status-badge" 
+                  [style.background-color]="getStatusColor(item.status)">
+                  {{ item.status }}
+                </span>
+              </td>
+              <td class="last-contact">
+                {{ item.lastContact || '-' }}
+              </td>
+              <td class="tables">
+                {{ item.totalTables || '-' }}
+              </td>
+              <td class="price">
+                @if (item.totalPrice > 0) {
+                  {{ item.totalPrice }} €
+                } @else {
+                  -
+                }
+              </td>
+              <td class="actions">
+                <button 
+                  class="btn btn-secondary btn-sm" 
+                  title="Ajouter un contact"
+                  (click)="markContacted(item)">
+                  Contacter
+                </button>
+
+                @if (item.reservation) {
+                  <button 
+                    class="btn btn-primary btn-sm" 
+                    (click)="openWorkflow(item.editor.id, item.reservation.idReservation)">
+                    Gérer
+                  </button>
+                } @else {
+                  <button 
+                    class="btn btn-primary btn-sm" 
+                    (click)="createReservation(item.editor.id)">
+                    Réserver
+                  </button>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+
+      @if (editorsWithReservations().length === 0) {
+        <div class="empty-state">
+          <p>Aucun exposant disponible pour ce festival.</p>
+        </div>
+      }
+    </div>
+  }
+</div>
