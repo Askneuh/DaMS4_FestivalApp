@@ -91,25 +91,25 @@ router.get('/current-festival/withReservationStatus', verifyToken, async (req, r
             exposant: row.exposant,
             distributeur: row.distributeur,
             logo: row.logo,
-            reservation: row.idreservation ? {
-                idReservation: row.idreservation,
-                status: row.reservationstatus,
-                nbSmallTables: row.nbsmalltables,
-                nbLargeTables: row.nblargetables,
-                nbCityHallTables: row.nbcityhalltables,
+            reservation: row.idReservation ? {
+                idReservation: row.idReservation,
+                status: row.reservationStatus,
+                nbSmallTables: row.nbSmallTables,
+                nbLargeTables: row.nbLargeTables,
+                nbCityHallTables: row.nbCityHallTables,
                 remise: parseFloat(row.remise) || 0,
-                totalPrice: parseFloat(row.totalprice) || 0,
-                lastContactDate: row.lastcontactdate
+                totalPrice: parseFloat(row.totalPrice) || 0,
+                lastContactDate: row.lastContactDate
             } : null,
-            contact: row.contactid ? {
-                id: row.contactid,
-                name: row.contactname,
-                email: row.contactemail,
-                phone: row.contactphone
+            contact: row.contactId ? {
+                id: row.contactId,
+                name: row.contactName,
+                email: row.contactEmail,
+                phone: row.contactPhone
             } : null,
             // Indicateurs dérivés pour faciliter le tri/filtrage côté frontend
-            hasReservation: !!row.idreservation,
-            hasBeenContacted: !!row.lastcontactdate
+            hasReservation: !!row.idReservation,
+            hasBeenContacted: !!row.lastContactDate
         }));
 
         res.json(editors);
@@ -172,25 +172,25 @@ router.get('/festival/:festivalName/withReservationStatus', verifyToken, async (
             exposant: row.exposant,
             distributeur: row.distributeur,
             logo: row.logo,
-            reservation: row.idreservation ? {
-                idReservation: row.idreservation,
-                status: row.reservationstatus,
-                nbSmallTables: row.nbsmalltables,
-                nbLargeTables: row.nblargetables,
-                nbCityHallTables: row.nbcityhalltables,
+            reservation: row.idReservation ? {
+                idReservation: row.idReservation,
+                status: row.reservationStatus,
+                nbSmallTables: row.nbSmallTables,
+                nbLargeTables: row.nbLargeTables,
+                nbCityHallTables: row.nbCityHallTables,
                 remise: parseFloat(row.remise) || 0,
-                totalPrice: parseFloat(row.totalprice) || 0,
-                lastContactDate: row.lastcontactdate
+                totalPrice: parseFloat(row.totalPrice) || 0,
+                lastContactDate: row.lastContactDate
             } : null,
-            contact: row.contactid ? {
-                id: row.contactid,
-                name: row.contactname,
-                email: row.contactemail,
-                phone: row.contactphone
+            contact: row.contactId ? {
+                id: row.contactId,
+                name: row.contactName,
+                email: row.contactEmail,
+                phone: row.contactPhone
             } : null,
             // Indicateurs dérivés pour faciliter le tri/filtrage côté frontend
-            hasReservation: !!row.idreservation,
-            hasBeenContacted: !!row.lastcontactdate
+            hasReservation: !!row.idReservation,
+            hasBeenContacted: !!row.lastContactDate
         }));
 
         res.json(editors);
