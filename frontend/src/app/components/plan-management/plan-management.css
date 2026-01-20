@@ -1,0 +1,313 @@
+.plan-management-container {
+    max-width: 1200px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+  }
+  
+  h1 {
+    color: #1f2937;
+    margin-bottom: 2rem;
+  }
+  
+  .festival-info {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 1.5rem;
+    border-radius: 12px;
+    margin-bottom: 2rem;
+  }
+  
+  .tariff-zones-section {
+    margin-bottom: 2rem;
+  }
+  
+  .zones-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+  }
+  
+  .zone-card {
+    background: white;
+    border: 2px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 1.5rem;
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+  
+  .zone-card:hover {
+    border-color: #667eea;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+  }
+  
+  .zone-card.selected {
+    border-color: #667eea;
+    background: #eef2ff;
+  }
+  
+  .zone-card h4 {
+    margin-bottom: 1rem;
+    color: #1f2937;
+  }
+  
+  .zone-details p {
+    margin: 0.5rem 0;
+    color: #6b7280;
+  }
+  
+  .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+  }
+  
+  /* Zones de plan existantes */
+  .plan-areas-list {
+    margin: 2rem 0;
+    padding: 1.5rem;
+    background: #f9fafb;
+    border-radius: 12px;
+  }
+  
+  .plan-areas-list h4 {
+    margin: 0 0 1.5rem 0;
+    color: #1f2937;
+    font-size: 1.2rem;
+    font-weight: 600;
+  }
+  
+  .plan-areas-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.5rem;
+  }
+  
+  .plan-area-card {
+    background: white;
+    border: 2px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 1.5rem;
+    transition: all 0.3s;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  }
+  
+  .plan-area-card:hover {
+    border-color: #667eea;
+    box-shadow: 0 6px 16px rgba(102, 126, 234, 0.15);
+    transform: translateY(-2px);
+  }
+  
+  .plan-area-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid #f3f4f6;
+  }
+  
+  .plan-area-header h5 {
+    margin: 0;
+    color: #667eea;
+    font-size: 1.1rem;
+    font-weight: 600;
+  }
+  
+  .plan-area-badge {
+    background: #eef2ff;
+    color: #667eea;
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+  
+  .plan-area-details {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  
+  .detail-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  .detail-item .icon {
+    font-size: 1.2rem;
+  }
+  
+  .detail-item .label {
+    color: #6b7280;
+    font-size: 0.9rem;
+    flex: 1;
+  }
+  
+  .detail-item .value {
+    color: #1f2937;
+    font-weight: 600;
+    font-size: 1rem;
+  }
+  
+  /* Boutons d'action sur les cartes */
+  .plan-area-actions {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: flex-end;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #f3f4f6;
+  }
+  
+  .btn-action {
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+  
+  .btn-edit {
+    background: #eef2ff;
+    color: #667eea;
+  }
+  
+  .btn-edit:hover {
+    background: #dbeafe;
+    transform: translateY(-1px);
+  }
+  
+  .btn-delete {
+    background: #fee2e2;
+    color: #dc2626;
+  }
+  
+  .btn-delete:hover {
+    background: #fecaca;
+    transform: translateY(-1px);
+  }
+  
+  .no-plan-areas {
+    background: #f9fafb;
+    border: 2px dashed #d1d5db;
+    border-radius: 12px;
+    padding: 3rem 2rem;
+    text-align: center;
+    margin: 2rem 0;
+  }
+  
+  .no-plan-areas p {
+    margin: 0;
+    color: #6b7280;
+    font-size: 1.1rem;
+  }
+  
+  /* Formulaire */
+  .form-card {
+    background: white;
+    border-radius: 12px;
+    padding: 2rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    margin-top: 1.5rem;
+  }
+  
+  .form-card h3 {
+    margin: 0 0 1.5rem 0;
+    color: #1f2937;
+    font-size: 1.3rem;
+  }
+  
+  .form-group {
+    margin-bottom: 1.5rem;
+  }
+  
+  .form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: #374151;
+    font-weight: 500;
+  }
+  
+  .form-group input {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 1rem;
+  }
+  
+  .form-group input:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  }
+  
+  .error {
+    color: #ef4444;
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+    display: block;
+  }
+  
+  .form-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-end;
+    margin-top: 2rem;
+  }
+  
+  .btn {
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 8px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  
+  .btn-primary {
+    background: #667eea;
+    color: white;
+  }
+  
+  .btn-primary:hover {
+    background: #5568d3;
+  }
+  
+  .btn-primary:disabled {
+    background: #d1d5db;
+    cursor: not-allowed;
+  }
+  
+  .btn-secondary {
+    background: white;
+    color: #374151;
+    border: 1px solid #d1d5db;
+  }
+  
+  .btn-secondary:hover {
+    background: #f9fafb;
+  }
+  
+  .no-festival {
+    background: #f9fafb;
+    border: 2px dashed #d1d5db;
+    border-radius: 12px;
+    padding: 3rem;
+    text-align: center;
+  }
+  
+  .no-zones {
+    color: #6b7280;
+    text-align: center;
+    padding: 2rem;
+  }

@@ -12,7 +12,7 @@ import { GameAssignmentRequest } from '../interfaces/game-assignment-request';
   providedIn: 'root',
 })
 export class PlanAreaService {
-  public readonly API_URL = 'https://localhost:4000/api';
+  public readonly API_URL = 'https://localhost:4000/api/planArea';
   public readonly http = inject(HttpClient);
 
 

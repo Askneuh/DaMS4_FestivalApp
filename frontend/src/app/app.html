@@ -5,6 +5,7 @@
     <a routerLink="festival_list" routerLinkActive="active">Festivals</a>
     <a routerLink="editor-list" routerLinkActive="active">Éditeurs</a>
     <a routerLink="reservation_workflow" routerLinkActive="active">Réservation</a>
+    <a routerLink="plan-management" routerLinkActive="active">Zone du Plan</a>
     @if (this.auth_svc.isLoggedIn() && this.auth_svc.currentUser()?.role == 'admin') {
     <a routerLink="admin" routerLinkActive="active">Admin</a>
     }
