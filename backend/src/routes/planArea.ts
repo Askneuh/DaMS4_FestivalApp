@@ -379,26 +379,12 @@ router.get('/:planAreaId/editors-from-games', verifyToken, validateNumericParam(
 router.delete('/:planAreaId', verifyToken, requireAdmin, validateNumericParam('planAreaId'), async (req, res) => {
     const planAreaId = req.params.planAreaId
     try {
-        // Vérifier si des jeux ou éditeurs sont associés à cette zone
-        const { rows: gamesInArea } = await pool.query(
-            'SELECT COUNT(*) as "count" FROM "game_planArea" WHERE "idPA" = $1',
-            [planAreaId]
-        )
-        const { rows: editorsInArea } = await pool.query(
-            'SELECT COUNT(*) as "count" FROM "editor_planArea" WHERE "idPA" = $1',
-            [planAreaId]
-        )
-
-        if (parseInt(gamesInArea[0].count) > 0 || parseInt(editorsInArea[0].count) > 0) {
-            return res.status(409).json({
-                error: 'Impossible de supprimer cette zone car elle contient des jeux ou des éditeurs'
-            })
-        }
-
         const { rowCount } = await pool.query('DELETE FROM "planArea" WHERE "id" = $1', [planAreaId])
+
         if (rowCount === 0) {
             return res.status(404).json({ error: "Zone de plan non trouvée" })
         }
+
         return res.status(200).json({ message: 'Zone de plan supprimée' })
     } catch (err: any) {
         console.error(err)

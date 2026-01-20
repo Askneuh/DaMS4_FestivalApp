@@ -80,7 +80,7 @@ CREATE TABLE IF NOT EXISTS "tariffZone" (
     "largeTablePrice" INTEGER,
     "cityHallTablePrice" INTEGER,
     "squareMeterPrice" INTEGER,
-    "festivalName" TEXT REFERENCES "festival"("name") NOT NULL
+    "festivalName" TEXT REFERENCES "festival"("name") ON DELETE CASCADE NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS "game" (
@@ -90,7 +90,7 @@ CREATE TABLE IF NOT EXISTS "game" (
     "nbMinPlayer" INTEGER NOT NULL,
     "nbMaxPlayer" INTEGER NOT NULL,
     "gameNotice" TEXT,
-    "idGameType" INTEGER REFERENCES "gameType"("id") NOT NULL,
+    "idGameType" INTEGER REFERENCES "gameType"("id") ON DELETE RESTRICT NOT NULL,
     "minimumAge" INTEGER NOT NULL,
     "prototype" BOOLEAN NOT NULL DEFAULT FALSE,
     "duration" INTEGER NOT NULL,
@@ -99,12 +99,12 @@ CREATE TABLE IF NOT EXISTS "game" (
     "gameImage" TEXT,
     "rulesTutorial" TEXT,
     "edition" INTEGER,
-    "idEditor" INTEGER REFERENCES "editor"("id") NOT NULL
+    "idEditor" INTEGER REFERENCES "editor"("id") ON DELETE CASCADE NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS "reservation" (
     "idReservation" SERIAL PRIMARY KEY,
-    "idEditor" INTEGER REFERENCES "editor"("id") NOT NULL,
+    "idEditor" INTEGER REFERENCES "editor"("id") ON DELETE CASCADE NOT NULL,
     "status" TEXT NOT NULL,
     "nbSmallTables" INTEGER,
     "nbLargeTables" INTEGER,
@@ -114,8 +114,8 @@ CREATE TABLE IF NOT EXISTS "reservation" (
     "listeDemandee" BOOLEAN,
     "listeRecue" BOOLEAN,
     "jeuxRecus" BOOLEAN,
-    "festivalName" TEXT REFERENCES "festival"("name") NOT NULL,
-    "idTZ" INTEGER REFERENCES "tariffZone"("idTZ") NOT NULL
+    "festivalName" TEXT REFERENCES "festival"("name") ON DELETE CASCADE NOT NULL,
+    "idTZ" INTEGER REFERENCES "tariffZone"("idTZ") ON DELETE CASCADE NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS "planArea" (
@@ -124,8 +124,8 @@ CREATE TABLE IF NOT EXISTS "planArea" (
     "nbSmallTables" INTEGER NOT NULL,
     "nbLargeTables" INTEGER NOT NULL,
     "nbCityHallTables" INTEGER NOT NULL,
-    "festivalName" TEXT REFERENCES "festival"("name") NOT NULL,
-    "idTZ" INTEGER REFERENCES "tariffZone"("idTZ")
+    "festivalName" TEXT REFERENCES "festival"("name") ON DELETE CASCADE NOT NULL,
+    "idTZ" INTEGER REFERENCES "tariffZone"("idTZ") ON DELETE SET NULL
 );
 
 CREATE TABLE IF NOT EXISTS "contact" (
@@ -135,7 +135,7 @@ CREATE TABLE IF NOT EXISTS "contact" (
     "phone" TEXT,
     "role" TEXT,
     "priority" BOOLEAN,
-    "idEditor" INTEGER REFERENCES "editor"("id") NOT NULL
+    "idEditor" INTEGER REFERENCES "editor"("id") ON DELETE CASCADE NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS "suiviReservation" (
@@ -143,32 +143,32 @@ CREATE TABLE IF NOT EXISTS "suiviReservation" (
     "status" TEXT NOT NULL,
     "commentaire" TEXT,
     "date" DATE NOT NULL,
-    "idReservation" INTEGER REFERENCES "reservation"("idReservation") NOT NULL
+    "idReservation" INTEGER REFERENCES "reservation"("idReservation") ON DELETE CASCADE NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS "editor_festival" (
-    "idEditor" INTEGER REFERENCES "editor"("id") NOT NULL,
-    "festivalName" TEXT REFERENCES "festival"("name") NOT NULL,
+    "idEditor" INTEGER REFERENCES "editor"("id") ON DELETE CASCADE NOT NULL,
+    "festivalName" TEXT REFERENCES "festival"("name") ON DELETE CASCADE NOT NULL,
     PRIMARY KEY("idEditor", "festivalName")
 );
 
 
 CREATE TABLE IF NOT EXISTS "game_mechanism" (
     "id" SERIAL PRIMARY KEY,
-    "idGame" INTEGER REFERENCES "game"("id"),
-    "idMechanism" INTEGER REFERENCES "mechanism"("id")
+    "idGame" INTEGER REFERENCES "game"("id") ON DELETE CASCADE,
+    "idMechanism" INTEGER REFERENCES "mechanism"("id") ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS "festival_tariffZone" (
-    "festivalName" TEXT REFERENCES "festival"("name"),
-    "idTZ" INTEGER REFERENCES "tariffZone"("idTZ"),
+    "festivalName" TEXT REFERENCES "festival"("name") ON DELETE CASCADE,
+    "idTZ" INTEGER REFERENCES "tariffZone"("idTZ") ON DELETE CASCADE,
     PRIMARY KEY("festivalName", "idTZ")
 );
 
 
 CREATE TABLE IF NOT EXISTS "reservation_game" (
-    "idReservation" INTEGER REFERENCES "reservation"("idReservation"),
-    "idGame" INTEGER REFERENCES "game"("id"),
+    "idReservation" INTEGER REFERENCES "reservation"("idReservation") ON DELETE CASCADE,
+    "idGame" INTEGER REFERENCES "game"("id") ON DELETE CASCADE,
     "isGamePlaced" BOOLEAN DEFAULT FALSE,
     "quantity" INTEGER DEFAULT 1,
     PRIMARY KEY("idReservation", "idGame")
@@ -176,25 +176,25 @@ CREATE TABLE IF NOT EXISTS "reservation_game" (
 
 -- Représente les éditeurs qui animent sur une zone
 CREATE TABLE IF NOT EXISTS "editor_planArea" (
-    "idEditor" INTEGER REFERENCES "editor"("id"),
-    "idPA" INTEGER REFERENCES "planArea"("id"),
+    "idEditor" INTEGER REFERENCES "editor"("id") ON DELETE CASCADE,
+    "idPA" INTEGER REFERENCES "planArea"("id") ON DELETE CASCADE,
     PRIMARY KEY("idEditor", "idPA")
 );
 
 -- Représente les jeux présentés sur une zone
 CREATE TABLE IF NOT EXISTS "game_planArea" (
-    "idGame" INTEGER REFERENCES "game"("id"),
-    "idPA" INTEGER REFERENCES "planArea"("id"),
+    "idGame" INTEGER REFERENCES "game"("id") ON DELETE CASCADE,
+    "idPA" INTEGER REFERENCES "planArea"("id") ON DELETE CASCADE,
     "quantity" INTEGER DEFAULT 1,
     PRIMARY KEY("idGame", "idPA")
 );
 
 -- Représente un jeu présenté lors d'un festival, lié à une réservation et une zone
 CREATE TABLE IF NOT EXISTS "game_festival" (
-    "idGame" INTEGER REFERENCES "game"("id"),
-    "festivalName" TEXT REFERENCES "festival"("name"),
-    "idReservation" INTEGER REFERENCES "reservation"("idReservation"),
-    "idPA" INTEGER REFERENCES "planArea"("id"),
+    "idGame" INTEGER REFERENCES "game"("id") ON DELETE CASCADE,
+    "festivalName" TEXT REFERENCES "festival"("name") ON DELETE CASCADE,
+    "idReservation" INTEGER REFERENCES "reservation"("idReservation") ON DELETE CASCADE,
+    "idPA" INTEGER REFERENCES "planArea"("id") ON DELETE CASCADE,
     "isGamePlaced" BOOLEAN DEFAULT FALSE,
     PRIMARY KEY("idGame", "festivalName", "idReservation", "idPA")
 );
