@@ -1,177 +1,226 @@
-import { Component, Input, OnInit, inject, signal, computed } from '@angular/core';
-import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup } from '@angular/forms';
+import { Component, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Game } from '../../interfaces/game';
-import { MatFormField, MatLabel } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { FestivalService } from '../../services/festival-service';
-import { EditorService } from '../../services/editor-service';
-import { GameServiceTemp } from '../../services/game-service-temp';
+import { ActivatedRoute, Router } from '@angular/router';
+import { FormsModule } from '@angular/forms';
 import { ReservationService } from '../../services/reservation-service';
-import { Editor } from '../../interfaces/editor';
-import { Reservation } from '../../interfaces/reservation';
-
-export interface ContactEntry {
-  date: Date;
-  comment: string;
-}
+import { EditorService } from '../../services/editor-service';
+import { ReservationDAO } from '../../interfaces/reservationDAO';
+import { SuiviReservation } from '../../interfaces/suivi-reservation';
+import { SuiviHistoryComponent } from '../suivi-history/suivi-history';
+import { TariffZoneService } from '../../services/tariff-zone-service';
+import { TariffZone } from '../../interfaces/tariff-zone';
+import { ReservationGame } from '../../interfaces/reservation-game';
+import { GameService } from '../../services/game-service';
+import { ReservationGameSelector } from '../reservation-game-selector/reservation-game-selector';
+import { Game } from '../../interfaces/game';
 
 @Component({
   selector: 'app-reservation-workflow',
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, MatFormField, MatLabel, MatInputModule],
+  standalone: true,
+  imports: [FormsModule, SuiviHistoryComponent, ReservationGameSelector, CommonModule],
   templateUrl: './reservation-workflow.html',
   styleUrl: './reservation-workflow.css',
 })
-export class ReservationWorkflow implements OnInit {
-  private fb = inject(FormBuilder);
-  editeurName: string = "Éditeur de test";
-  readonly festival_svc = inject(FestivalService);
-  readonly editor_svc = inject(EditorService);
-  readonly game_svc = inject(GameServiceTemp);
-  readonly reservation_svc = inject(ReservationService);
+export class ReservationWorkflow {
+  readonly route = inject(ActivatedRoute);
+  readonly router = inject(Router);
+  readonly reservationSvc = inject(ReservationService);
+  readonly editorSvc = inject(EditorService);
+  readonly tariffZoneSvc = inject(TariffZoneService);
+  readonly gameSvc = inject(GameService);
 
-  reservation: Reservation | null = null; // Will hold the actual ReservationDAO data
-  editeur: Editor | null = null; // Will hold the actual EditorDAO data
+  reservationId = signal<number | null>(null);
+  reservation = signal<ReservationDAO | null>(null);
+  suiviHistory = signal<SuiviReservation[]>([]);
+  reservationGames = signal<ReservationGame[]>([]);
+  availableZones = signal<TariffZone[]>([]);
+  loading = signal(true);
+  savingLogistics = signal(false);
+  errorMessage = signal<string | null>(null);
+  showGameSelector = signal(false);
 
-  reservationForm!: FormGroup;
-  isEditing = signal(false);
-
-  // On utilise des signaux pour la réactivité du calcul sans ngModel
-  smallTablesPrice = 10;
-  bigTablesPrice = 20;
-  mairieTablesPrice = 5;
-
-  contactDates: ContactEntry[] = [
-    { date: new Date('2025-11-20'), comment: 'Premier contact par mail' }
+  availableStatuses = [
+    'Pas encore de contact',
+    'Contact pris',
+    'Discussion en cours',
+    'Sera absent',
+    'Considéré absent',
+    'Présent',
+    'Facturé',
+    'Facture payée'
   ];
-  newContactComment: string = '';
 
-  games: Game[] = []; // Array to hold games for this reservation
+  editor = computed(() => {
+    const res = this.reservation();
+    if (!res) return null;
+    return this.editorSvc.editors().find(e => e.id === res.idEditor) || null;
+  });
 
-  constructor() { }
+  selectedZone = computed(() => {
+    const res = this.reservation();
+    if (!res || !res.idTZ) return null;
+    return this.availableZones().find(z => z.idTZ === res.idTZ) || null;
+  });
 
-  private initializeFormWithDefaults(): void {
-    this.reservationForm = this.fb.group({
-      status: ['Discussion'],
-      listeDemandee: [false],
-      listeRecue: [false],
-      jeuxRecus: [false],
-      nbPetitesTables: [0],
-      nbGrandesTables: [0],
-      nbTablesMairie: [0],
-      typeAnimateur: ['editeur']
-    });
-  }
+  totalPrice = computed(() => {
+    const zone = this.selectedZone();
+    const res = this.reservation();
+    if (!res || !zone) return 0;
 
-  ngOnInit(): void {
-    // Subscribe to the observable to get the actual reservation data
-    this.reservation_svc.getReservationById(1).subscribe({
-      next: (data) => {
-        this.reservation = data;
+    const smallPrice = (res.nbSmallTables || 0) * Number(zone.smallTablePrice || 0);
+    const largePrice = (res.nbLargeTables || 0) * Number(zone.largeTablePrice || 0);
+    const cityHallPrice = (res.nbCityHallTables || 0) * Number(zone.cityHallTablePrice || 0);
+    
+    return Math.max(0, smallPrice + largePrice + cityHallPrice - Number(res.remise || 0));
+  });
 
-        // Initialize the form with the fetched data
-        this.reservationForm = this.fb.group({
-          status: [this.reservation.status],
-          listeDemandee: [this.reservation.listeDemandee],
-          listeRecue: [this.reservation.listeRecue],
-          jeuxRecus: [this.reservation.jeuxRecus],
-          nbPetitesTables: [this.reservation.nbSmallTables],
-          nbGrandesTables: [this.reservation.nbLargeTables],
-          nbTablesMairie: [this.reservation.nbCityHallTables],
-          typeAnimateur: ['editeur']
-        });
-
-        // Load the editor for this reservation
-        this.editor_svc.findById(this.reservation.idEditor).subscribe({
-          next: (editorData) => {
-            this.editeur = editorData;
-          },
-          error: (err) => {
-            console.error('Error fetching editor:', err);
-          }
-        });
-      },
-      error: (err) => {
-        console.error('❌ Error fetching reservation:', err);
-        console.error('❌ Error status:', err.status);
-        console.error('❌ Error message:', err.message);
-        // Initialize form with default values if fetch fails
-        this.initializeFormWithDefaults();
-      }
-    });
-  }
-
-
-  // Getter pour faciliter l'accès aux valeurs du formulaire dans le template
-  get formValues() {
-    return this.reservationForm.value;
-  }
-
-  onSubmitLogistics() {
-    const v = this.reservationForm.value;
-    this.isEditing.set(false);
-
-    // Ensure reservation exists and has required IDs
-    if (!this.reservation?.idReservation || !this.reservation?.idEditor) {
-      console.error('❌ Impossible de mettre à jour: réservation invalide');
-      return;
+  constructor() {
+    const id = Number(this.route.snapshot.paramMap.get('id'));
+    if (id) {
+      this.reservationId.set(id);
+      this.loadReservation(id);
+      this.loadSuiviHistory(id);
+      this.loadReservationGames(id);
+    } else {
+      this.loading.set(false);
     }
+  }
 
-    const updatedReservation: Reservation = {
-      idReservation: this.reservation.idReservation,
-      idEditor: this.reservation.idEditor,
-      status: v.status,
-      listeDemandee: v.listeDemandee,
-      listeRecue: v.listeRecue,
-      jeuxRecus: v.jeuxRecus,
-      nbSmallTables: v.nbPetitesTables,
-      nbLargeTables: v.nbGrandesTables,
-      nbCityHallTables: v.nbTablesMairie,
-      remise: this.reservation.remise,
-      typeAnimateur: v.typeAnimateur === 'editeur' ? 1 : 0,
-      festivalName: this.reservation.festivalName,
-      idTZ: this.reservation.idTZ
-    };
-
-    this.reservation_svc.updateReservation(this.reservation.idReservation, updatedReservation).subscribe({
-      next: () => {
-        // Update local reservation object
-        this.reservation = updatedReservation;
-        console.log('✅ Réservation mise à jour avec succès');
+  loadReservation(id: number) {
+    this.reservationSvc.getReservationById(id).subscribe({
+      next: (data) => {
+        this.reservation.set(data);
+        if (data.festivalName) {
+          this.loadTariffZones(data.festivalName);
+        }
+        this.loading.set(false);
       },
       error: (err) => {
-        console.error('❌ Erreur lors de la mise à jour:', err);
+        console.error('Erreur chargement réservation:', err);
+        this.errorMessage.set("Erreur lors du chargement de la réservation.");
+        this.loading.set(false);
       }
     });
   }
 
-  toggleEdit() {
-    this.isEditing.set(true);
-    // Synchronize form with current reservation data
-    this.reservationForm.patchValue({
-      status: this.reservation?.status,
-      listeDemandee: this.reservation?.listeDemandee,
-      listeRecue: this.reservation?.listeRecue,
-      jeuxRecus: this.reservation?.jeuxRecus,
-      nbPetitesTables: this.reservation?.nbSmallTables,
-      nbGrandesTables: this.reservation?.nbLargeTables,
-      nbTablesMairie: this.reservation?.nbCityHallTables,
-      typeAnimateur: this.reservation?.typeAnimateur === 0 ? 'benevole' : 'editeur'
+  loadTariffZones(festivalName: string) {
+    this.tariffZoneSvc.findByFestivalName(festivalName).subscribe({
+      next: (zones) => this.availableZones.set(zones),
+      error: (err) => console.error('Erreur chargement zones:', err)
     });
   }
 
-  addContactDate() {
-    this.contactDates.push({
-      date: new Date(),
-      comment: this.newContactComment || 'Relance sans commentaire'
+  loadSuiviHistory(id: number) {
+    this.reservationSvc.getSuiviHistory(id).subscribe({
+      next: (data) => this.suiviHistory.set(data),
+      error: (err) => console.error('Erreur chargement suivi:', err)
     });
-    this.newContactComment = ''; // Reset le champ
-    // TODO: Update backend (table suiviReservation)
   }
 
-  onStatusChange() {
-    const status = this.reservationForm.get('status')?.value;
-    console.log("Nouveau statut :", status);
-    // TODO: Trigger logique de facturation si statut === 'Facture'
+  loadReservationGames(id: number) {
+    this.reservationSvc.getReservationGames(id).subscribe({
+      next: (data) => this.reservationGames.set(data),
+      error: (err) => console.error('Erreur chargement jeux résa:', err)
+    });
+  }
+
+  onStatusChange(newStatus: string) {
+    const resId = this.reservationId();
+    if (!resId) return;
+    
+    this.reservationSvc.updateStatus(resId, newStatus).subscribe({
+      next: () => {
+        this.reservation.update(r => r ? { ...r, status: newStatus } : null);
+      },
+      error: (err) => console.error('Erreur update status:', err)
+    });
+  }
+
+  onSuiviAdded() {
+    const id = this.reservationId();
+    if (id) this.loadSuiviHistory(id);
+  }
+
+  onLogisticsUpdate() {
+    const res = this.reservation();
+    if (!res) return;
+
+    this.savingLogistics.set(true);
+    this.errorMessage.set(null);
+
+    this.reservationSvc.updateReservation(res.idReservation, res as any).subscribe({
+      next: () => {
+        this.savingLogistics.set(false);
+        alert("Logistique mise à jour avec succès !");
+      },
+      error: (err) => {
+        console.error('Erreur update logistique:', err);
+        this.errorMessage.set(err.error?.error || "Erreur lors de la mise à jour.");
+        this.savingLogistics.set(false);
+      }
+    });
+  }
+
+  updateField(field: keyof ReservationDAO, value: any) {
+    this.reservation.update(r => r ? { ...r, [field]: value } : null);
+  }
+
+  addGameToReservation(event: { game: Game; quantity: number }) {
+    const resId = this.reservationId();
+    if (!resId) return;
+
+    this.reservationSvc.addGameToReservation(resId, event.game.id, event.quantity).subscribe({
+      next: () => {
+        this.loadReservationGames(resId);
+        this.showGameSelector.set(false);
+      },
+      error: (err) => alert(err.error?.error || "Erreur lors de l'ajout du jeu.")
+    });
+  }
+
+  updateGameQuantity(gameId: number, quantity: number) {
+    const resId = this.reservationId();
+    if (!resId) return;
+
+    this.reservationSvc.updateGameInReservation(resId, gameId, { quantity }).subscribe({
+      next: () => this.loadReservationGames(resId),
+      error: (err) => console.error('Erreur update quantité:', err)
+    });
+  }
+
+  removeGame(gameId: number) {
+    if (!confirm("Retirer ce jeu de la réservation ?")) return;
+    
+    const resId = this.reservationId();
+    if (!resId) return;
+
+    this.reservationSvc.removeGameFromReservation(resId, gameId).subscribe({
+      next: () => this.loadReservationGames(resId),
+      error: (err) => console.error('Erreur suppression jeu:', err)
+    });
+  }
+
+  toggleGamePlaced(game: ReservationGame) {
+    const resId = this.reservationId();
+    if (!resId) return;
+
+    this.reservationSvc.updateGameInReservation(resId, game.id, { isGamePlaced: !game.isGamePlaced }).subscribe({
+      next: () => this.loadReservationGames(resId),
+      error: (err) => console.error('Erreur update placement:', err)
+    });
+  }
+
+  goBack() {
+    this.router.navigate(['/reservations']);
+  }
+
+  generateInvoice() {
+    if (!confirm("Générer la facture pour cet éditeur ? Cela passera le statut à 'Facturé'.")) return;
+    this.onStatusChange('Facturé');
+  }
+
+  markPaid() {
+    if (!confirm("Confirmer le paiement de la facture ? Cela passera le statut à 'Facture payée'.")) return;
+    this.onStatusChange('Facture payée');
   }
 }

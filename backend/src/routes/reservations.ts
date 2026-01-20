@@ -2,10 +2,11 @@ import { Router } from 'express'
 import pool from '../db/database.js'
 import { requireOrganizer } from '../middleware/auth-organizer.js'
 import { verifyToken } from '../middleware/token-management.js'
+import { validateNumericParam, validateStringLengths, normalizeBooleans } from '../middleware/validation.js'
 
 const router = Router()
 
-router.get('/:reservationId', verifyToken, requireOrganizer, async (req, res) => {
+router.get('/:reservationId', verifyToken, requireOrganizer, validateNumericParam('reservationId'), async (req, res) => {
     const reservationId = req.params.reservationId
     try {
         const query = `
@@ -62,38 +63,64 @@ router.get('/:reservationId', verifyToken, requireOrganizer, async (req, res) =>
 })
 
 // Route de création d'une réservation
-router.post('/', verifyToken, requireOrganizer, async (req, res) => {
+router.post('/', verifyToken, requireOrganizer, validateStringLengths({ status: 255, festivalName: 255 }), normalizeBooleans(['listeDemandee', 'listeRecue', 'jeuxRecus']), async (req, res) => {
     const { idEditor, status, nbSmallTables, nbLargeTables, nbCityHallTables, remise, typeAnimateur, listeDemandee, listeRecue, jeuxRecus, festivalName, idTZ } = req.body
-    if (!idEditor || !idTZ) {
-        return res.status(400).json({ error: "ID de l'éditeur et ID de la zone tarifaire obligatoires pour la création de réservation" })
+
+    // Validation des champs obligatoires
+    if (!idEditor || !festivalName) {
+        return res.status(400).json({ error: "ID éditeur et nom du festival obligatoires" })
     }
 
-    // Validation des tables
-    try {
-        await checkTableCapacity(idTZ, -1, nbSmallTables || 0, nbLargeTables || 0, nbCityHallTables || 0);
-    } catch (error: any) {
-        return res.status(400).json({ error: error.message });
+    // Validation des valeurs numériques
+    const smallTables = nbSmallTables || 0;
+    const largeTables = nbLargeTables || 0;
+    const cityHallTables = nbCityHallTables || 0;
+    const discount = remise || 0;
+
+    if (smallTables < 0 || largeTables < 0 || cityHallTables < 0) {
+        return res.status(400).json({ error: "Le nombre de tables ne peut pas être négatif" })
+    }
+    if (discount < 0) {
+        return res.status(400).json({ error: "La remise ne peut pas être négative" })
     }
 
+    // Validation de la capacité de la zone tarifaire (si idTZ fourni)
+    if (idTZ) {
+        try {
+            await checkTableCapacity(idTZ, -1, smallTables, largeTables, cityHallTables);
+        } catch (error: any) {
+            return res.status(400).json({ error: error.message });
+        }
+    }
+
+    const client = await pool.connect();
     try {
-        const { rows } = await pool.query(
+        await client.query('BEGIN');
+
+        const { rows } = await client.query(
             'INSERT INTO "reservation" ("idEditor", "status", "nbSmallTables", "nbLargeTables", "nbCityHallTables", "remise", "typeAnimateur", "listeDemandee", "listeRecue", "jeuxRecus", "festivalName", "idTZ") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING "idReservation"',
-            [idEditor, status, nbSmallTables, nbLargeTables, nbCityHallTables, remise, typeAnimateur, listeDemandee, listeRecue, jeuxRecus, festivalName, idTZ]
+            [idEditor, status || 'Contacté', smallTables, largeTables, cityHallTables, discount, typeAnimateur || 0, listeDemandee || false, listeRecue || false, jeuxRecus || false, festivalName, idTZ || null]
         )
+
+        await client.query('COMMIT');
         return res.status(201).json({ message: 'Réservation créée', id: rows[0].idReservation })
     } catch (err: any) {
-        //Catch les erreurs d'unicité, ici de la clé primaire 
+        await client.query('ROLLBACK');
         if (err.code === '23505') {
-            return res.status(409).json({ error: 'Id de la réservation déjà existant' })
-        } else {
-            console.error(err);
-            return res.status(500).json({ error: 'Erreur serveur' })
+            return res.status(409).json({ error: 'Réservation déjà existante' })
         }
+        if (err.code === '23503') {
+            return res.status(400).json({ error: 'Référence invalide (éditeur, festival ou zone tarifaire inexistant)' })
+        }
+        console.error(err);
+        return res.status(500).json({ error: 'Erreur serveur' })
+    } finally {
+        client.release();
     }
 })
 
 // Route de mise à jour d'une réservation
-router.post('/update/:reservationId', verifyToken, requireOrganizer, async (req, res) => {
+router.post('/update/:reservationId', verifyToken, requireOrganizer, validateNumericParam('reservationId'), validateStringLengths({ status: 255 }), normalizeBooleans(['listeDemandee', 'listeRecue', 'jeuxRecus']), async (req, res) => {
     const reservationId = req.params.reservationId
     const { status, nbSmallTables, nbLargeTables, nbCityHallTables, remise, typeAnimateur, listeDemandee, listeRecue, jeuxRecus, idTZ } = req.body
     try {
@@ -146,7 +173,7 @@ router.post('/update/:reservationId', verifyToken, requireOrganizer, async (req,
 })
 
 // Route pour récupérer les réservations d'un editeur 
-router.get('/byEditor/:idEditor', verifyToken, requireOrganizer, async (req, res) => {
+router.get('/byEditor/:idEditor', verifyToken, requireOrganizer, validateNumericParam('idEditor'), async (req, res) => {
     const idEditor = req.params.idEditor
     try {
         const query = `
@@ -246,7 +273,7 @@ router.get('/byFestival/:festivalName', verifyToken, requireOrganizer, async (re
 })
 
 // Route pour récupérer les jeux d'une réservation
-router.get('/:reservationId/games', verifyToken, requireOrganizer, async (req, res) => {
+router.get('/:reservationId/games', verifyToken, requireOrganizer, validateNumericParam('reservationId'), async (req, res) => {
     const reservationId = req.params.reservationId
     try {
         const query = `
@@ -293,7 +320,7 @@ router.get('/:reservationId/games', verifyToken, requireOrganizer, async (req, r
 })
 
 // Route pour ajouter un jeu à une réservation
-router.post('/:reservationId/games', verifyToken, requireOrganizer, async (req, res) => {
+router.post('/:reservationId/games', verifyToken, requireOrganizer, validateNumericParam('reservationId'), async (req, res) => {
     const reservationId = req.params.reservationId
     const { idGame, quantity } = req.body
 
@@ -317,7 +344,7 @@ router.post('/:reservationId/games', verifyToken, requireOrganizer, async (req, 
 })
 
 // Route pour mettre à jour un jeu dans une réservation (quantité, placement)
-router.put('/:reservationId/games/:gameId', verifyToken, requireOrganizer, async (req, res) => {
+router.put('/:reservationId/games/:gameId', verifyToken, requireOrganizer, validateNumericParam('reservationId'), validateNumericParam('gameId'), normalizeBooleans(['isGamePlaced']), async (req, res) => {
     const { reservationId, gameId } = req.params
     const { quantity, isGamePlaced } = req.body
 
@@ -342,7 +369,7 @@ router.put('/:reservationId/games/:gameId', verifyToken, requireOrganizer, async
 })
 
 // Route pour retirer un jeu d'une réservation
-router.delete('/:reservationId/games/:gameId', verifyToken, requireOrganizer, async (req, res) => {
+router.delete('/:reservationId/games/:gameId', verifyToken, requireOrganizer, validateNumericParam('reservationId'), validateNumericParam('gameId'), async (req, res) => {
     const { reservationId, gameId } = req.params
 
     try {
@@ -363,7 +390,7 @@ router.delete('/:reservationId/games/:gameId', verifyToken, requireOrganizer, as
 })
 
 // Route pour supprimer une réservation (avec cascade)
-router.delete('/:reservationId', verifyToken, requireOrganizer, async (req, res) => {
+router.delete('/:reservationId', verifyToken, requireOrganizer, validateNumericParam('reservationId'), async (req, res) => {
     const reservationId = req.params.reservationId
     const client = await pool.connect()
 

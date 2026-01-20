@@ -7,6 +7,8 @@ import pool from '../db/database.js'
 import { requireAdmin } from '../middleware/auth-admin.js'
 import { requireOrganizer } from '../middleware/auth-organizer.js'
 import { verifyToken } from '../middleware/token-management.js'
+import { getCurrentDate } from '../utils/date.js'
+import { validateStringLengths, normalizeBooleans } from '../middleware/validation.js'
 
 const router = Router()
 
@@ -127,13 +129,9 @@ router.get('/:festivalName', verifyToken, async (req, res) => {
     }
 });
 //Route pour la création d'un festival
-router.post('/', verifyToken, requireOrganizer, async (req, res) => {
+router.post('/', verifyToken, requireOrganizer, validateStringLengths({ name: 255 }), normalizeBooleans(['isCurrent']), async (req, res) => {
     const { name, nbSmallTables, nbLargeTables, nbCityHallTables, begin_date, end_date } = req.body;
-    const dateActuelle: Date = new Date();
-    //Gérer le fuseau horaire et formate pour le type Date de postgres
-    const decalageFuseauHoraire_ms: number = dateActuelle.getTimezoneOffset() * 60 * 1000;
-    const dateAjustee: Date = new Date(dateActuelle.getTime() - decalageFuseauHoraire_ms);
-    const creation_date: string = dateAjustee.toISOString().substring(0, 10);
+    const creation_date = getCurrentDate();
     const tariffZones = req.body.tariffZones;
 
     const client = await pool.connect();
@@ -230,7 +228,7 @@ router.post('/', verifyToken, requireOrganizer, async (req, res) => {
     }
 })
 
-router.post('/update/:festivalName', verifyToken, requireOrganizer, async (req, res) => {
+router.post('/update/:festivalName', verifyToken, requireOrganizer, validateStringLengths({ festivalName: 255 }), normalizeBooleans(['isCurrent']), async (req, res) => {
     const festivalNameParam = req.params.festivalName;
     const { nbSmallTables, nbLargeTables, nbCityHallTables, remainingSmallTables, remainingLargeTables, remainingCityHallTables, begin_date, end_date } = req.body;
     const tariffZones = req.body.tariffZones;

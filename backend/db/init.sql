@@ -76,10 +76,10 @@ CREATE TABLE IF NOT EXISTS "tariffZone" (
     "remainingSmallTables" INTEGER,
     "remainingLargeTables" INTEGER,
     "remainingCityHallTables" INTEGER,
-    "smallTablePrice" NUMERIC,
-    "largeTablePrice" NUMERIC,
-    "cityHallTablePrice" NUMERIC,
-    "squareMeterPrice" NUMERIC,
+    "smallTablePrice" INTEGER,
+    "largeTablePrice" INTEGER,
+    "cityHallTablePrice" INTEGER,
+    "squareMeterPrice" INTEGER,
     "festivalName" TEXT REFERENCES "festival"("name") NOT NULL
 );
 
@@ -93,10 +93,10 @@ CREATE TABLE IF NOT EXISTS "game" (
     "idGameType" INTEGER REFERENCES "gameType"("id") NOT NULL,
     "minimumAge" INTEGER NOT NULL,
     "prototype" BOOLEAN NOT NULL DEFAULT FALSE,
-    "duration" INTEGER NOT NULL, --A voir
+    "duration" INTEGER NOT NULL,
     "theme" TEXT,
     "description" TEXT,
-    "gameImage" TEXT, --a voir
+    "gameImage" TEXT,
     "rulesTutorial" TEXT,
     "edition" INTEGER,
     "idEditor" INTEGER REFERENCES "editor"("id") NOT NULL
@@ -109,7 +109,7 @@ CREATE TABLE IF NOT EXISTS "reservation" (
     "nbSmallTables" INTEGER,
     "nbLargeTables" INTEGER,
     "nbCityHallTables" INTEGER,
-    "remise" FLOAT,
+    "remise" INTEGER, --on indique directement le montant de la remise
     "typeAnimateur" INTEGER, -- 0 = a besoin de bénévoles, 1 = n'a pas besoin de bénévoles
     "listeDemandee" BOOLEAN,
     "listeRecue" BOOLEAN,
@@ -132,8 +132,8 @@ CREATE TABLE IF NOT EXISTS "contact" (
     "id" SERIAL PRIMARY KEY,
     "name" TEXT NOT NULL,
     "email" TEXT NOT NULL CHECK ("email" ~ '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'),
-    "phone" TEXT, -- phone dans Contact.ts est optionnel ???
-    "role" TEXT, -- role dans Contact.ts est optionnel ???
+    "phone" TEXT,
+    "role" TEXT,
     "priority" BOOLEAN,
     "idEditor" INTEGER REFERENCES "editor"("id") NOT NULL
 );
