@@ -12,6 +12,7 @@ import { TariffZone } from '../../interfaces/tariff-zone';
 import { ReservationGame } from '../../interfaces/reservation-game';
 import { GameService } from '../../services/game-service';
 import { ReservationGameSelector } from '../reservation-game-selector/reservation-game-selector';
+import { ReservationStatusService } from '../../services/reservation-status.service';
 import { Game } from '../../interfaces/game';
 
 @Component({
@@ -28,6 +29,7 @@ export class ReservationWorkflow {
   readonly editorSvc = inject(EditorService);
   readonly tariffZoneSvc = inject(TariffZoneService);
   readonly gameSvc = inject(GameService);
+  readonly reservationStatusSvc = inject(ReservationStatusService);
 
   reservationId = signal<number | null>(null);
   reservation = signal<ReservationDAO | null>(null);
@@ -39,16 +41,7 @@ export class ReservationWorkflow {
   errorMessage = signal<string | null>(null);
   showGameSelector = signal(false);
 
-  availableStatuses = [
-    'Pas encore de contact',
-    'Contact pris',
-    'Discussion en cours',
-    'Sera absent',
-    'Considéré absent',
-    'Présent',
-    'Facturé',
-    'Facture payée'
-  ];
+  availableStatuses = this.reservationStatusSvc.getAvailableStatuses();
 
   editor = computed(() => {
     const res = this.reservation();
@@ -70,7 +63,7 @@ export class ReservationWorkflow {
     const smallPrice = (res.nbSmallTables || 0) * Number(zone.smallTablePrice || 0);
     const largePrice = (res.nbLargeTables || 0) * Number(zone.largeTablePrice || 0);
     const cityHallPrice = (res.nbCityHallTables || 0) * Number(zone.cityHallTablePrice || 0);
-    
+
     return Math.max(0, smallPrice + largePrice + cityHallPrice - Number(res.remise || 0));
   });
 
@@ -127,7 +120,7 @@ export class ReservationWorkflow {
   onStatusChange(newStatus: string) {
     const resId = this.reservationId();
     if (!resId) return;
-    
+
     this.reservationSvc.updateStatus(resId, newStatus).subscribe({
       next: () => {
         this.reservation.update(r => r ? { ...r, status: newStatus } : null);
@@ -190,7 +183,7 @@ export class ReservationWorkflow {
 
   removeGame(gameId: number) {
     if (!confirm("Retirer ce jeu de la réservation ?")) return;
-    
+
     const resId = this.reservationId();
     if (!resId) return;
 
