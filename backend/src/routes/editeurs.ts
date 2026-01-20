@@ -314,76 +314,17 @@ router.get('/festival/:festivalName', verifyToken, async (req, res) => {
 // Route de suppression d'un éditeur par ID
 router.delete('/:editorId', verifyToken, requireAdmin, validateNumericParam('editorId'), async (req, res) => {
     const editorId = req.params.editorId;
-    const client = await pool.connect();
-
     try {
-        await client.query('BEGIN');
-
-        // 1. Supprimer les références dans game_mechanism (via les jeux de l'éditeur)
-        await client.query(`
-            DELETE FROM "game_mechanism" 
-            WHERE "idGame" IN (SELECT "id" FROM "game" WHERE "idEditor" = $1)
-        `, [editorId]);
-
-        // 2. Supprimer les références dans game_planArea (via les jeux de l'éditeur)
-        await client.query(`
-            DELETE FROM "game_planArea" 
-            WHERE "idGame" IN (SELECT "id" FROM "game" WHERE "idEditor" = $1)
-        `, [editorId]);
-
-        // 3. Supprimer les références dans game_festival (via les jeux de l'éditeur OU les réservations de l'éditeur)
-        await client.query(`
-            DELETE FROM "game_festival" 
-            WHERE "idGame" IN (SELECT "id" FROM "game" WHERE "idEditor" = $1)
-            OR "idReservation" IN (SELECT "idReservation" FROM "reservation" WHERE "idEditor" = $1)
-        `, [editorId]);
-
-        // 4. Supprimer les références dans suiviReservation (via les réservations de l'éditeur)
-        await client.query(`
-            DELETE FROM "suiviReservation" 
-            WHERE "idReservation" IN (SELECT "idReservation" FROM "reservation" WHERE "idEditor" = $1)
-        `, [editorId]);
-
-        // 5. Supprimer les références dans reservation_game (via les réservations de l'éditeur OU les jeux de l'éditeur)
-        // Note: DELETE CASCADE sur la FK aiderait, mais ici on le fait manuellement pour être sûr
-        await client.query(`
-            DELETE FROM "reservation_game" 
-            WHERE "idReservation" IN (SELECT "idReservation" FROM "reservation" WHERE "idEditor" = $1)
-            OR "idGame" IN (SELECT "id" FROM "game" WHERE "idEditor" = $1)
-        `, [editorId]);
-
-        // 6. Supprimer les jeux de l'éditeur
-        await client.query('DELETE FROM "game" WHERE "idEditor" = $1', [editorId]);
-
-        // 7. Supprimer les références dans editor_festival
-        await client.query('DELETE FROM "editor_festival" WHERE "idEditor" = $1', [editorId]);
-
-        // 8. Supprimer les références dans editor_planArea
-        await client.query('DELETE FROM "editor_planArea" WHERE "idEditor" = $1', [editorId]);
-
-        // 9. Supprimer les contacts de l'éditeur
-        await client.query('DELETE FROM "contact" WHERE "idEditor" = $1', [editorId]);
-
-        // 10. Supprimer les réservations de l'éditeur
-        await client.query('DELETE FROM "reservation" WHERE "idEditor" = $1', [editorId]);
-
-        // 11. Enfin, supprimer l'éditeur
-        const { rowCount } = await client.query('DELETE FROM "editor" WHERE "id" = $1', [editorId]);
+        const { rowCount } = await pool.query('DELETE FROM "editor" WHERE "id" = $1', [editorId]);
 
         if (rowCount === 0) {
-            await client.query('ROLLBACK');
             return res.status(404).json({ error: "Éditeur non trouvé" });
         }
 
-        await client.query('COMMIT');
-        return res.status(200).json({ message: 'Éditeur et toutes ses données associées ont été supprimés avec succès' });
-
+        return res.status(200).json({ message: 'Éditeur supprimé' });
     } catch (err: any) {
-        await client.query('ROLLBACK');
-        console.error("Erreur lors de la suppression de l'éditeur:", err);
-        return res.status(500).json({ error: 'Erreur serveur lors de la suppression' });
-    } finally {
-        client.release();
+        console.error(err);
+        return res.status(500).json({ error: 'Erreur serveur' });
     }
 });
 
