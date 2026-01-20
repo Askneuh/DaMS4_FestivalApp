@@ -7,13 +7,14 @@ import { PlanAreaGame } from '../interfaces/plan-area-game';
 import { AssignedGame } from '../interfaces/assigned-game';
 import { EditorWithGameCount } from '../interfaces/editor-with-game-count';
 import { GameAssignmentRequest } from '../interfaces/game-assignment-request';
+import { environment } from '../../environment/environment';
 
 @Injectable({
   providedIn: 'root',
 })
 export class PlanAreaService {
-  public readonly API_URL = 'https://localhost:4000/api/planArea';
-  public readonly http = inject(HttpClient);
+  private readonly API_URL = `${environment.apiUrl}/planArea`;
+  private readonly http = inject(HttpClient);
 
 
   getPlanAreasByFestival(festivalName: string): Observable<PlanArea[]> {

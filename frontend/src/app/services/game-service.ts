@@ -3,13 +3,14 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Game } from '../interfaces/game';
 import { Mechanism } from '../interfaces/mechanism';
+import { environment } from '../../environment/environment';
 
 @Injectable({
   providedIn: 'root',
 })
 export class GameService {
   private readonly http = inject(HttpClient);
-  private readonly apiUrl = 'https://localhost:4000/api';
+  private readonly apiUrl = environment.apiUrl;
 
   private readonly _gameList = signal<Game[]>([]);
   readonly gameList = this._gameList.asReadonly();
@@ -69,5 +70,53 @@ export class GameService {
 
   getGamesByTariffZone(tariffZone: string): Observable<Game[]> {
     return this.http.get<Game[]>(`${this.apiUrl}/games/byTariffZone/${tariffZone}`, { withCredentials: true });
+  }
+
+
+  mapFormToGame(formValue: any): Game {
+    return {
+      id: formValue.id,
+      name: formValue.name,
+      author: formValue.author,
+      nbMinPlayer: formValue.nbMinPlayer,
+      nbMaxPlayer: formValue.nbMaxPlayer,
+      idGameType: formValue.idGameType,
+      minimumAge: formValue.minimumAge,
+      duration: formValue.duration,
+      prototype: formValue.prototype,
+      theme: formValue.theme,
+      description: formValue.description,
+      gameNotice: formValue.gameNotice,
+      gameImage: formValue.gameImage,
+      rulesTutorial: formValue.rulesTutorial,
+      edition: formValue.edition,
+      idEditor: formValue.idEditor
+    };
+  }
+
+  /**
+   * Retourne les valeurs par défaut pour la création d'un jeu
+   * @param editorId - ID de l'éditeur
+   * @returns Objet Game avec valeurs par défaut
+   */
+  getDefaultGameValues(editorId: number): Partial<Game> {
+    return {
+      id: 0,
+      name: '',
+      author: '',
+      nbMinPlayer: 1,
+      nbMaxPlayer: 4,
+      idGameType: 1,
+      minimumAge: 6,
+      duration: 30,
+      prototype: false,
+      theme: '',
+      description: '',
+      gameNotice: '',
+      gameImage: '',
+      rulesTutorial: '',
+      edition: 2024,
+      idEditor: editorId
+    };
   }
 }

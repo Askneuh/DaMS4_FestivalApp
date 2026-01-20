@@ -2,13 +2,14 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Game } from '../interfaces/game';
 import { Observable } from 'rxjs';
+import { environment } from '../../environment/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class GameServiceTemp {
-  private readonly API_URL = 'https://localhost:4000/api/game';
-  private http = inject(HttpClient);
+  private readonly API_URL = `${environment.apiUrl}/game`;
+  private readonly http = inject(HttpClient);
 
   getGameById(id: number): Observable<Game> {
     return this.http.get<Game>(`${this.API_URL}/${id}`, { withCredentials: true });

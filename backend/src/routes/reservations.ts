@@ -102,6 +102,14 @@ router.post('/', verifyToken, requireOrganizer, validateStringLengths({ status: 
             [idEditor, status || 'Contact pris', smallTables, largeTables, cityHallTables, discount, typeAnimateur || 0, listeDemandee || false, listeRecue || false, jeuxRecus || false, festivalName, idTZ || null]
         )
 
+        // Mettre à jour les tables restantes de la zone tarifaire
+        if (idTZ) {
+            await updateZoneRemainingTables(client, idTZ);
+        }
+
+        // Mettre à jour les tables restantes du festival
+        await updateFestivalRemainingTables(client, festivalName);
+
         await client.query('COMMIT');
         return res.status(201).json({ message: 'Réservation créée', id: rows[0].idReservation })
     } catch (err: any) {
@@ -164,6 +172,29 @@ router.post('/update/:reservationId', verifyToken, requireOrganizer, validateNum
         if (rowCount === 0) {
             return res.status(404).json({ error: "Réservation non trouvée" })
         }
+
+        // Mettre à jour les tables restantes
+        // Si la zone a changé, mettre à jour les deux zones
+        const updateClient = await pool.connect();
+        try {
+            if (idTZ !== undefined && idTZ !== current.idtz) {
+                // Ancienne zone
+                if (current.idtz) {
+                    await updateZoneRemainingTables(updateClient, current.idtz);
+                }
+                // Nouvelle zone
+                await updateZoneRemainingTables(updateClient, idTZ);
+            } else if (targetIdTZ) {
+                // Même zone, juste mise à jour des quantités
+                await updateZoneRemainingTables(updateClient, targetIdTZ);
+            }
+
+            // Mettre à jour les tables restantes du festival
+            await updateFestivalRemainingTables(updateClient, current.festivalname);
+        } finally {
+            updateClient.release();
+        }
+
         return res.status(200).json({ message: 'Réservation mise à jour' })
     } catch (err: any) {
         if (err.message && err.message.startsWith('Capacité')) {
@@ -449,4 +480,104 @@ async function checkTableCapacity(idTZ: number, excludeResId: number, newSmall: 
     if (currentUsedCityp + newCityHall > availableTheoreticallyCityp) {
         throw new Error(`Capacité dépassée pour les tables de réception (Max: ${availableTheoreticallyCityp}, Utilisées: ${currentUsedCityp}, Demandées: ${newCityHall})`);
     }
+}
+
+/**
+ * Met à jour les tables restantes d'une zone tarifaire
+ * en recalculant depuis toutes les réservations actives
+ * @param client - Client PostgreSQL (peut être une transaction)
+ * @param idTZ - ID de la zone tarifaire à mettre à jour
+ */
+async function updateZoneRemainingTables(client: any, idTZ: number) {
+    // 1. Récupérer le total de tables de la zone
+    const zoneQuery = `
+        SELECT "nbSmallTables", "nbLargeTables", "nbCityHallTables"
+        FROM "tariffZone"
+        WHERE "idTZ" = $1
+    `;
+    const { rows: zoneRows } = await client.query(zoneQuery, [idTZ]);
+
+    if (zoneRows.length === 0) {
+        throw new Error("Zone tarifaire introuvable");
+    }
+
+    const zone = zoneRows[0];
+
+    // 2. Calculer le total utilisé par les réservations
+    const usedQuery = `
+        SELECT 
+            COALESCE(SUM("nbSmallTables"), 0) as used_small,
+            COALESCE(SUM("nbLargeTables"), 0) as used_large,
+            COALESCE(SUM("nbCityHallTables"), 0) as used_city_hall
+        FROM "reservation"
+        WHERE "idTZ" = $1
+    `;
+    const { rows: usedRows } = await client.query(usedQuery, [idTZ]);
+    const used = usedRows[0];
+
+    // 3. Calculer les tables restantes
+    const remainingSmall = zone.nbsmalltables - parseInt(used.used_small);
+    const remainingLarge = zone.nblargetables - parseInt(used.used_large);
+    const remainingCityHall = zone.nbcityhalltables - parseInt(used.used_city_hall);
+
+    // 4. Mettre à jour la zone tarifaire
+    const updateQuery = `
+        UPDATE "tariffZone"
+        SET 
+            "remainingSmallTables" = $1,
+            "remainingLargeTables" = $2,
+            "remainingCityHallTables" = $3
+        WHERE "idTZ" = $4
+    `;
+    await client.query(updateQuery, [remainingSmall, remainingLarge, remainingCityHall, idTZ]);
+}
+
+/**
+ * Met à jour les tables restantes d'un festival
+ * en recalculant depuis toutes les réservations actives
+ * @param client - Client PostgreSQL (peut être une transaction)
+ * @param festivalName - Nom du festival à mettre à jour
+ */
+async function updateFestivalRemainingTables(client: any, festivalName: string) {
+    // 1. Récupérer le total de tables du festival
+    const festivalQuery = `
+        SELECT "nbSmallTables", "nbLargeTables", "nbCityHallTables"
+        FROM "festival"
+        WHERE "name" = $1
+    `;
+    const { rows: festivalRows } = await client.query(festivalQuery, [festivalName]);
+
+    if (festivalRows.length === 0) {
+        throw new Error("Festival introuvable");
+    }
+
+    const festival = festivalRows[0];
+
+    // 2. Calculer le total utilisé par toutes les réservations du festival
+    const usedQuery = `
+        SELECT 
+            COALESCE(SUM("nbSmallTables"), 0) as used_small,
+            COALESCE(SUM("nbLargeTables"), 0) as used_large,
+            COALESCE(SUM("nbCityHallTables"), 0) as used_city_hall
+        FROM "reservation"
+        WHERE "festivalName" = $1
+    `;
+    const { rows: usedRows } = await client.query(usedQuery, [festivalName]);
+    const used = usedRows[0];
+
+    // 3. Calculer les tables restantes
+    const remainingSmall = festival.nbsmalltables - parseInt(used.used_small);
+    const remainingLarge = festival.nblargetables - parseInt(used.used_large);
+    const remainingCityHall = festival.nbcityhalltables - parseInt(used.used_city_hall);
+
+    // 4. Mettre à jour le festival
+    const updateQuery = `
+        UPDATE "festival"
+        SET 
+            "remainingSmallTables" = $1,
+            "remainingLargeTables" = $2,
+            "remainingCityHallTables" = $3
+        WHERE "name" = $4
+    `;
+    await client.query(updateQuery, [remainingSmall, remainingLarge, remainingCityHall, festivalName]);
 }

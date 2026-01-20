@@ -3,13 +3,14 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { TariffZone } from '../interfaces/tariff-zone';
 import { TariffZoneGame } from '../interfaces/tariff-zone-game';
+import { environment } from '../../environment/environment';
 
 @Injectable({
   providedIn: 'root',
 })
 export class TariffZoneService {
   private readonly http = inject(HttpClient);
-  private readonly apiUrl = 'https://localhost:4000/api';
+  private readonly apiUrl = environment.apiUrl;
 
   private readonly _tariffZoneList = signal<TariffZone[]>([]);
   readonly tariffZoneList = this._tariffZoneList.asReadonly();
