@@ -9,6 +9,7 @@ import { adminGuard } from './shared/admin/admin-guard';
 import { EditorList } from './components/editor-list/editor-list';
 import { EditorGamesComponent } from './components/editor-games/editor-games';
 import { EditorContactsComponent } from './components/editor-contacts/editor-contacts';
+import { PlanManagement } from './components/plan-management/plan-management';
 import { ReservationList } from './components/reservation-list/reservation-list';
 import { ReservationWorkflow } from './components/reservation-workflow/reservation-workflow';
 
@@ -19,6 +20,7 @@ export const routes: Routes = [
     { path: 'home', component: WelcomePage, canActivate: [authGuardInterceptor] },
     { path: 'login', component: Login },
     { path: 'festival_list', component: FestivalList, canActivate: [authGuardInterceptor] },
+    { path: 'plan-management', component: PlanManagement },
     { path: 'reservations', component: ReservationList, canActivate: [authGuardInterceptor] },
     { path: 'reservation-workflow/:id', component: ReservationWorkflow, canActivate: [authGuardInterceptor] },
     { path: 'admin', component: Admin, canActivate: [authGuardInterceptor, adminGuard] },

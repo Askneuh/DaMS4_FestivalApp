@@ -4,6 +4,8 @@
     <a routerLink="" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">Accueil</a>
     <a routerLink="festival_list" routerLinkActive="active">Festivals</a>
     <a routerLink="editor-list" routerLinkActive="active">Éditeurs</a>
+    <a routerLink="plan-management" routerLinkActive="active">Zone du Plan</a>
+    @if (this.auth_svc.isLoggedIn() && this.auth_svc.currentUser()?.role == 'admin') {
     <a routerLink="reservations" routerLinkActive="active">Réservations</a>
     @if (authSvc.isLoggedIn() && authSvc.currentUser()?.role == 'admin') {
     <a routerLink="admin" routerLinkActive="active">Admin</a>
