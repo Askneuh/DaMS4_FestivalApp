@@ -2,13 +2,14 @@ import { Injectable, inject, signal, WritableSignal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Contact } from '../interfaces/contact';
+import { environment } from '../../environment/environment';
 
 @Injectable({
   providedIn: 'root',
 })
 export class ContactService {
   private readonly http = inject(HttpClient);
-  private readonly base = 'https://localhost:4000/api/contact';
+  private readonly base = `${environment.apiUrl}/contact`;
 
   private readonly _contacts: WritableSignal<Contact[]> = signal<Contact[]>([]);
   readonly contacts = this._contacts.asReadonly();

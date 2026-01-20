@@ -5,13 +5,14 @@ import { Game } from '../interfaces/game';
 import { EditorWithReservationStatus } from '../interfaces/editor-with-reservation-status';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../environment/environment';
 
 @Injectable({
   providedIn: 'root',
 })
 export class EditorService {
   private readonly http = inject(HttpClient)
-  private readonly apiUrl = 'https://localhost:4000/api';
+  private readonly apiUrl = environment.apiUrl;
 
   private readonly _editors = signal<Editor[]>([])
   readonly editors = this._editors.asReadonly()
@@ -67,5 +68,53 @@ export class EditorService {
 
   removeEditor(id: number): Observable<{ message: string }> {
     return this.http.delete<{ message: string }>(`${this.apiUrl}/editeurs/${id}`, { withCredentials: true });
+  }
+
+  /**
+   * Transforme les données du formulaire en objet Editor
+   * @param formValue - Valeurs brutes du formulaire
+   * @returns Editor typé
+   */
+  mapFormToEditor(formValue: any): Editor {
+    return {
+      id: formValue.id ?? 0,
+      name: formValue.name,
+      exposant: formValue.exposant,
+      distributeur: formValue.distributeur,
+      logo: formValue.logo
+    };
+  }
+
+  /**
+   * Filtre et trie les éditeurs selon les critères
+   * @param editors - Liste des éditeurs
+   * @param filterType - Type de filtre ('all' | 'exposant' | 'distributeur' | 'both')
+   * @param searchTerm - Terme de recherche
+   * @returns Liste filtrée et triée
+   */
+  filterEditors(
+    editors: Editor[],
+    filterType: 'all' | 'exposant' | 'distributeur' | 'both',
+    searchTerm: string
+  ): Editor[] {
+    let result = editors;
+
+    // Filtrage par type
+    if (filterType === 'exposant') {
+      result = result.filter(e => e.exposant);
+    } else if (filterType === 'distributeur') {
+      result = result.filter(e => e.distributeur);
+    } else if (filterType === 'both') {
+      result = result.filter(e => e.exposant && e.distributeur);
+    }
+
+    // Filtrage par recherche
+    if (searchTerm) {
+      const search = searchTerm.toLowerCase();
+      result = result.filter(e => e.name.toLowerCase().startsWith(search));
+    }
+
+    // Tri alphabétique
+    return result.sort((a, b) => a.name.localeCompare(b.name));
   }
 }
