@@ -35,14 +35,14 @@ export class FestivalService {
 
 
 
-  addFestival(festival: Festival): void {
-    this.http.post<Festival>(`${this.apiUrl}/festivals`, festival, { withCredentials: true })
-      .subscribe({
-        next: (newFestival) => {
+  addFestival(festival: Festival): Observable<Festival> {
+    return this.http.post<Festival>(`${this.apiUrl}/festivals`, festival, { withCredentials: true })
+      .pipe(
+        tap((newFestival) => {
           this._currentFestival.set(newFestival);
           this.loadFestivalsFromBD();
-        }
-      });
+        })
+      );
   }
 
 

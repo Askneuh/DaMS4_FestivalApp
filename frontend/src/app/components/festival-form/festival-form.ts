@@ -135,8 +135,18 @@ export class FestivalFormComponent {
       }
       // MODE CRÉATION
       else {
-        this.festivalService.addFestival(festival);
-        this.finishSubmit();
+        this.festivalService.addFestival(festival).subscribe({
+          next: () => {
+            this.finishSubmit();
+          },
+          error: (err) => {
+            if (err.status === 409) {
+              alert('Un festival avec ce nom existe déjà. Veuillez choisir un autre nom.');
+            } else {
+              alert(err.error?.error || 'Erreur lors de la création du festival.');
+            }
+          }
+        });
       }
     }
   }
