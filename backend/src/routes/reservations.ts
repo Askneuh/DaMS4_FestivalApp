@@ -38,6 +38,7 @@ router.get('/:reservationId', verifyToken, requireOrganizer, validateNumericPara
             nbSmallTables: row.nbSmallTables,
             nbLargeTables: row.nbLargeTables,
             nbCityHallTables: row.nbCityHallTables,
+            m2: row.m2 || 0,
             remise: row.remise,
             typeAnimateur: row.typeAnimateur,
             listeDemandee: row.listeDemandee,
@@ -64,7 +65,7 @@ router.get('/:reservationId', verifyToken, requireOrganizer, validateNumericPara
 
 // Route de création d'une réservation
 router.post('/', verifyToken, requireOrganizer, validateStringLengths({ status: 255, festivalName: 255 }), normalizeBooleans(['listeDemandee', 'listeRecue', 'jeuxRecus']), async (req, res) => {
-    const { idEditor, status, nbSmallTables, nbLargeTables, nbCityHallTables, remise, typeAnimateur, listeDemandee, listeRecue, jeuxRecus, festivalName, idTZ } = req.body
+    const { idEditor, status, nbSmallTables, nbLargeTables, nbCityHallTables, m2, remise, typeAnimateur, listeDemandee, listeRecue, jeuxRecus, festivalName, idTZ } = req.body
 
     // Validation des champs obligatoires
     if (!idEditor || !festivalName) {
@@ -98,8 +99,8 @@ router.post('/', verifyToken, requireOrganizer, validateStringLengths({ status: 
         await client.query('BEGIN');
 
         const { rows } = await client.query(
-            'INSERT INTO "reservation" ("idEditor", "status", "nbSmallTables", "nbLargeTables", "nbCityHallTables", "remise", "typeAnimateur", "listeDemandee", "listeRecue", "jeuxRecus", "festivalName", "idTZ") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING "idReservation"',
-            [idEditor, status || 'Contact pris', smallTables, largeTables, cityHallTables, discount, typeAnimateur || 0, listeDemandee || false, listeRecue || false, jeuxRecus || false, festivalName, idTZ || null]
+            'INSERT INTO "reservation" ("idEditor", "status", "nbSmallTables", "nbLargeTables", "nbCityHallTables", "m2", "remise", "typeAnimateur", "listeDemandee", "listeRecue", "jeuxRecus", "festivalName", "idTZ") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING "idReservation"',
+            [idEditor, status || 'Contact pris', smallTables, largeTables, cityHallTables, m2 || 0, discount, typeAnimateur || 0, listeDemandee || false, listeRecue || false, jeuxRecus || false, festivalName, idTZ || null]
         )
 
         // Mettre à jour les tables restantes de la zone tarifaire
@@ -130,7 +131,7 @@ router.post('/', verifyToken, requireOrganizer, validateStringLengths({ status: 
 // Route de mise à jour d'une réservation
 router.post('/update/:reservationId', verifyToken, requireOrganizer, validateNumericParam('reservationId'), validateStringLengths({ status: 255 }), normalizeBooleans(['listeDemandee', 'listeRecue', 'jeuxRecus']), async (req, res) => {
     const reservationId = req.params.reservationId
-    const { status, nbSmallTables, nbLargeTables, nbCityHallTables, remise, typeAnimateur, listeDemandee, listeRecue, jeuxRecus, idTZ } = req.body
+    const { status, nbSmallTables, nbLargeTables, nbCityHallTables, m2, remise, typeAnimateur, listeDemandee, listeRecue, jeuxRecus, idTZ } = req.body
     try {
         // 1. Récupérer la réservation actuelle pour avoir les valeurs courantes si non fournies
         const currentRes = await pool.query('SELECT * FROM "reservation" WHERE "idReservation" = $1', [reservationId]);
@@ -160,14 +161,15 @@ router.post('/update/:reservationId', verifyToken, requireOrganizer, validateNum
                 "nbSmallTables" = COALESCE($2, "nbSmallTables"), 
                 "nbLargeTables" = COALESCE($3, "nbLargeTables"), 
                 "nbCityHallTables" = COALESCE($4, "nbCityHallTables"), 
-                "remise" = COALESCE($5, "remise"), 
-                "typeAnimateur" = COALESCE($6, "typeAnimateur"), 
-                "listeDemandee" = COALESCE($7, "listeDemandee"), 
-                "listeRecue" = COALESCE($8, "listeRecue"), 
-                "jeuxRecus" = COALESCE($9, "jeuxRecus"), 
-                "idTZ" = COALESCE($10, "idTZ") 
-            WHERE "idReservation" = $11`,
-            [status, nbSmallTables, nbLargeTables, nbCityHallTables, remise, typeAnimateur, listeDemandee, listeRecue, jeuxRecus, idTZ, reservationId]
+                "m2" = COALESCE($5, "m2"),
+                "remise" = COALESCE($6, "remise"), 
+                "typeAnimateur" = COALESCE($7, "typeAnimateur"), 
+                "listeDemandee" = COALESCE($8, "listeDemandee"), 
+                "listeRecue" = COALESCE($9, "listeRecue"), 
+                "jeuxRecus" = COALESCE($10, "jeuxRecus"), 
+                "idTZ" = COALESCE($11, "idTZ") 
+            WHERE "idReservation" = $12`,
+            [status, nbSmallTables, nbLargeTables, nbCityHallTables, m2, remise, typeAnimateur, listeDemandee, listeRecue, jeuxRecus, idTZ, reservationId]
         )
         if (rowCount === 0) {
             return res.status(404).json({ error: "Réservation non trouvée" })
@@ -503,10 +505,10 @@ async function updateZoneRemainingTables(client: any, idTZ: number) {
 
     const zone = zoneRows[0];
 
-    // 2. Calculer le total utilisé par les réservations
+    // 2. Calculer le total utilisé par les réservations (including m² converted to small tables)
     const usedQuery = `
         SELECT 
-            COALESCE(SUM("nbSmallTables"), 0) as used_small,
+            COALESCE(SUM("nbSmallTables" + CEIL(COALESCE("m2", 0)::float / 4)), 0) as used_small,
             COALESCE(SUM("nbLargeTables"), 0) as used_large,
             COALESCE(SUM("nbCityHallTables"), 0) as used_city_hall
         FROM "reservation"
@@ -554,10 +556,10 @@ async function updateFestivalRemainingTables(client: any, festivalName: string) 
 
     const festival = festivalRows[0];
 
-    // 2. Calculer le total utilisé par toutes les réservations du festival
+    // 2. Calculer le total utilisé par toutes les réservations du festival (including m² converted to small tables)
     const usedQuery = `
         SELECT 
-            COALESCE(SUM("nbSmallTables"), 0) as used_small,
+            COALESCE(SUM("nbSmallTables" + CEIL(COALESCE("m2", 0)::float / 4)), 0) as used_small,
             COALESCE(SUM("nbLargeTables"), 0) as used_large,
             COALESCE(SUM("nbCityHallTables"), 0) as used_city_hall
         FROM "reservation"

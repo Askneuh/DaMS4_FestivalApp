@@ -56,13 +56,17 @@ router.get('/current-festival/withReservationStatus', verifyToken, async (req, r
                 r."nbSmallTables",
                 r."nbLargeTables",
                 r."nbCityHallTables",
+                r."m2",
                 r."remise",
+                -- Total tables (including m² converted to small tables)
+                (COALESCE(r."nbSmallTables", 0) + COALESCE(r."nbLargeTables", 0) + COALESCE(r."nbCityHallTables", 0) + CEIL(COALESCE(r."m2", 0)::float / 4)) as "totalTables",
                 -- Calcul du prix total
                 COALESCE(
                     (SELECT 
                         (COALESCE(r."nbSmallTables", 0) * COALESCE(tz."smallTablePrice", 0) +
                          COALESCE(r."nbLargeTables", 0) * COALESCE(tz."largeTablePrice", 0) +
-                         COALESCE(r."nbCityHallTables", 0) * COALESCE(tz."cityHallTablePrice", 0)) - 
+                         COALESCE(r."nbCityHallTables", 0) * COALESCE(tz."cityHallTablePrice", 0) +
+                         COALESCE(r."m2", 0) * (COALESCE(tz."smallTablePrice", 0)::float / 4)) - 
                         COALESCE(r."remise", 0)
                     FROM "tariffZone" tz
                     WHERE tz."idTZ" = r."idTZ"),
@@ -97,8 +101,10 @@ router.get('/current-festival/withReservationStatus', verifyToken, async (req, r
                 nbSmallTables: row.nbSmallTables,
                 nbLargeTables: row.nbLargeTables,
                 nbCityHallTables: row.nbCityHallTables,
+                m2: row.m2 || 0,
                 remise: parseFloat(row.remise) || 0,
                 totalPrice: parseFloat(row.totalPrice) || 0,
+                totalTables: parseInt(row.totalTables) || 0,
                 lastContactDate: row.lastContactDate
             } : null,
             contact: row.contactId ? {
@@ -137,13 +143,17 @@ router.get('/festival/:festivalName/withReservationStatus', verifyToken, async (
                 r."nbSmallTables",
                 r."nbLargeTables",
                 r."nbCityHallTables",
+                r."m2",
                 r."remise",
+                -- Total tables (including m² converted to small tables)
+                (COALESCE(r."nbSmallTables", 0) + COALESCE(r."nbLargeTables", 0) + COALESCE(r."nbCityHallTables", 0) + CEIL(COALESCE(r."m2", 0)::float / 4)) as "totalTables",
                 -- Calcul du prix total
                 COALESCE(
                     (SELECT 
                         (COALESCE(r."nbSmallTables", 0) * COALESCE(tz."smallTablePrice", 0) +
                          COALESCE(r."nbLargeTables", 0) * COALESCE(tz."largeTablePrice", 0) +
-                         COALESCE(r."nbCityHallTables", 0) * COALESCE(tz."cityHallTablePrice", 0)) - 
+                         COALESCE(r."nbCityHallTables", 0) * COALESCE(tz."cityHallTablePrice", 0) +
+                         COALESCE(r."m2", 0) * (COALESCE(tz."smallTablePrice", 0)::float / 4)) - 
                         COALESCE(r."remise", 0)
                     FROM "tariffZone" tz
                     WHERE tz."idTZ" = r."idTZ"),
@@ -178,8 +188,10 @@ router.get('/festival/:festivalName/withReservationStatus', verifyToken, async (
                 nbSmallTables: row.nbSmallTables,
                 nbLargeTables: row.nbLargeTables,
                 nbCityHallTables: row.nbCityHallTables,
+                m2: row.m2 || 0,
                 remise: parseFloat(row.remise) || 0,
                 totalPrice: parseFloat(row.totalPrice) || 0,
+                totalTables: parseInt(row.totalTables) || 0,
                 lastContactDate: row.lastContactDate
             } : null,
             contact: row.contactId ? {

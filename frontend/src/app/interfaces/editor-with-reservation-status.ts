@@ -19,8 +19,10 @@ export interface EditorWithReservationStatus {
         nbSmallTables: number;
         nbLargeTables: number;
         nbCityHallTables: number;
+        m2: number;
         remise: number;
         totalPrice: number;
+        totalTables: number;
         lastContactDate: Date | null;
     } | null;
 
