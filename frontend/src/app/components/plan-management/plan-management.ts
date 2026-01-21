@@ -126,17 +126,41 @@ export class PlanManagement {
         if (selectedZone) {
           const filteredAreas = areas.filter(area => area.idTZ === selectedZone.idTZ);
 
-          filteredAreas.forEach(area => {
-            this.planAreaService.getAssignedGames(area.id).subscribe({
-              next: (assignedGames) => {
-                area.presentedGames = assignedGames;
-                this.planAreas.set([...this.planAreas()]);
-              },
-              error: (err) => console.error('Erreur chargement jeux:', err)
-            });
-          });
+          // Charger les détails (jeux + éditeurs) pour chaque zone
+          const detailRequests = filteredAreas.map(area => 
+            forkJoin({
+              games: this.planAreaService.getAssignedGames(area.id),
+              editors: this.planAreaService.getEditorsFromAssignedGames(area.id)
+            }).pipe(
+              // On peut catcher l'erreur individuellement pour ne pas casser tout le chargement
+              /* catchError(() => of({ games: [], editors: [] })) */ 
+              // Pour l'instant on laisse propager si erreur
+            )
+          );
 
-          this.planAreas.set(filteredAreas);
+          if (detailRequests.length > 0) {
+            forkJoin(detailRequests).subscribe({
+              next: (results) => {
+                results.forEach((res, index) => {
+                  filteredAreas[index].presentedGames = res.games;
+                  filteredAreas[index].editors = res.editors;
+                });
+                this.planAreas.set(filteredAreas);
+                
+                // Si une zone est en cours de visualisation, mettre à jour ses données
+                const currentViewing = this.viewingPlanArea();
+                if (currentViewing) {
+                  const updated = filteredAreas.find(a => a.id === currentViewing.id);
+                  if (updated) {
+                    this.viewingPlanArea.set(updated);
+                  }
+                }
+              },
+              error: (err) => console.error('Erreur chargement détails zones:', err)
+            });
+          } else {
+            this.planAreas.set(filteredAreas);
+          }
         }
       },
       error: (err) => {
@@ -196,6 +220,7 @@ export class PlanManagement {
     this.planAreaService.unassignGameFromPlanArea(area.id, game.id, qtyToRemove, game.idReservation).subscribe({
       next: () => {
         this.loadEditingAreaGames(area.id);
+        this.loadPlanAreas(); // Rafraîchir la liste principale (cartes)
         const zone = this.selectedTariffZone();
         if (zone) {
           this.loadAvailableGames(zone.idTZ);
@@ -231,6 +256,7 @@ export class PlanManagement {
         this.selectedQuantities.set(quantities);
 
         this.loadEditingAreaGames(area.id);
+        this.loadPlanAreas(); // Rafraîchir la liste principale
         const zone = this.selectedTariffZone();
         if (zone) {
           this.loadAvailableGames(zone.idTZ);
@@ -427,11 +453,21 @@ export class PlanManagement {
     }
   }
 
+  viewingPlanArea = signal<PlanArea | null>(null);
+
+  viewDetails(area: PlanArea) {
+    this.viewingPlanArea.set(area);
+  }
+
   finalizeSubmit() {
     this.planAreaForm.reset();
     this.showForm.set(false);
     this.editingPlanArea.set(null);
     this.selectedGameIds.set(new Set());
+    
+    // Si on éditait une zone qui est actuellement visualisée en détails, on veut recharger ses détails
+    // loadPlanAreas va rafraîchir les données de toutes les zones, donc viewingPlanArea pointera vers des données "obsèques"
+    // On rappelle loadPlanAreas, et on mettra à jour viewingPlanArea quand les nouvelles données arriveront
     this.loadPlanAreas();
     
     const zone = this.selectedTariffZone();

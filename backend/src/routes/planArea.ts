@@ -444,11 +444,11 @@ router.get('/:planAreaId/editors-from-games', verifyToken, validateNumericParam(
         const query = `
             SELECT DISTINCT
                 e.*,
-                COUNT(DISTINCT gf."idGame") as game_count
+                COUNT(DISTINCT gpa."idGame") as game_count
             FROM "editor" e
-            JOIN "reservation" r ON e."id" = r."idEditor"
-            JOIN "game_festival" gf ON r."idReservation" = gf."idReservation"
-            WHERE gf."idPA" = $1
+            JOIN "game" g ON e."id" = g."idEditor"
+            JOIN "game_planArea" gpa ON g."id" = gpa."idGame"
+            WHERE gpa."idPA" = $1
             GROUP BY e."id", e."name", e."exposant", e."distributeur", e."logo"
             ORDER BY e."name"
         `;

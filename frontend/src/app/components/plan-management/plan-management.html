@@ -100,28 +100,11 @@
                     </div>
                   </div>
 
-                  <!-- Liste des jeux assignés -->
-                  @if (area.presentedGames && area.presentedGames.length > 0) {
-                    <div class="assigned-games-section">
-                      <h6>Jeux assignés ({{ area.presentedGames.length }})</h6>
-                      <div class="games-list-view">
-                        @for (game of area.presentedGames; track game.id) {
-                          <div class="game-list-item">
-                            <span class="game-qty-badge" title="Quantité assignée">{{ game.quantity }}x</span>
-                            <span class="game-name" [title]="game.name">{{ game.name }}</span>
-                            <span class="game-editor-small">{{ game.editorName }}</span>
-                          </div>
-                        }
-                      </div>
-                    </div>
-                  } @else {
-                    <div class="no-games-assigned">
-                      <span>Aucun jeu assigné</span>
-                    </div>
-                  }
-
                   <!-- Boutons d'action -->
                   <div class="plan-area-actions">
+                    <button class="btn-action btn-view" (click)="viewDetails(area)" title="Voir Détails">
+                      Voir Détails
+                    </button>
                     <button class="btn-action btn-edit" (click)="editPlanArea(area)" title="Modifier">
                       Modifier
                     </button>
@@ -301,6 +284,63 @@
                 </button>
               </div>
             </form>
+          </div>
+        }
+
+        <!-- Section Détails en bas de page -->
+        @if (viewingPlanArea(); as detailArea) {
+          <div class="details-section" id="details-section">
+            <div class="details-header">
+              <h3>Détails : {{ detailArea.name }}</h3>
+              <button class="btn-close-details" (click)="viewingPlanArea.set(null)">Fermer</button>
+            </div>
+            
+            <div class="details-content">
+              <!-- Colonne Jeux -->
+              <div class="details-column">
+                <h4>Jeux présents ({{ detailArea.presentedGames?.length || 0 }})</h4>
+                @if (detailArea.presentedGames && detailArea.presentedGames.length > 0) {
+                  <div class="games-table-container">
+                    <table class="games-table">
+                      <thead>
+                        <tr>
+                          <th>Jeu</th>
+                          <th>Éditeur</th>
+                          <th>Quantité</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        @for (game of detailArea.presentedGames; track game.id) {
+                          <tr>
+                            <td>{{ game.name }}</td>
+                            <td>{{ game.editorName }}</td>
+                            <td><span class="badge-qty">{{ game.quantity }}</span></td>
+                          </tr>
+                        }
+                      </tbody>
+                    </table>
+                  </div>
+                } @else {
+                  <p class="empty-msg">Aucun jeu dans cette zone</p>
+                }
+              </div>
+
+              <!-- Colonne Éditeurs -->
+              <div class="details-column">
+                <h4>Éditeurs présents ({{ detailArea.editors?.length || 0 }})</h4>
+                @if (detailArea.editors && detailArea.editors.length > 0) {
+                  <div class="editors-grid-large">
+                    @for (editor of detailArea.editors; track editor.id) {
+                      <div class="editor-card-large">
+                        <span class="editor-name-large">{{ editor.name }}</span>
+                      </div>
+                    }
+                  </div>
+                } @else {
+                  <p class="empty-msg">Aucun éditeur dans cette zone</p>
+                }
+              </div>
+            </div>
           </div>
         }
       </div>
