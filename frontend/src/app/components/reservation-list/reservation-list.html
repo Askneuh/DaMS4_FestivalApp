@@ -79,7 +79,7 @@
                 </span>
               </td>
               <td class="last-contact">
-                {{ item.lastContact || '-' }}
+                {{ item.lastContact ? dateFormatter.formatDateTime(item.lastContact) : '-' }}
               </td>
               <td class="tables">
                 {{ item.totalTables || '-' }}
