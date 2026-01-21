@@ -1,6 +1,7 @@
 import { Component, inject, input, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ReservationService } from '../../services/reservation-service';
+import { DateFormatterService } from '../../services/date-formatter.service';
 import { SuiviReservation } from '../../interfaces/suivi-reservation';
 
 @Component({
@@ -11,6 +12,7 @@ import { SuiviReservation } from '../../interfaces/suivi-reservation';
 })
 export class SuiviHistoryComponent {
   readonly reservationSvc = inject(ReservationService);
+  readonly dateFormatter = inject(DateFormatterService);
 
   reservationId = input.required<number>();
   currentStatus = input.required<string>();
@@ -49,14 +51,5 @@ export class SuiviHistoryComponent {
     });
   }
 
-  formatDate(dateStr: string): string {
-    const date = new Date(dateStr);
-    return date.toLocaleDateString('fr-FR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  }
+
 }

@@ -24,12 +24,7 @@ export class EditorContactsComponent {
   editorId = signal<number>(0);
 
   sortedContacts = computed(() => {
-    const all = this.contacts();
-    return [...all].sort((a, b) => {
-      if (a.priority && !b.priority) return -1;
-      if (!a.priority && b.priority) return 1;
-      return a.name.localeCompare(b.name);
-    });
+    return this.contactService.sortContactsByPriority(this.contacts());
   });
 
   constructor() {

@@ -34,4 +34,16 @@ export class ContactService {
     return this.http.post(`${this.base}/update/${contact.id}`, contact, { withCredentials: true });
   }
 
+  /**
+   * Trie les contacts par priorité puis par nom
+   * @param contacts - Liste des contacts à trier
+   * @returns Liste triée des contacts (prioritaires en premier, puis alphabétique)
+   */
+  sortContactsByPriority(contacts: Contact[]): Contact[] {
+    return [...contacts].sort((a, b) => {
+      if (a.priority && !b.priority) return -1;
+      if (!a.priority && b.priority) return 1;
+      return a.name.localeCompare(b.name);
+    });
+  }
 }

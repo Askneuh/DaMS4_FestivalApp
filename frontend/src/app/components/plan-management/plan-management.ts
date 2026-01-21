@@ -22,7 +22,7 @@ export class PlanManagement {
   private planAreaService = inject(PlanAreaService);
 
   currentFestival = this.festivalService.currentFestival;
-  
+
   tariffZones = computed(() => {
     const festival = this.currentFestival();
     return festival?.tariffZones || [];
@@ -30,7 +30,7 @@ export class PlanManagement {
 
   selectedTariffZone = signal<TariffZone | null>(null);
   showForm = signal(false);
-  
+
   planAreas = signal<PlanArea[]>([]);
   availableGames = signal<TariffZoneGame[]>([]);
   selectedGameIds = signal<Set<number>>(new Set());
@@ -70,7 +70,7 @@ export class PlanManagement {
         const selectedZone = this.selectedTariffZone();
         if (selectedZone) {
           const filteredAreas = areas.filter(area => area.idTZ === selectedZone.idTZ);
-          
+
           filteredAreas.forEach(area => {
             this.planAreaService.getAssignedGames(area.id).subscribe({
               next: (assignedGames) => {
@@ -78,13 +78,13 @@ export class PlanManagement {
                   ...game,
                   quantity: 1
                 }));
-                
+
                 this.planAreas.set([...this.planAreas()]);
               },
               error: (err) => console.error('Erreur chargement jeux:', err)
             });
           });
-          
+
           this.planAreas.set(filteredAreas);
         }
       },
@@ -146,7 +146,7 @@ export class PlanManagement {
     this.planAreaService.deletePlanArea(area.id).subscribe({
       next: () => {
         alert('Zone de plan supprimée avec succès !');
-        
+
         const newRemainingSmall = Math.min(
           selectedZone.remainingSmallTables + area.nbSmallTables,
           selectedZone.nbSmallTables
@@ -161,8 +161,8 @@ export class PlanManagement {
         );
 
         const updatePayload: TariffZone = {
-          idTZ: selectedZone.idTZ,  
-          festivalName: selectedZone.festivalName,  
+          idTZ: selectedZone.idTZ,
+          festivalName: selectedZone.festivalName,
           name: selectedZone.name,
           nbSmallTables: selectedZone.nbSmallTables,
           nbLargeTables: selectedZone.nbLargeTables,
@@ -179,7 +179,7 @@ export class PlanManagement {
         this.tariffZoneService.updateTariffZoneById(selectedZone.idTZ, updatePayload).subscribe({
           next: () => {
             this.festivalService.loadFestivalsFromBD();
-            
+
             setTimeout(() => {
               const festival = this.currentFestival();
               if (festival) {
@@ -224,14 +224,21 @@ export class PlanManagement {
     const requestedLarge = formValue.nbLargeTables || 0;
     const requestedCityHall = formValue.nbCityHallTables || 0;
 
-    const smallDiff = editingArea 
-      ? requestedSmall - editingArea.nbSmallTables 
+    // Basic client-side validation for negative numbers (UX improvement)
+    if (requestedSmall < 0 || requestedLarge < 0 || requestedCityHall < 0) {
+      alert('Le nombre de tables ne peut pas être négatif');
+      return;
+    }
+
+    // Quick client-side check for obvious errors (UX improvement)
+    const smallDiff = editingArea
+      ? requestedSmall - editingArea.nbSmallTables
       : requestedSmall;
     const largeDiff = editingArea
-      ? requestedLarge - editingArea.nbLargeTables 
+      ? requestedLarge - editingArea.nbLargeTables
       : requestedLarge;
-    const cityHallDiff = editingArea 
-      ? requestedCityHall - editingArea.nbCityHallTables 
+    const cityHallDiff = editingArea
+      ? requestedCityHall - editingArea.nbCityHallTables
       : requestedCityHall;
 
     if (smallDiff > selectedZone.remainingSmallTables) {
@@ -244,11 +251,6 @@ export class PlanManagement {
     }
     if (cityHallDiff > selectedZone.remainingCityHallTables) {
       alert(`Tables mairie : Vous demandez ${cityHallDiff} mais il n'y a que ${selectedZone.remainingCityHallTables} disponibles`);
-      return;
-    }
-
-    if (requestedSmall < 0 || requestedLarge < 0 || requestedCityHall < 0) {
-      alert('Le nombre de tables ne peut pas être négatif');
       return;
     }
 
@@ -274,7 +276,7 @@ export class PlanManagement {
           remainingLargeTables: selectedZone.remainingLargeTables - largeDiff,
           remainingCityHallTables: selectedZone.remainingCityHallTables - cityHallDiff
         };
-        
+
         this.tariffZoneService.updateTariffZoneById(selectedZone.idTZ, updatedZone).subscribe({
           next: () => {
             if (editingArea) {
@@ -287,28 +289,29 @@ export class PlanManagement {
           },
           error: (err: any) => {
             console.error('Erreur mise à jour zone tarifaire:', err);
-            alert('Zone créée mais erreur de mise à jour des tables');
+            alert(err.error?.error || 'Zone créée mais erreur de mise à jour des tables');
           }
         });
       },
       error: (err: any) => {
         console.error('Erreur:', err);
-        alert('Erreur lors de l\'opération');
+        // Display backend validation error
+        alert(err.error?.error || 'Erreur lors de l\'opération');
       }
     });
   }
 
   assignSelectedGames(planAreaId: number, festivalName: string) {
     const gameIds = Array.from(this.selectedGameIds());
-    
+
     if (gameIds.length === 0) {
       this.finalizeCreation();
       return;
     }
-  
+
     const requests = gameIds.map(gameId => {
       const game = this.availableGames().find(g => g.id === gameId);
-      
+
       if (!game || !game.idReservation) {
         return null;
       }
@@ -338,18 +341,18 @@ export class PlanManagement {
   finalizeCreation() {
     alert('Zone de plan créée avec succès !');
     this.festivalService.loadFestivalsFromBD();
-    
+
     setTimeout(() => {
       const festival = this.currentFestival();
       const selectedZone = this.selectedTariffZone();
-      
+
       if (festival && selectedZone) {
         const updatedZone = festival.tariffZones?.find(z => z.idTZ === selectedZone.idTZ);
         if (updatedZone) {
           this.selectedTariffZone.set(updatedZone);
         }
       }
-      
+
       this.planAreaForm.reset();
       this.showForm.set(false);
       this.editingPlanArea.set(null);

@@ -206,20 +206,15 @@ export class ReservationGameSelector {
   searchTerm = signal('');
   source = signal<'editor' | 'distributors'>('editor');
   loading = signal(true);
-  
+
   editorGames = signal<Game[]>([]);
   distributorGames = signal<Game[]>([]);
-  
+
   quantities: { [key: number]: number } = {};
 
   filteredGames = computed(() => {
     const list = this.source() === 'editor' ? this.editorGames() : this.distributorGames();
-    const term = this.searchTerm().toLowerCase();
-    
-    return list.filter(g => 
-      g.name.toLowerCase().includes(term) || 
-      g.author.toLowerCase().includes(term)
-    );
+    return this.gameService.filterGames(list, this.searchTerm());
   });
 
   constructor() {
@@ -233,7 +228,7 @@ export class ReservationGameSelector {
 
   loadGames() {
     this.loading.set(true);
-    
+
     this.gameService.getGamesByEditor(this.editorId()).subscribe({
       next: (games) => {
         this.editorGames.set(games);

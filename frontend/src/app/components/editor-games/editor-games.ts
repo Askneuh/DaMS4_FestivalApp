@@ -27,19 +27,7 @@ export class EditorGamesComponent {
   sortBy = signal<'name' | 'author' | 'duration' | 'players'>('name');
 
   sortedGames = computed(() => {
-    const result = [...this.games()];
-    const sort = this.sortBy();
-    
-    if (sort === 'name') {
-      return result.sort((a, b) => a.name.localeCompare(b.name));
-    } else if (sort === 'author') {
-      return result.sort((a, b) => a.author.localeCompare(b.author));
-    } else if (sort === 'duration') {
-      return result.sort((a, b) => a.duration - b.duration);
-    } else if (sort === 'players') {
-      return result.sort((a, b) => a.nbMinPlayer - b.nbMinPlayer);
-    }
-    return result;
+    return this.gameService.sortGames(this.games(), this.sortBy());
   });
 
   constructor() {

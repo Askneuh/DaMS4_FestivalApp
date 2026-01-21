@@ -22,23 +22,11 @@ export class EditorList {
   filterType = signal<'all' | 'exposant' | 'distributeur' | 'both'>('all');
 
   filteredEditors = computed(() => {
-    let result = this.editors();
-
-    const filter = this.filterType();
-    if (filter === 'exposant') {
-      result = result.filter(e => e.exposant);
-    } else if (filter === 'distributeur') {
-      result = result.filter(e => e.distributeur);
-    } else if (filter === 'both') {
-      result = result.filter(e => e.exposant && e.distributeur);
-    }
-
-    const search = this.searchTerm().toLowerCase();
-    if (search) {
-      result = result.filter(e => e.name.toLowerCase().startsWith(search));
-    }
-
-    return result.sort((a, b) => a.name.localeCompare(b.name));
+    return this.svc.filterEditors(
+      this.editors(),
+      this.filterType(),
+      this.searchTerm()
+    );
   });
 
   onEditEditor(editor: Editor) {

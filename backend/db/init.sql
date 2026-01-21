@@ -142,7 +142,7 @@ CREATE TABLE IF NOT EXISTS "suiviReservation" (
     "id" SERIAL PRIMARY KEY,
     "status" TEXT NOT NULL,
     "commentaire" TEXT,
-    "date" DATE NOT NULL,
+    "date" TIMESTAMP NOT NULL,
     "idReservation" INTEGER REFERENCES "reservation"("idReservation") ON DELETE CASCADE NOT NULL
 );
 

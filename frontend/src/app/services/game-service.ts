@@ -119,4 +119,44 @@ export class GameService {
       idEditor: editorId
     };
   }
+
+  /**
+   * Filtre les jeux par terme de recherche
+   * @param games - Liste des jeux à filtrer
+   * @param searchTerm - Terme de recherche
+   * @returns Liste filtrée des jeux
+   */
+  filterGames(games: Game[], searchTerm: string): Game[] {
+    const term = searchTerm.toLowerCase();
+    return games.filter(g =>
+      g.name.toLowerCase().includes(term) ||
+      g.author.toLowerCase().includes(term)
+    );
+  }
+
+  /**
+   * Trie les jeux selon le critère spécifié
+   * @param games - Liste des jeux à trier
+   * @param sortBy - Critère de tri
+   * @returns Liste triée des jeux
+   */
+  sortGames(
+    games: Game[],
+    sortBy: 'name' | 'author' | 'duration' | 'players'
+  ): Game[] {
+    const result = [...games];
+
+    switch (sortBy) {
+      case 'name':
+        return result.sort((a, b) => a.name.localeCompare(b.name));
+      case 'author':
+        return result.sort((a, b) => a.author.localeCompare(b.author));
+      case 'duration':
+        return result.sort((a, b) => a.duration - b.duration);
+      case 'players':
+        return result.sort((a, b) => a.nbMinPlayer - b.nbMinPlayer);
+      default:
+        return result;
+    }
+  }
 }

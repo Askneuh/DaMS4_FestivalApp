@@ -9,6 +9,7 @@ import { FestivalService } from '../../services/festival-service';
 import { TariffZoneService } from '../../services/tariff-zone-service';
 import { Festival } from '../../interfaces/festival';
 import { CommonModule } from '@angular/common';
+import { ValidationService } from '../../services/validation.service';
 
 @Component({
   selector: 'app-festival-form',
@@ -18,9 +19,10 @@ import { CommonModule } from '@angular/common';
 })
 export class FestivalFormComponent {
   //fb: Service pour construire nos formulaires facilement
-  private fb = inject(FormBuilder);
-  private festivalService = inject(FestivalService);
-  private tariffZoneService = inject(TariffZoneService);
+  readonly fb = inject(FormBuilder);
+  readonly festivalService = inject(FestivalService);
+  readonly tariffZoneService = inject(TariffZoneService);
+  readonly validationService = inject(ValidationService);
   festivalToEdit = input<Festival | null>(null);
   formClosed = output<void>();
 
@@ -28,19 +30,22 @@ export class FestivalFormComponent {
   //Réactif: quand sa valeur change, l'interface se met à jour automatiquement
   showForm = signal(false);
 
-  festivalForm: FormGroup = this.fb.group({
-    //Le champ name est obligatoire et minimum 3 caracteres.
-    name: ['', [Validators.required, Validators.minLength(3)]],
-    //Les champs de tables sont obligatoires et minimum 0.
-    nbSmallTables: [0, [Validators.required, Validators.min(0)]],
-    nbLargeTables: [0, [Validators.required, Validators.min(0)]],
-    nbCityHallTables: [0, [Validators.required, Validators.min(0)]],
-    //FormArray vide au départ et on y ajoutera dynamiquement des zones tarifaires
-    tariffZones: this.fb.array([])
-  }, { validators: this.tableAllocationValidator }); // Ajout du validateur ici
+  // Déclarer sans initialiser (sera initialisé dans le constructor)
+  festivalForm!: FormGroup;
 
-  // Effect: Pré-remplit le formulaire quand on reçoit un festival à éditer
   constructor() {
+    // Initialiser le formulaire APRÈS les injections de dépendances
+    this.festivalForm = this.fb.group({
+      name: ['', [Validators.required, Validators.minLength(3)]],
+      nbSmallTables: [0, [Validators.required, Validators.min(0)]],
+      nbLargeTables: [0, [Validators.required, Validators.min(0)]],
+      nbCityHallTables: [0, [Validators.required, Validators.min(0)]],
+      tariffZones: this.fb.array([])
+    }, {
+      validators: this.tableAllocationValidator
+    });
+
+    // Effect: Pré-remplit le formulaire quand on reçoit un festival à éditer
     effect(() => {
       const festival = this.festivalToEdit();
       if (festival) {
@@ -145,23 +150,8 @@ export class FestivalFormComponent {
     if (this.festivalForm.valid) {
       const formValue = this.festivalForm.value;
 
-      const festival: Festival = {
-        name: formValue.name,
-        nbSmallTables: formValue.nbSmallTables,
-        nbLargeTables: formValue.nbLargeTables,
-        nbCityHallTables: formValue.nbCityHallTables,
-        remainingSmallTables: formValue.nbSmallTables,
-        remainingLargeTables: formValue.nbLargeTables,
-        remainingCityHallTables: formValue.nbCityHallTables,
-        isCurrent: false,
-        tariffZones: formValue.tariffZones.map((zone: any) => ({
-          ...zone,
-          remainingSmallTables: zone.nbSmallTables,
-          remainingLargeTables: zone.nbLargeTables,
-          remainingCityHallTables: zone.nbCityHallTables,
-          festivalName: formValue.name
-        }))
-      };
+      // Use service method instead of duplicating logic
+      const festival = this.festivalService.prepareFestivalForSave(formValue);
 
       // MODE ÉDITION
       if (this.festivalToEdit()) {
@@ -198,41 +188,17 @@ export class FestivalFormComponent {
   }
 
   // Custom Validator pour vérifier l'allocation des tables
-  tableAllocationValidator(group: AbstractControl): ValidationErrors | null {
-    const nbSmallTables = group.get('nbSmallTables')?.value || 0;
-    const nbLargeTables = group.get('nbLargeTables')?.value || 0;
-    const nbCityHallTables = group.get('nbCityHallTables')?.value || 0;
-
+  // Arrow function pour garder le contexte 'this'
+  tableAllocationValidator = (group: AbstractControl): ValidationErrors | null => {
     const tariffZones = group.get('tariffZones') as FormArray;
-
     if (!tariffZones) return null;
 
-    let allocatedSmall = 0;
-    let allocatedLarge = 0;
-    let allocatedCityHall = 0;
-
-    tariffZones.controls.forEach((zone) => {
-      allocatedSmall += zone.get('nbSmallTables')?.value || 0;
-      allocatedLarge += zone.get('nbLargeTables')?.value || 0;
-      allocatedCityHall += zone.get('nbCityHallTables')?.value || 0;
+    // Use service method instead of duplicating business logic
+    return this.validationService.validateTableAllocation({
+      nbSmallTables: group.get('nbSmallTables')?.value || 0,
+      nbLargeTables: group.get('nbLargeTables')?.value || 0,
+      nbCityHallTables: group.get('nbCityHallTables')?.value || 0,
+      tariffZones: tariffZones.value
     });
-
-    const errors: any = {};
-    let hasError = false;
-
-    if (allocatedSmall > nbSmallTables) {
-      errors.smallTablesExceeded = { allocated: allocatedSmall, total: nbSmallTables };
-      hasError = true;
-    }
-    if (allocatedLarge > nbLargeTables) {
-      errors.largeTablesExceeded = { allocated: allocatedLarge, total: nbLargeTables };
-      hasError = true;
-    }
-    if (allocatedCityHall > nbCityHallTables) {
-      errors.cityHallTablesExceeded = { allocated: allocatedCityHall, total: nbCityHallTables };
-      hasError = true;
-    }
-
-    return hasError ? errors : null;
   }
 }
