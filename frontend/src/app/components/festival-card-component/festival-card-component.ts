@@ -10,8 +10,9 @@ import { Festival } from '../../interfaces/festival';
 export class FestivalCardComponent {
   public festival = input<Festival>();
 
-  // Contrôler l'affichage du bouton
+  // Contrôler l'affichage des boutons
   showMakeCurrentButton = input<boolean>(false);
+  showEditDeleteButtons = input<boolean>(true);
   //Permet d'ajouter un bouton pour updater les infos d'un festival.
   editFestival = output<Festival>();
   // Output pour supprimer

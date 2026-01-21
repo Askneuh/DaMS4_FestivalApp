@@ -10,10 +10,39 @@
   border-radius: 8px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   overflow: hidden;
+  position: relative;
+  transition: all 0.3s ease;
 }
 
 .festival-card:hover {
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Festival courant - Highlight doré */
+.festival-card.current {
+  border: 2px solid #f59e0b;
+  box-shadow: 0 0 20px rgba(245, 158, 11, 0.3);
+  background: linear-gradient(135deg, #fffbeb 0%, white 100%);
+}
+
+.festival-card.current:hover {
+  box-shadow: 0 0 25px rgba(245, 158, 11, 0.4);
+}
+
+/* Badge Festival en cours */
+.current-badge {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: white;
+  padding: 0.5rem 1rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-top-right-radius: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.1);
 }
 
 /* Header */

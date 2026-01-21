@@ -68,7 +68,6 @@ export class FestivalFormComponent {
       smallTablePrice: new FormControl<number>(zone?.smallTablePrice ?? 0, { nonNullable: true, validators: [Validators.required, Validators.min(0)] }),
       largeTablePrice: new FormControl<number>(zone?.largeTablePrice ?? 0, { nonNullable: true, validators: [Validators.required, Validators.min(0)] }),
       cityHallTablePrice: new FormControl<number>(zone?.cityHallTablePrice ?? 0, { nonNullable: true, validators: [Validators.required, Validators.min(0)] }),
-      squareMeterPrice: new FormControl<number>(zone?.squareMeterPrice ?? 0, { nonNullable: true, validators: [Validators.required, Validators.min(0)] }),
       festivalName: new FormControl<string>(zone?.festivalName ?? '', { nonNullable: true })
     });
   }

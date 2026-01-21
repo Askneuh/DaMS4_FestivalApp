@@ -136,7 +136,7 @@ export class ReservationService {
       listeRecue: false,
       jeuxRecus: false,
       festivalName: festivalName,
-      idTZ: 1
+      idTZ: null
     };
   }
 
