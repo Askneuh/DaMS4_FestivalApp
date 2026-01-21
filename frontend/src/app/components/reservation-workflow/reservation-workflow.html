@@ -111,6 +111,20 @@
             <span class="available-hint">{{ remainingCityHallRealTime() }} disponibles</span>
           </div>
 
+          <!-- Surface en m² -->
+          <div class="form-group">
+            <label>Surface (m²)</label>
+            <input type="number" min="4" 
+              [max]="maxM2Available()"
+              [value]="reservation()!.m2 || 4"
+              (input)="updateField('m2', +$any($event.target).value)">
+            <span class="available-hint">
+              = {{ Math.ceil((reservation()?.m2 || 4) / 4) }} petites tables | 
+              Max: {{ maxM2Available() }}m² | 
+              Prix: {{ +(selectedZone()?.smallTablePrice || 0) / 4 }}€/m²
+            </span>
+          </div>
+
           <!-- Remise -->
           <div class="form-group">
             <label>Remise (€)</label>

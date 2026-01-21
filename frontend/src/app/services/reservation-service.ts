@@ -98,19 +98,23 @@ export class ReservationService {
       nbSmallTables: number;
       nbLargeTables: number;
       nbCityHallTables: number;
+      m2?: number;
       remise: number;
     },
     zone: {
       smallTablePrice: number;
       largeTablePrice: number;
       cityHallTablePrice: number;
+      squareMeterPrice?: number;
     }
   ): number {
     const smallPrice = (reservation.nbSmallTables || 0) * Number(zone.smallTablePrice || 0);
     const largePrice = (reservation.nbLargeTables || 0) * Number(zone.largeTablePrice || 0);
     const cityHallPrice = (reservation.nbCityHallTables || 0) * Number(zone.cityHallTablePrice || 0);
+    // m² price = smallTablePrice / 4 (since 4m² = 1 small table)
+    const m2Price = (reservation.m2 || 0) * (Number(zone.smallTablePrice || 0) / 4);
 
-    return Math.max(0, smallPrice + largePrice + cityHallPrice - Number(reservation.remise || 0));
+    return Math.max(0, smallPrice + largePrice + cityHallPrice + m2Price - Number(reservation.remise || 0));
   }
 
   /**
@@ -141,10 +145,11 @@ export class ReservationService {
    * @param reservation - Réservation
    * @returns Total de tables (small + large + cityHall)
    */
-  calculateTotalTablesCount(reservation: Reservation): number {
+  calculateTotalTablesCount(reservation: any): number {
     return (reservation.nbSmallTables || 0) +
       (reservation.nbLargeTables || 0) +
-      (reservation.nbCityHallTables || 0);
+      (reservation.nbCityHallTables || 0) +
+      Math.ceil((reservation.m2 || 0) / 4);
   }
 
   /**
@@ -182,7 +187,9 @@ export class ReservationService {
         lastContact: editor.reservation?.lastContactDate || null,
         totalPrice: editor.reservation?.totalPrice || 0,
         totalTables: editor.reservation
-          ? this.calculateTotalTablesCount(editor.reservation)
+          ? (editor.reservation.totalTables !== undefined 
+              ? editor.reservation.totalTables 
+              : this.calculateTotalTablesCount(editor.reservation))
           : 0
       }));
 

@@ -23,6 +23,7 @@ import { Game } from '../../interfaces/game';
   styleUrl: './reservation-workflow.css',
 })
 export class ReservationWorkflow {
+  Math = Math; // Expose Math for template
   readonly route = inject(ActivatedRoute);
   readonly router = inject(Router);
   readonly reservationSvc = inject(ReservationService);
@@ -72,12 +73,16 @@ export class ReservationWorkflow {
     const orig = this.originalReservation();
     if (!zone || !res || !orig) return 0;
 
+    // Calculate small tables used by m² (4m² = 1 small table, rounded up)
+    const m2Tables = Math.ceil((res.m2 || 0) / 4);
+    const origM2Tables = Math.ceil((orig.m2 || 0) / 4);
+
     if (res.idTZ === orig.idTZ) {
-      const delta = res.nbSmallTables - orig.nbSmallTables;
+      const delta = (res.nbSmallTables + m2Tables) - (orig.nbSmallTables + origM2Tables);
       return Math.max(0, zone.remainingSmallTables - delta);
     } else {
       // Zone changed: the selected zone's remaining count doesn't know about this reservation yet
-      return Math.max(0, zone.remainingSmallTables - res.nbSmallTables);
+      return Math.max(0, zone.remainingSmallTables - res.nbSmallTables - m2Tables);
     }
   });
 
@@ -107,6 +112,25 @@ export class ReservationWorkflow {
     } else {
       return Math.max(0, zone.remainingCityHallTables - res.nbCityHallTables);
     }
+  });
+
+  // Max m² available = (remaining small tables + tables from current m²) * 4
+  maxM2Available = computed(() => {
+    const zone = this.selectedZone();
+    const res = this.reservation();
+    const orig = this.originalReservation();
+    if (!zone || !res) return 4;
+
+    // Get base remaining (without m² effect)
+    let baseRemaining = zone.remainingSmallTables;
+    if (orig && res.idTZ === orig.idTZ) {
+      // Add back the tables we originally used (both from nbSmallTables and m²)
+      baseRemaining += orig.nbSmallTables + Math.ceil((orig.m2 || 0) / 4);
+    }
+    // Subtract currently selected small tables
+    baseRemaining -= res.nbSmallTables;
+    
+    return Math.max(4, baseRemaining * 4);
   });
 
   constructor() {
@@ -142,7 +166,9 @@ export class ReservationWorkflow {
 
   loadTariffZones(festivalName: string) {
     this.tariffZoneSvc.findByFestivalName(festivalName).subscribe({
-      next: (zones: any) => {
+      next: (zones) => {
+        console.log('[DEBUG] Zones loaded:', zones);
+        console.log('[DEBUG] First zone smallTablePrice:', zones[0]?.smallTablePrice);
         this.availableZones.set(zones);
         this.loading.set(false); // Only stop loading after zones are here
       },
@@ -209,6 +235,11 @@ export class ReservationWorkflow {
   }
 
   updateField(field: keyof ReservationDAO, value: any) {
+    // Clamp m² between 4 and max
+    if (field === 'm2') {
+      const max = this.maxM2Available();
+      value = Math.max(4, Math.min(value, max));
+    }
     this.reservation.update(r => r ? { ...r, [field]: value } : null);
   }
 
