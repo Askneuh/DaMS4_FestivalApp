@@ -96,143 +96,11 @@ section h2 {
   color: #c2185b;
 }
 
-/* Status Section */
-.status-selector select {
-  width: 100%;
-  padding: 0.75rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 1rem;
-  background: white;
-  cursor: pointer;
-}
-
-.status-selector select:focus {
-  outline: none;
-  border-color: #667eea;
-}
-
 /* Suivi Section */
 .suivi-section {
   padding: 0;
   box-shadow: none;
   background: transparent;
-}
-
-/* Logistique Section */
-.logistique-section .section-top {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.5rem;
-}
-
-.total-price-badge {
-  background: var(--primary-color, #667eea);
-  color: white;
-  padding: 0.5rem 1rem;
-  border-radius: 2rem;
-  font-size: 1.1rem;
-  font-weight: 600;
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-}
-
-.logistique-form {
-  background: #f8f9fa;
-  padding: 1.5rem;
-  border-radius: 8px;
-  border: 1px solid #e9ecef;
-}
-
-.form-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 1.5rem;
-  margin-bottom: 1.5rem;
-}
-
-.form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.form-group label {
-  font-weight: 500;
-  color: #495057;
-  font-size: 0.9rem;
-}
-
-.form-group input,
-.form-group select {
-  padding: 0.75rem;
-  border: 1px solid #ced4da;
-  border-radius: 4px;
-  font-size: 1rem;
-  transition: border-color 0.2s;
-}
-
-.form-group input:focus,
-.form-group select:focus {
-  outline: none;
-  border-color: #667eea;
-}
-
-.form-group.full-width {
-  grid-column: span 2;
-}
-
-.form-actions {
-  display: flex;
-  justify-content: flex-end;
-}
-
-.alert-danger {
-  background-color: #fff5f5;
-  color: #c53030;
-  padding: 0.75rem 1rem;
-  border-radius: 6px;
-  margin-bottom: 1.5rem;
-  border-left: 4px solid #c53030;
-  font-size: 0.9rem;
-}
-
-.organisation-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 2rem;
-  background: #f8f9fa;
-  padding: 1.5rem;
-  border-radius: 8px;
-  border: 1px solid #e9ecef;
-}
-
-.org-item label {
-  display: block;
-  font-weight: 600;
-  margin-bottom: 0.75rem;
-  color: #495057;
-}
-
-.radio-group,
-.checkboxes {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.radio-group label,
-.checkbox-label {
-  display: flex !important;
-  align-items: center;
-  gap: 0.5rem;
-  font-weight: normal !important;
-  margin-bottom: 0 !important;
-  cursor: pointer;
-}
-
-.mt-1 {
-  margin-top: 1rem;
 }
 
 .btn {
@@ -254,17 +122,6 @@ section h2 {
   background: #e9ecef;
 }
 
-.btn-danger {
-  background: #fff5f5;
-  color: #c53030;
-  border: 1px solid #feb2b2;
-}
-
-.btn-danger:hover {
-  background: #feb2b2;
-  color: white;
-}
-
 .btn-success {
   background: #c6f6d5;
   color: #22543d;
@@ -275,58 +132,6 @@ section h2 {
   background: #9ae6b4;
 }
 
-.btn-sm {
-  padding: 0.35rem 0.75rem;
-  font-size: 0.85rem;
-}
-
-.games-table-container {
-  overflow-x: auto;
-}
-
-.games-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 1rem;
-}
-
-.games-table th,
-.games-table td {
-  padding: 1rem;
-  text-align: left;
-  border-bottom: 1px solid #eee;
-}
-
-.games-table th {
-  background: #f8f9fa;
-  font-weight: 600;
-  color: #666;
-  font-size: 0.9rem;
-}
-
-.game-cell {
-  display: flex;
-  flex-direction: column;
-}
-
-.subtext {
-  font-size: 0.8rem;
-  color: #999;
-}
-
-.qty-input {
-  width: 60px;
-  padding: 0.4rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-}
-
-.empty-row {
-  text-align: center;
-  color: #999;
-  padding: 3rem !important;
-}
-
 .btn-primary {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
@@ -335,10 +140,4 @@ section h2 {
 .btn-primary:hover {
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-}
-
-.available-hint {
-  font-size: 0.8rem;
-  color: #28a745;
-  font-weight: 500;
 }
