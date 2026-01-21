@@ -1,7 +1,7 @@
 import { Component, inject, input, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ReservationService } from '../../services/reservation-service';
-import { DateFormatterService } from '../../services/date-formatter.service';
+import { DateFormatterService } from '../../services/date-formatter-service';
 import { SuiviReservation } from '../../interfaces/suivi-reservation';
 
 @Component({

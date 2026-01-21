@@ -12,7 +12,7 @@ import { TariffZone } from '../../interfaces/tariff-zone';
 import { ReservationGame } from '../../interfaces/reservation-game';
 import { GameService } from '../../services/game-service';
 import { ReservationGameSelector } from '../reservation-game-selector/reservation-game-selector';
-import { ReservationStatusService } from '../../services/reservation-status.service';
+import { ReservationStatusService } from '../../services/reservation-status-service';
 import { Game } from '../../interfaces/game';
 
 @Component({

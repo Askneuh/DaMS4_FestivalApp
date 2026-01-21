@@ -1,9 +1,9 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, effect, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { ReservationService } from '../../services/reservation-service';
 import { EditorService } from '../../services/editor-service';
 import { FestivalService } from '../../services/festival-service';
-import { DateFormatterService } from '../../services/date-formatter.service';
+import { DateFormatterService } from '../../services/date-formatter-service';
 import { EditorWithReservationStatus } from '../../interfaces/editor-with-reservation-status';
 
 @Component({
@@ -51,11 +51,14 @@ export class ReservationList {
   });
 
   constructor() {
-    if (this.currentFestival()) {
-      this.loadData();
-    } else {
-      this.loading.set(false);
-    }
+    effect(() => {
+      const festival = this.currentFestival();
+      if (festival) {
+        this.loadData();
+      } else {
+        this.loading.set(false);
+      }
+    });
   }
 
   loadData() {

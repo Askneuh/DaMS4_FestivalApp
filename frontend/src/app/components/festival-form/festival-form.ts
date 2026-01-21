@@ -9,7 +9,7 @@ import { FestivalService } from '../../services/festival-service';
 import { TariffZoneService } from '../../services/tariff-zone-service';
 import { Festival } from '../../interfaces/festival';
 import { CommonModule } from '@angular/common';
-import { ValidationService } from '../../services/validation.service';
+import { ValidationService } from '../../services/validation-service';
 import { TariffZoneForm } from '../tariff-zone-form/tariff-zone-form';
 
 @Component({
