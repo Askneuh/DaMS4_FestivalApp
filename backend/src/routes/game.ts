@@ -150,7 +150,8 @@ router.post('/', verifyToken, requireAdmin, validateStringLengths({ name: 255, a
             return res.status(409).json({ error: 'Id du jeu déjà existant' })
         }
         if (err.code === '23503') {
-            return res.status(400).json({ error: 'Référence invalide (éditeur ou type de jeu inexistant)' })
+            console.error('FK Violation:', err.detail);
+            return res.status(400).json({ error: `Référence invalide: ${err.detail} (ou contrainte: ${err.constraint})` })
         }
         console.error(err);
         return res.status(500).json({ error: 'Erreur serveur' })

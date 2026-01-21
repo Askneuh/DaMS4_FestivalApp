@@ -186,8 +186,9 @@ CREATE TABLE IF NOT EXISTS "editor_planArea" (
 CREATE TABLE IF NOT EXISTS "game_planArea" (
     "idGame" INTEGER REFERENCES "game"("id") ON DELETE CASCADE,
     "idPA" INTEGER REFERENCES "planArea"("id") ON DELETE CASCADE,
+    "idReservation" INTEGER REFERENCES "reservation"("idReservation") ON DELETE CASCADE,
     "quantity" INTEGER DEFAULT 1,
-    PRIMARY KEY("idGame", "idPA")
+    PRIMARY KEY("idGame", "idPA", "idReservation")
 );
 
 -- Représente un jeu présenté lors d'un festival, lié à une réservation et une zone

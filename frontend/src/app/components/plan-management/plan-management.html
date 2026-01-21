@@ -104,11 +104,13 @@
                   @if (area.presentedGames && area.presentedGames.length > 0) {
                     <div class="assigned-games-section">
                       <h6>Jeux assignés ({{ area.presentedGames.length }})</h6>
-                      <div class="games-chips">
+                      <div class="games-list-view">
                         @for (game of area.presentedGames; track game.id) {
-                          <span class="game-chip" [title]="game.name">
-                            {{ game.name }}
-                          </span>
+                          <div class="game-list-item">
+                            <span class="game-qty-badge" title="Quantité assignée">{{ game.quantity }}x</span>
+                            <span class="game-name" [title]="game.name">{{ game.name }}</span>
+                            <span class="game-editor-small">{{ game.editorName }}</span>
+                          </div>
                         }
                       </div>
                     </div>
@@ -185,28 +187,108 @@
                 />
               </div>
 
-              <!-- Section de sélection des jeux -->
+              <!-- Section de gestion des jeux -->
               <div class="form-group">
-                <label>Jeux à assigner à cette zone du plan</label>
-                
-                @if (availableGames().length > 0) {
-                  <div class="games-list">
-                    @for (game of availableGames(); track game.id) {
-                      <label class="game-item">
-                        <input 
-                          type="checkbox" 
-                          [checked]="selectedGameIds().has(game.id)"
-                          (change)="toggleGameSelection(game.id)"
-                        />
-                        <span class="game-name">{{ game.name }}</span>
-                        <span class="game-editor">({{ game.editorName }})</span>
-                        <span class="game-qty">{{ game.remainingQuantity }}/{{ game.totalQuantity }}</span>
-                      </label>
-                    }
-                  </div>
-                  <p class="selection-info">{{ selectedGameIds().size }} jeu(x) sélectionné(s)</p>
-                } @else {
-                  <p class="no-games">Aucun jeu disponible dans cette zone tarifaire</p>
+                <!-- MODE ÉDITION: Afficher jeux assignés avec option de retrait -->
+                @if (editingPlanArea()) {
+                  <label>Jeux actuellement assignés</label>
+                  @if (editingAreaGames().length > 0) {
+                    <div class="assigned-games-edit">
+                      @for (game of editingAreaGames(); track game.id) {
+                        <div class="assigned-game-item">
+                          <div class="game-info">
+                            <span class="game-name">{{ game.name }}</span>
+                            <span class="game-details">{{ game.editorName }} — Actuel: <strong>{{ game.quantity }}</strong></span>
+                          </div>
+                          
+                          <div class="remove-controls">
+                            <label class="qty-label">Retirer :</label>
+                            <input 
+                              type="number" 
+                              [value]="getRemovalQuantity(game.id)" 
+                              min="1" 
+                              [max]="game.quantity"
+                              (input)="updateRemovalQuantity(game.id, +$any($event.target).value, game.quantity)"
+                              class="qty-input-small"
+                            />
+                            <button type="button" class="btn-remove" (click)="removeGameFromZone(game)">
+                              Retirer
+                            </button>
+                          </div>
+                        </div>
+                      }
+                    </div>
+                  } @else {
+                    <p class="no-games">Aucun jeu assigné à cette zone</p>
+                  }
+
+                  <label class="label-spacing">Ajouter des jeux</label>
+                  @if (availableGames().length > 0) {
+                    <div class="games-list">
+                      @for (game of availableGames(); track game.id) {
+                        <div class="game-item-add">
+                          <span class="game-name">{{ game.name }}</span>
+                          <span class="game-editor">({{ game.editorName }})</span>
+                          <span class="game-qty">{{ game.remainingQuantity }}/{{ game.totalQuantity }}</span>
+                          
+                          <div class="qty-control">
+                            <input 
+                              type="number" 
+                              [value]="getQuantity(game.id)" 
+                              min="1" 
+                              [max]="game.remainingQuantity"
+                              (input)="updateQuantity(game.id, +$any($event.target).value, game.remainingQuantity)"
+                              class="qty-input"
+                            />
+                            <button type="button" class="btn-add" (click)="addGameToExistingZone(game)">
+                              Ajouter
+                            </button>
+                          </div>
+                        </div>
+                      }
+                    </div>
+                  } @else {
+                    <p class="no-games">Aucun jeu disponible à ajouter</p>
+                  }
+                }
+
+                <!-- MODE CRÉATION: Checkbox pour sélectionner les jeux -->
+                @if (!editingPlanArea()) {
+                  <label>Jeux à assigner à cette zone du plan</label>
+                  
+                  @if (availableGames().length > 0) {
+                    <div class="games-list">
+                      @for (game of availableGames(); track game.id) {
+                        <div class="game-item">
+                          <label class="game-checkbox-label">
+                            <input 
+                              type="checkbox" 
+                              [checked]="selectedGameIds().has(game.id)"
+                              (change)="toggleGameSelection(game.id)"
+                            />
+                            <span class="game-name">{{ game.name }}</span>
+                            <span class="game-editor">({{ game.editorName }})</span>
+                            <span class="game-qty">{{ game.remainingQuantity }}/{{ game.totalQuantity }}</span>
+                          </label>
+
+                          @if (selectedGameIds().has(game.id)) {
+                            <input 
+                              type="number" 
+                              [value]="getQuantity(game.id)" 
+                              min="1" 
+                              [max]="game.remainingQuantity"
+                              (input)="updateQuantity(game.id, +$any($event.target).value, game.remainingQuantity)"
+                              class="qty-input-small"
+                              (click)="$event.stopPropagation()"
+                            />
+                          }
+                        </div>
+                      }
+                    </div>
+                    <p class="selection-info">{{ selectedGameIds().size }} jeu(x) sélectionné(s)</p>
+                  } @else {
+                    <p class="no-games">Aucun jeu disponible dans cette zone tarifaire</p>
+                  }
                 }
               </div>
 

@@ -113,7 +113,10 @@ export class GameFormComponent {
             this.showForm.set(false);
             this.formClosed.emit();
           },
-          error: (err) => console.error('Erreur mise à jour:', err)
+          error: (err) => {
+            console.error('Erreur mise à jour:', err);
+            alert('Erreur MAJ: ' + (err.error?.error || 'Erreur inconnue'));
+          }
         });
       } else {
         this.gameService.addGame(game).subscribe({
@@ -122,7 +125,10 @@ export class GameFormComponent {
             this.showForm.set(false);
             this.formClosed.emit();
           },
-          error: (err) => console.error('Erreur création:', err)
+          error: (err: any) => {
+            console.error('Erreur création:', err);
+            alert('Erreur Création: ' + (err.error?.error || JSON.stringify(err.error) || 'Erreur inconnue'));
+          }
         });
       }
     }

@@ -257,63 +257,116 @@ router.post('/:planAreaId/editors', verifyToken, requireAdmin, validateNumericPa
     }
 })
 
-// Route pour assigner un exemplaire de jeu à une zone du plan
-router.post('/:planAreaId/assign-game', verifyToken, requireAdmin, validateNumericParam('planAreaId'), validateStringLengths({ festivalName: 255 }), async (req, res) => {
+// Route pour assigner un jeu à une zone du plan (utilise game_planArea avec quantity et idReservation)
+router.post('/:planAreaId/assign-game', verifyToken, requireAdmin, validateNumericParam('planAreaId'), async (req, res) => {
     const planAreaId = req.params.planAreaId;
-    const { idGame, idReservation, festivalName } = req.body;
+    const { idGame, quantity, idReservation } = req.body;
 
-    if (!idGame || !idReservation || !festivalName) {
-        return res.status(400).json({
-            error: "ID du jeu, ID de la réservation et nom du festival obligatoires"
-        });
+    if (!idGame || !idReservation) {
+        return res.status(400).json({ error: "ID du jeu et ID de réservation obligatoires" });
     }
 
+    const qty = quantity || 1;
+
     try {
-        // Validate the assignment
-        await validateGameAssignment(
-            parseInt(idGame),
-            parseInt(idReservation),
-            parseInt(planAreaId as string),
-            festivalName
+        // Vérifier la quantité totale réservée
+        const reservRes = await pool.query(
+            'SELECT "quantity" FROM "reservation_game" WHERE "idGame" = $1 AND "idReservation" = $2',
+            [idGame, idReservation]
         );
 
-        // Insert into game_festival
-        await pool.query(
-            `INSERT INTO "game_festival" ("idGame", "festivalName", "idReservation", "idPA", "isGamePlaced") 
-             VALUES ($1, $2, $3, $4, $5)`,
-            [idGame, festivalName, idReservation, planAreaId, false]
-        );
+        if (reservRes.rows.length === 0) {
+            return res.status(404).json({ error: "Ce jeu ne fait pas partie de cette réservation" });
+        }
+        const totalReserved = reservRes.rows[0].quantity;
 
-        return res.status(201).json({ message: 'Jeu assigné à la zone du plan' });
-    } catch (err: any) {
-        if (err.code === '23505') {
-            return res.status(409).json({
-                error: 'Cet exemplaire est déjà assigné à cette zone'
+        // Vérifier la quantité déjà placée (toutes zones confondues)
+        const placedRes = await pool.query(
+            'SELECT SUM("quantity") as total_placed FROM "game_planArea" WHERE "idGame" = $1 AND "idReservation" = $2',
+            [idGame, idReservation]
+        );
+        const totalPlaced = parseInt(placedRes.rows[0].total_placed || '0', 10);
+
+        // Quantité disponible actuellement
+        const available = totalReserved - totalPlaced;
+
+        // Si on met à jour une zone existante, attention au calcul (on ajoute qty à ce qui est déjà là)
+        // Mais ici qty est le delta que l'on veut ajouter ? 
+        // Le frontend envoie la quantité TOTALE voulue dans la zone ? Non, `addGameToExistingZone` envoie la quantité à AJOUTER (qty).
+        // `assignSelectedGames` envoie la quantité sélectionnée.
+        
+        // Wait, frontend logic:
+        // `assignGameToPlanArea` (addGameTo...): sends `qty`. Backend does UPDATE ... SET quantity = quantity + $1 OR INSERT ...
+        // So `qty` is indeed an ADDITION amount.
+
+        if (qty > available) {
+            return res.status(400).json({ 
+                error: `Impossible d'ajouter ${qty} exemplaire(s). Il n'en reste que ${available}.` 
             });
         }
-        if (err.message) {
-            return res.status(400).json({ error: err.message });
+
+        // Vérifier si le jeu pour cette réservation est déjà dans cette zone
+        const existing = await pool.query(
+            'SELECT "quantity" FROM "game_planArea" WHERE "idGame" = $1 AND "idPA" = $2 AND "idReservation" = $3',
+            [idGame, planAreaId, idReservation]
+        );
+
+        if (existing.rows.length > 0) {
+            // Mettre à jour la quantité
+            await pool.query(
+                'UPDATE "game_planArea" SET "quantity" = "quantity" + $1 WHERE "idGame" = $2 AND "idPA" = $3 AND "idReservation" = $4',
+                [qty, idGame, planAreaId, idReservation]
+            );
+            return res.status(200).json({ message: 'Quantité de jeu mise à jour' });
+        } else {
+            // Insérer nouvelle entrée
+            await pool.query(
+                'INSERT INTO "game_planArea" ("idGame", "idPA", "idReservation", "quantity") VALUES ($1, $2, $3, $4)',
+                [idGame, planAreaId, idReservation, qty]
+            );
+            return res.status(201).json({ message: 'Jeu assigné à la zone du plan' });
         }
+    } catch (err: any) {
         console.error(err);
         return res.status(500).json({ error: 'Erreur serveur' });
     }
 });
 
-// Route pour retirer un exemplaire de jeu d'une zone du plan
-router.delete('/:planAreaId/games/:gameId/reservation/:reservationId', verifyToken, requireAdmin, validateNumericParam('planAreaId'), validateNumericParam('gameId'), validateNumericParam('reservationId'), async (req, res) => {
-    const { planAreaId, gameId, reservationId } = req.params;
+// Route pour retirer un jeu d'une zone du plan
+router.delete('/:planAreaId/games/:gameId', verifyToken, requireAdmin, validateNumericParam('planAreaId'), validateNumericParam('gameId'), async (req, res) => {
+    const { planAreaId, gameId } = req.params;
+    const quantity = parseInt(req.query.quantity as string) || 1;
+    const reservationId = parseInt(req.query.reservationId as string);
+
+    if (!reservationId) {
+        return res.status(400).json({ error: "ID de réservation obligatoire" });
+    }
 
     try {
-        const { rowCount } = await pool.query(
-            `DELETE FROM "game_festival" 
-             WHERE "idGame" = $1 AND "idPA" = $2 AND "idReservation" = $3`,
+        // Récupérer la quantité actuelle pour cette réservation
+        const current = await pool.query(
+            'SELECT "quantity" FROM "game_planArea" WHERE "idGame" = $1 AND "idPA" = $2 AND "idReservation" = $3',
             [gameId, planAreaId, reservationId]
         );
 
-        if (rowCount === 0) {
-            return res.status(404).json({
-                error: "Jeu non trouvé dans cette zone pour cette réservation"
-            });
+        if (current.rows.length === 0) {
+            return res.status(404).json({ error: "Jeu non trouvé dans cette zone pour cette réservation" });
+        }
+
+        const currentQty = current.rows[0].quantity;
+
+        if (currentQty <= quantity) {
+            // Supprimer complètement l'entrée
+            await pool.query(
+                'DELETE FROM "game_planArea" WHERE "idGame" = $1 AND "idPA" = $2 AND "idReservation" = $3',
+                [gameId, planAreaId, reservationId]
+            );
+        } else {
+            // Réduire la quantité
+            await pool.query(
+                'UPDATE "game_planArea" SET "quantity" = "quantity" - $1 WHERE "idGame" = $2 AND "idPA" = $3 AND "idReservation" = $4',
+                [quantity, gameId, planAreaId, reservationId]
+            );
         }
 
         return res.status(200).json({ message: 'Jeu retiré de la zone du plan' });
@@ -323,29 +376,28 @@ router.delete('/:planAreaId/games/:gameId/reservation/:reservationId', verifyTok
     }
 });
 
-// Route pour récupérer les jeux assignés à une zone du plan (avec détails de réservation)
+// Route pour récupérer les jeux assignés à une zone du plan (utilise game_planArea)
 router.get('/:planAreaId/assigned-games', verifyToken, validateNumericParam('planAreaId'), async (req, res) => {
     const planAreaId = req.params.planAreaId;
     try {
         const query = `
             SELECT 
                 g.*,
-                gf."idReservation",
-                gf."isGamePlaced",
-                gf."festivalName",
-                r."idEditor",
-                r."idTZ",
+                gpa."quantity",
+                gpa."idReservation",
+                rg."isGamePlaced",
+                e."id" as editor_id,
                 e."name" as editor_name,
                 e."logo" as editor_logo,
                 gt."id" as gameType_id,
                 gt."gameTypeLabel"
             FROM "game" g
-            JOIN "game_festival" gf ON g."id" = gf."idGame"
-            JOIN "reservation" r ON gf."idReservation" = r."idReservation"
-            JOIN "editor" e ON r."idEditor" = e."id"
+            JOIN "game_planArea" gpa ON g."id" = gpa."idGame"
+            JOIN "reservation_game" rg ON gpa."idGame" = rg."idGame" AND gpa."idReservation" = rg."idReservation"
+            LEFT JOIN "editor" e ON g."idEditor" = e."id"
             LEFT JOIN "gameType" gt ON g."idGameType" = gt."id"
-            WHERE gf."idPA" = $1
-            ORDER BY e."name", g."name"
+            WHERE gpa."idPA" = $1
+            ORDER BY g."name"
         `;
 
         const { rows } = await pool.query(query, [planAreaId]);
@@ -366,11 +418,10 @@ router.get('/:planAreaId/assigned-games', verifyToken, validateNumericParam('pla
             gameImage: row.gameimage,
             rulesTutorial: row.rulestutorial,
             edition: row.edition,
-            idEditor: row.ideditor,
-            idReservation: row.idreservation,
-            isGamePlaced: row.isgameplaced,
-            festivalName: row.festivalname,
-            idTZ: row.idtz,
+            idEditor: row.ideditor || row.idEditor || row.editor_id,
+            quantity: row.quantity,
+            idReservation: row.idreservation || row.idReservation,
+            isGamePlaced: row.isgameplaced || row.isGamePlaced,
             editorName: row.editor_name,
             editorLogo: row.editor_logo,
             gameType: row.gametype_id ? {

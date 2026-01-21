@@ -7,7 +7,8 @@ import { PlanAreaService } from '../../services/plan-area-service';
 import { PlanArea } from '../../interfaces/plan-area';
 import { TariffZone } from '../../interfaces/tariff-zone';
 import { TariffZoneGame } from '../../interfaces/tariff-zone-game';
-import { forkJoin } from 'rxjs';
+import { AssignedGame } from '../../interfaces/assigned-game';
+import { forkJoin, Observable } from 'rxjs';
 
 @Component({
   selector: 'app-plan-management',
@@ -28,10 +29,8 @@ export class PlanManagement {
     return festival?.tariffZones || [];
   });
 
-  // Stocker seulement l'ID de la zone sélectionnée
   private selectedTariffZoneId = signal<number | null>(null);
   
-  // Computed qui retrouve toujours la zone à jour depuis le festival
   selectedTariffZone = computed(() => {
     const id = this.selectedTariffZoneId();
     if (!id) return null;
@@ -43,7 +42,11 @@ export class PlanManagement {
   planAreas = signal<PlanArea[]>([]);
   availableGames = signal<TariffZoneGame[]>([]);
   selectedGameIds = signal<Set<number>>(new Set());
+  selectedQuantities = signal<Map<number, number>>(new Map());
   editingPlanArea = signal<PlanArea | null>(null);
+  editingAreaGames = signal<AssignedGame[]>([]);
+  
+  quantitiesToRemove = signal<Map<number, number>>(new Map());
 
   planAreaForm: FormGroup = this.fb.group({
     name: ['', [Validators.required, Validators.minLength(3)]],
@@ -52,10 +55,6 @@ export class PlanManagement {
     nbCityHallTables: [0, [Validators.required, Validators.min(0)]],
   });
 
-  /**
-   * Tables RÉSERVÉES par les éditeurs dans la zone tarifaire sélectionnée
-   * = total - remaining (ce sont les tables que les éditeurs ont réservé)
-   */
   reservedTables = computed(() => {
     const zone = this.selectedTariffZone();
     if (!zone) return { small: 0, large: 0, cityHall: 0 };
@@ -66,15 +65,10 @@ export class PlanManagement {
     };
   });
 
-  /**
-   * Tables déjà PLACÉES dans les zones du plan
-   * = somme des tables de toutes les zones du plan de cette zone tarifaire
-   */
   placedTables = computed(() => {
     const areas = this.planAreas();
     const editing = this.editingPlanArea();
     
-    // On exclut la zone en cours d'édition du calcul
     const areasToCount = editing 
       ? areas.filter(a => a.id !== editing.id)
       : areas;
@@ -86,10 +80,6 @@ export class PlanManagement {
     };
   });
 
-  /**
-   * Tables DISPONIBLES pour placement dans de nouvelles zones du plan
-   * = tables réservées - tables déjà placées
-   */
   availableForPlacement = computed(() => {
     const reserved = this.reservedTables();
     const placed = this.placedTables();
@@ -99,14 +89,12 @@ export class PlanManagement {
       cityHall: Math.max(0, reserved.cityHall - placed.cityHall)
     };
   });
-  // Stocker le nom du dernier festival pour détecter un changement
+
   private lastFestivalName = signal<string | null>(null);
 
   constructor() {
-    // Recharger les données du festival au démarrage pour avoir les dernières données
     this.festivalService.loadCurrentFestival();
 
-    // Réinitialiser seulement si on change de festival (pas juste mise à jour des données)
     effect(() => {
       const festival = this.currentFestival();
       const currentName = festival?.name || null;
@@ -141,10 +129,7 @@ export class PlanManagement {
           filteredAreas.forEach(area => {
             this.planAreaService.getAssignedGames(area.id).subscribe({
               next: (assignedGames) => {
-                area.presentedGames = assignedGames.map(game => ({
-                  ...game,
-                  quantity: 1
-                }));
+                area.presentedGames = assignedGames;
                 this.planAreas.set([...this.planAreas()]);
               },
               error: (err) => console.error('Erreur chargement jeux:', err)
@@ -163,7 +148,7 @@ export class PlanManagement {
   loadAvailableGames(tzId: number) {
     this.tariffZoneService.getGamesFromTariffZone(tzId).subscribe({
       next: (games) => {
-        const available = games.filter(g => g.remainingQuantity > 0);
+        const available = games.filter(g => g.remainingQuantity > 0); 
         this.availableGames.set(available);
       },
       error: (err) => {
@@ -173,12 +158,114 @@ export class PlanManagement {
     });
   }
 
+  loadEditingAreaGames(planAreaId: number) {
+    this.planAreaService.getAssignedGames(planAreaId).subscribe({
+      next: (games) => {
+        this.editingAreaGames.set(games);
+        const initialRemovals = new Map<number, number>();
+        games.forEach(g => initialRemovals.set(g.id, 1));
+        this.quantitiesToRemove.set(initialRemovals);
+      },
+      error: (err) => {
+        console.error('Erreur chargement jeux assignés:', err);
+        this.editingAreaGames.set([]);
+      }
+    });
+  }
+
+  updateRemovalQuantity(gameId: number, qty: number, max: number) {
+    if (qty < 1) qty = 1;
+    if (qty > max) qty = max;
+    const current = new Map(this.quantitiesToRemove());
+    current.set(gameId, qty);
+    this.quantitiesToRemove.set(current);
+  }
+
+  getRemovalQuantity(gameId: number): number {
+    return this.quantitiesToRemove().get(gameId) || 1;
+  }
+
+  removeGameFromZone(game: AssignedGame) {
+    const area = this.editingPlanArea();
+    if (!area) return;
+
+    const qtyToRemove = this.getRemovalQuantity(game.id);
+
+    if (!confirm(`Retirer ${qtyToRemove} exemplaire(s) de "${game.name}" de cette zone ?`)) return;
+    
+    this.planAreaService.unassignGameFromPlanArea(area.id, game.id, qtyToRemove, game.idReservation).subscribe({
+      next: () => {
+        this.loadEditingAreaGames(area.id);
+        const zone = this.selectedTariffZone();
+        if (zone) {
+          this.loadAvailableGames(zone.idTZ);
+        }
+      },
+      error: (err) => {
+        console.error('Erreur retrait jeu:', err);
+        alert(err.error?.error || 'Erreur lors du retrait du jeu');
+      }
+    });
+  }
+
+  addGameToExistingZone(game: TariffZoneGame) {
+    const area = this.editingPlanArea();
+    if (!area) return;
+
+    const qty = this.getQuantity(game.id);
+
+    if (qty > game.remainingQuantity) {
+      alert(`Il ne reste que ${game.remainingQuantity} exemplaire(s) disponible(s)`);
+      return;
+    }
+
+    if (!game.idReservation) {
+      alert("Erreur: ID Réservation manquant pour ce jeu");
+      return;
+    }
+
+    this.planAreaService.assignGameToPlanArea(area.id, game.id, qty, game.idReservation).subscribe({
+      next: () => {
+        const quantities = new Map(this.selectedQuantities());
+        quantities.delete(game.id);
+        this.selectedQuantities.set(quantities);
+
+        this.loadEditingAreaGames(area.id);
+        const zone = this.selectedTariffZone();
+        if (zone) {
+          this.loadAvailableGames(zone.idTZ);
+        }
+      },
+      error: (err) => {
+        console.error('Erreur ajout jeu:', err);
+        alert(err.error?.error || 'Erreur lors de l\'ajout du jeu');
+      }
+    });
+  }
+
+  updateQuantity(gameId: number, qty: number, max: number) {
+    if (qty < 1) qty = 1;
+    if (qty > max) qty = max;
+    
+    const current = new Map(this.selectedQuantities());
+    current.set(gameId, qty);
+    this.selectedQuantities.set(current);
+  }
+
+  getQuantity(gameId: number): number {
+    return this.selectedQuantities().get(gameId) || 1;
+  }
+
   toggleGameSelection(gameId: number) {
     const current = new Set(this.selectedGameIds());
     if (current.has(gameId)) {
       current.delete(gameId);
+      const quantities = new Map(this.selectedQuantities());
+      quantities.delete(gameId);
+      this.selectedQuantities.set(quantities);
     } else {
       current.add(gameId);
+      this.updateQuantity(gameId, 1, 999); 
     }
     this.selectedGameIds.set(current);
   }
@@ -198,6 +285,7 @@ export class PlanManagement {
       nbLargeTables: area.nbLargeTables,
       nbCityHallTables: area.nbCityHallTables
     });
+    this.loadEditingAreaGames(area.id);
     this.showForm.set(true);
   }
 
@@ -210,6 +298,10 @@ export class PlanManagement {
       next: () => {
         alert('Zone de plan supprimée avec succès !');
         this.loadPlanAreas();
+        const zone = this.selectedTariffZone();
+        if (zone) {
+          this.loadAvailableGames(zone.idTZ);
+        }
       },
       error: (err: any) => {
         console.error('Erreur suppression:', err);
@@ -220,6 +312,16 @@ export class PlanManagement {
         }
       }
     });
+  }
+
+  cancelForm() {
+    this.planAreaForm.reset();
+    this.showForm.set(false);
+    this.editingPlanArea.set(null);
+    this.selectedGameIds.set(new Set());
+    this.selectedQuantities.set(new Map());
+    this.editingAreaGames.set([]);
+    this.quantitiesToRemove.set(new Map());
   }
 
   onSubmit() {
@@ -240,23 +342,26 @@ export class PlanManagement {
     const requestedLarge = formValue.nbLargeTables || 0;
     const requestedCityHall = formValue.nbCityHallTables || 0;
 
-    // Validation: nombres négatifs
     if (requestedSmall < 0 || requestedLarge < 0 || requestedCityHall < 0) {
       alert('Le nombre de tables ne peut pas être négatif');
       return;
     }
 
-    // Validation: ne pas dépasser les tables disponibles pour placement
-    if (requestedSmall > available.small) {
-      alert(`Petites tables : Vous demandez ${requestedSmall} mais seulement ${available.small} sont disponibles pour placement`);
+    // Calcul de la disponibilité en tenant compte des tables déjà possédées par la zone si en édition
+    const currentSmall = editingArea?.nbSmallTables || 0;
+    const currentLarge = editingArea?.nbLargeTables || 0;
+    const currentCityHall = editingArea?.nbCityHallTables || 0;
+
+    if (requestedSmall > available.small + currentSmall) {
+      alert(`Petites tables : Insuffisant (Dispo: ${available.small})`);
       return;
     }
-    if (requestedLarge > available.large) {
-      alert(`Grandes tables : Vous demandez ${requestedLarge} mais seulement ${available.large} sont disponibles pour placement`);
+    if (requestedLarge > available.large + currentLarge) {
+      alert(`Grandes tables : Insuffisant (Dispo: ${available.large})`);
       return;
     }
-    if (requestedCityHall > available.cityHall) {
-      alert(`Tables mairie : Vous demandez ${requestedCityHall} mais seulement ${available.cityHall} sont disponibles pour placement`);
+    if (requestedCityHall > available.cityHall + currentCityHall) {
+      alert(`Tables mairie : Insuffisant (Dispo: ${available.cityHall})`);
       return;
     }
 
@@ -293,70 +398,45 @@ export class PlanManagement {
 
   assignSelectedGames(planAreaId: number, festivalName: string) {
     const gameIds = Array.from(this.selectedGameIds());
-    // Sauvegarder la liste des jeux disponibles maintenant car elle sera peut-être modifiée après
-    const gamesSnapshot = [...this.availableGames()];
-
-    console.log('=== DEBUG assignSelectedGames ===');
-    console.log('planAreaId:', planAreaId);
-    console.log('festivalName:', festivalName);
-    console.log('gameIds sélectionnés:', gameIds);
-    console.log('availableGames:', gamesSnapshot);
 
     if (gameIds.length === 0) {
       this.finalizeSubmit();
       return;
     }
 
-    const requests = gameIds.map(gameId => {
-      const game = gamesSnapshot.find(g => g.id === gameId);
-      console.log(`Jeu ${gameId}:`, game);
+    const gamesToAssign = this.availableGames().filter(g => this.selectedGameIds().has(g.id));
 
-      if (!game) {
-        console.warn(`Jeu ${gameId} non trouvé dans availableGames`);
-        return null;
-      }
+    const requests = gamesToAssign.map(game => {
+      const qty = this.getQuantity(game.id);
       if (!game.idReservation) {
-        console.warn(`Jeu ${gameId} n'a pas d'idReservation:`, game.idReservation);
         return null;
       }
-
-      return this.planAreaService.assignGameToPlanArea(planAreaId, {
-        idGame: gameId,
-        idReservation: game.idReservation,
-        festivalName: festivalName
-      });
-    }).filter(r => r !== null);
-
-    console.log('Nombre de requêtes valides:', requests.length);
+      return this.planAreaService.assignGameToPlanArea(planAreaId, game.id, qty, game.idReservation);
+    }).filter(req => req !== null) as Observable<{message: string}>[];
 
     if (requests.length > 0) {
       forkJoin(requests).subscribe({
         next: () => this.finalizeSubmit(),
         error: (err) => {
           console.error('Erreur assignation jeux:', err);
-          alert('Zone créée mais erreur d\'assignation des jeux');
           this.finalizeSubmit();
         }
       });
     } else {
-      console.error('Aucune requête valide générée');
       this.finalizeSubmit();
     }
   }
 
   finalizeSubmit() {
-    alert('Zone de plan enregistrée avec succès !');
     this.planAreaForm.reset();
     this.showForm.set(false);
     this.editingPlanArea.set(null);
     this.selectedGameIds.set(new Set());
     this.loadPlanAreas();
-  }
-
-  cancelForm() {
-    this.planAreaForm.reset();
-    this.showForm.set(false);
-    this.editingPlanArea.set(null);
-    this.selectedGameIds.set(new Set());
+    
+    const zone = this.selectedTariffZone();
+    if (zone) {
+      this.loadAvailableGames(zone.idTZ);
+    }
   }
 }

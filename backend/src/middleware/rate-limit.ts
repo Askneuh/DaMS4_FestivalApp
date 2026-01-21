@@ -6,7 +6,7 @@ import rateLimit from 'express-rate-limit'
  */
 export const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 5, // 5 requêtes max
+    max: 100, // 100 requêtes max pour le dev
     message: { error: 'Trop de tentatives. Réessayez dans 15 minutes.' },
     standardHeaders: true, // Retourne les headers RateLimit-*
     legacyHeaders: false, // Désactive les headers X-RateLimit-*

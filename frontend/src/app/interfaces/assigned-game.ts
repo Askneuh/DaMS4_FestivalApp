@@ -9,4 +9,5 @@ export interface AssignedGame extends Game {
     editorName: string;
     editorLogo: string;
     gameType?: GameType;
+    quantity: number;
 }

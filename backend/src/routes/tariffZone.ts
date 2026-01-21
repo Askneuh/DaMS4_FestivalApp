@@ -149,10 +149,10 @@ router.get('/:tzId/games', verifyToken, validateNumericParam('tzId'), async (req
                 gt."id" as gameType_id,
                 gt."gameTypeLabel",
                 COALESCE(
-                    (SELECT COUNT(*) 
-                     FROM "game_festival" gf 
-                     WHERE gf."idGame" = g."id" 
-                       AND gf."idReservation" = r."idReservation"
+                    (SELECT SUM(gpa."quantity")
+                     FROM "game_planArea" gpa 
+                     WHERE gpa."idGame" = g."id" 
+                       AND gpa."idReservation" = r."idReservation"
                     ), 0
                 ) as assigned_quantity
             FROM "game" g
