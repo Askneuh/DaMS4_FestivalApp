@@ -60,11 +60,7 @@ export class ReservationWorkflow {
     const res = this.reservation();
     if (!res || !zone) return 0;
 
-    const smallPrice = (res.nbSmallTables || 0) * Number(zone.smallTablePrice || 0);
-    const largePrice = (res.nbLargeTables || 0) * Number(zone.largeTablePrice || 0);
-    const cityHallPrice = (res.nbCityHallTables || 0) * Number(zone.cityHallTablePrice || 0);
-
-    return Math.max(0, smallPrice + largePrice + cityHallPrice - Number(res.remise || 0));
+    return this.reservationSvc.calculateTotalPrice(res, zone);
   });
 
   constructor() {

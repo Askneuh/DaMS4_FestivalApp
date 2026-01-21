@@ -3,6 +3,7 @@ import pool from '../db/database.js'
 import { requireAdmin } from '../middleware/auth-admin.js'
 import { verifyToken } from '../middleware/token-management.js'
 import { validateNumericParam, validateStringLengths, normalizeBooleans } from '../middleware/validation.js'
+import { validatePlanAreaTableLimits } from '../middleware/validate-plan-area.js'
 
 const router = Router()
 
@@ -29,10 +30,26 @@ router.post('/', verifyToken, requireAdmin, validateStringLengths({ name: 255, f
         return res.status(400).json({ error: "Nom et nom du festival obligatoires pour la création de zone de plan" })
     }
 
+    if (!idTZ) {
+        return res.status(400).json({ error: "ID de la zone tarifaire obligatoire" })
+    }
+
     try {
         const smallTables = nbSmallTables || 0;
         const largeTables = nbLargeTables || 0;
         const cityHallTables = nbCityHallTables || 0;
+
+        // Validate table limits before creating the plan area
+        const validation = await validatePlanAreaTableLimits(
+            idTZ,
+            smallTables,
+            largeTables,
+            cityHallTables
+        );
+
+        if (!validation.valid) {
+            return res.status(400).json({ error: validation.error });
+        }
 
         const { rows } = await pool.query(
             'INSERT INTO "planArea" ("name", "nbSmallTables", "nbLargeTables", "nbCityHallTables", "festivalName", "idTZ") VALUES ($1, $2, $3, $4, $5, $6) RETURNING "id"',
@@ -57,6 +74,34 @@ router.post('/update/:planAreaId', verifyToken, requireAdmin, validateNumericPar
     const planAreaId = req.params.planAreaId
     const { name, nbSmallTables, nbLargeTables, nbCityHallTables, festivalName, idTZ } = req.body
     try {
+        // Validate table limits if any table counts or zone are being updated
+        if (idTZ !== undefined && (nbSmallTables !== undefined || nbLargeTables !== undefined || nbCityHallTables !== undefined)) {
+            // Get current values if not all are provided
+            const currentQuery = await pool.query(
+                'SELECT "nbSmallTables", "nbLargeTables", "nbCityHallTables", "idTZ" FROM "planArea" WHERE "id" = $1',
+                [planAreaId]
+            );
+
+            if (currentQuery.rows.length === 0) {
+                return res.status(404).json({ error: "Zone de plan non trouvée" });
+            }
+
+            const current = currentQuery.rows[0];
+            const targetIdTZ = idTZ !== undefined ? idTZ : current.idTZ;
+
+            const validation = await validatePlanAreaTableLimits(
+                targetIdTZ,
+                nbSmallTables !== undefined ? nbSmallTables : current.nbSmallTables,
+                nbLargeTables !== undefined ? nbLargeTables : current.nbLargeTables,
+                nbCityHallTables !== undefined ? nbCityHallTables : current.nbCityHallTables,
+                parseInt(planAreaId as string) // Exclude this plan area from totals
+            );
+
+            if (!validation.valid) {
+                return res.status(400).json({ error: validation.error });
+            }
+        }
+
         const { rowCount } = await pool.query(
             `UPDATE "planArea" SET 
                 "name" = COALESCE($1, "name"), 

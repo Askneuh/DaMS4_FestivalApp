@@ -7,35 +7,29 @@
   </div>
 
   @if (showForm()) {
-    <div class="suivi-form">
-      <textarea 
-        placeholder="Commentaire (optionnel)..." 
-        [value]="newComment()" 
-        (input)="newComment.set($any($event.target).value)"
-        rows="3">
+  <div class="suivi-form">
+    <textarea placeholder="Commentaire (optionnel)..." [value]="newComment()"
+      (input)="newComment.set($any($event.target).value)" rows="3">
       </textarea>
-      <button 
-        class="btn btn-primary" 
-        (click)="addSuivi()" 
-        [disabled]="submitting()">
-        {{ submitting() ? 'Enregistrement...' : 'Enregistrer le contact' }}
-      </button>
-    </div>
+    <button class="btn btn-primary" (click)="addSuivi()" [disabled]="submitting()">
+      {{ submitting() ? 'Enregistrement...' : 'Enregistrer le contact' }}
+    </button>
+  </div>
   }
 
   <div class="suivi-list">
     @if (history().length === 0) {
-      <p class="empty">Aucun contact enregistré pour le moment.</p>
+    <p class="empty">Aucun contact enregistré pour le moment.</p>
     } @else {
-      @for (suivi of history(); track suivi.id) {
-        <div class="suivi-item">
-          <div class="suivi-date">{{ formatDate(suivi.date) }}</div>
-          <div class="suivi-status">{{ suivi.status }}</div>
-          @if (suivi.commentaire) {
-            <div class="suivi-comment">{{ suivi.commentaire }}</div>
-          }
-        </div>
+    @for (suivi of history(); track suivi.id) {
+    <div class="suivi-item">
+      <div class="suivi-date">{{ dateFormatter.formatDateTime(suivi.date) }}</div>
+      <div class="suivi-status">{{ suivi.status }}</div>
+      @if (suivi.commentaire) {
+      <div class="suivi-comment">{{ suivi.commentaire }}</div>
       }
+    </div>
+    }
     }
   </div>
 </div>
