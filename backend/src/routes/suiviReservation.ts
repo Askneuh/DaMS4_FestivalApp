@@ -2,7 +2,7 @@ import { Router } from 'express'
 import pool from '../db/database.js'
 import { requireOrganizer } from '../middleware/auth-organizer.js'
 import { verifyToken } from '../middleware/token-management.js'
-import { getCurrentDate } from '../utils/date.js'
+import { getCurrentDateTime } from '../utils/date.js'
 import { validateNumericParam, validateStringLengths } from '../middleware/validation.js'
 
 const router = Router()
@@ -48,7 +48,7 @@ router.post('/', verifyToken, requireOrganizer, validateStringLengths({ status: 
         return res.status(400).json({ error: "ID de réservation invalide" })
     }
 
-    const modification_date = getCurrentDate()
+    const modification_date = getCurrentDateTime()
     try {
         const { rows } = await pool.query(
             'INSERT INTO "suiviReservation" ("status", "date", "idReservation", "commentaire") VALUES ($1, $2, $3, $4) RETURNING "id"',
@@ -74,7 +74,7 @@ router.post('/', verifyToken, requireOrganizer, validateStringLengths({ status: 
 router.post('/update/:suiviId', verifyToken, requireOrganizer, validateNumericParam('suiviId'), validateStringLengths({ status: 255 }), async (req, res) => {
     const suiviId = req.params.suiviId
     const { status } = req.body
-    const modification_date = getCurrentDate()
+    const modification_date = getCurrentDateTime()
 
     if (!status) {
         return res.status(400).json({ error: "Statut obligatoire pour la mise à jour" })
