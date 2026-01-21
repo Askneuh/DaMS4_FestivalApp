@@ -12,9 +12,11 @@ import { EditorContactsComponent } from './components/editor-contacts/editor-con
 import { PlanManagement } from './components/plan-management/plan-management';
 import { ReservationList } from './components/reservation-list/reservation-list';
 import { ReservationWorkflow } from './components/reservation-workflow/reservation-workflow';
+import { FestivalGamesComponent } from './components/festival-games/festival-games';
 
 export const routes: Routes = [
     { path: 'editor-list', component: EditorList, canActivate: [authGuardInterceptor] },
+    { path: 'festival-games', component: FestivalGamesComponent, canActivate: [authGuardInterceptor] },
     { path: 'editor-games/:id', component: EditorGamesComponent, canActivate: [authGuardInterceptor] },
     { path: 'editor-contacts/:id', component: EditorContactsComponent, canActivate: [authGuardInterceptor] },
     { path: 'home', component: WelcomePage, canActivate: [authGuardInterceptor] },

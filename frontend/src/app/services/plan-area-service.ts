@@ -53,17 +53,17 @@ export class PlanAreaService {
     return this.http.post<{ message: string }>(`${this.API_URL}/${idPA}/editors`, { idEditor }, { withCredentials: true });
   }
 
-  assignGameToPlanArea(planAreaId: number, assignment: GameAssignmentRequest): Observable<{ message: string }> {
+  assignGameToPlanArea(planAreaId: number, idGame: number, quantity: number, idReservation: number): Observable<{ message: string }> {
     return this.http.post<{ message: string }>(
       `${this.API_URL}/${planAreaId}/assign-game`,
-      assignment,
+      { idGame, quantity, idReservation },
       { withCredentials: true }
     );
   }
 
-  unassignGameFromPlanArea(planAreaId: number, gameId: number, reservationId: number): Observable<{ message: string }> {
+  unassignGameFromPlanArea(planAreaId: number, gameId: number, quantity: number, idReservation: number): Observable<{ message: string }> {
     return this.http.delete<{ message: string }>(
-      `${this.API_URL}/${planAreaId}/games/${gameId}/reservation/${reservationId}`,
+      `${this.API_URL}/${planAreaId}/games/${gameId}?quantity=${quantity}&reservationId=${idReservation}`,
       { withCredentials: true }
     );
   }

@@ -324,19 +324,60 @@ router.get('/festival/:festivalName', verifyToken, async (req, res) => {
 });
 
 // Route de suppression d'un éditeur par ID
+// IMPORTANT: Avant de supprimer l'éditeur, on doit restaurer les tables réservées dans les zones tarifaires
 router.delete('/:editorId', verifyToken, requireAdmin, validateNumericParam('editorId'), async (req, res) => {
     const editorId = req.params.editorId;
+    const client = await pool.connect();
+    
     try {
-        const { rowCount } = await pool.query('DELETE FROM "editor" WHERE "id" = $1', [editorId]);
+        await client.query('BEGIN');
+
+        // 1. Récupérer toutes les réservations de cet éditeur avec leurs tables et zones tarifaires
+        const { rows: reservations } = await client.query(
+            `SELECT r."idReservation", r."idTZ", r."nbSmallTables", r."nbLargeTables", r."nbCityHallTables", r."m2"
+             FROM "reservation" r
+             WHERE r."idEditor" = $1`,
+            [editorId]
+        );
+
+        // 2. Pour chaque réservation, restaurer les tables dans la zone tarifaire
+        for (const reservation of reservations) {
+            if (reservation.idTZ) {
+                const m2ToSmallTables = Math.ceil((reservation.m2 || 0) / 4);
+                
+                await client.query(
+                    `UPDATE "tariffZone" 
+                     SET "remainingSmallTables" = "remainingSmallTables" + $1 + $2,
+                         "remainingLargeTables" = "remainingLargeTables" + $3,
+                         "remainingCityHallTables" = "remainingCityHallTables" + $4
+                     WHERE "idTZ" = $5`,
+                    [
+                        reservation.nbSmallTables || 0,
+                        m2ToSmallTables,
+                        reservation.nbLargeTables || 0,
+                        reservation.nbCityHallTables || 0,
+                        reservation.idTZ
+                    ]
+                );
+            }
+        }
+
+        // 3. Supprimer l'éditeur (les réservations seront supprimées en cascade)
+        const { rowCount } = await client.query('DELETE FROM "editor" WHERE "id" = $1', [editorId]);
 
         if (rowCount === 0) {
+            await client.query('ROLLBACK');
             return res.status(404).json({ error: "Éditeur non trouvé" });
         }
 
+        await client.query('COMMIT');
         return res.status(200).json({ message: 'Éditeur supprimé' });
     } catch (err: any) {
+        await client.query('ROLLBACK');
         console.error(err);
         return res.status(500).json({ error: 'Erreur serveur' });
+    } finally {
+        client.release();
     }
 });
 
