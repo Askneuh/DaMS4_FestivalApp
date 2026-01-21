@@ -172,7 +172,7 @@ export class ReservationWorkflow {
         this.availableZones.set(zones);
         this.loading.set(false); // Only stop loading after zones are here
       },
-      error: (err) => {
+      error: (err: any) => {
         console.error('Erreur chargement zones:', err);
         this.loading.set(false);
       }

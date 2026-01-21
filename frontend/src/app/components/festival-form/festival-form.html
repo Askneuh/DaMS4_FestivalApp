@@ -1,6 +1,10 @@
 <div class="form-container">
-  <button class="btn btn-add" (click)="OpenCloseForm()">
-    {{ showForm() ? 'Annuler' : '+ Ajouter un Festival' }}
+  <button class="btn btn-toggle" (click)="OpenCloseForm()">
+    @if (showForm()) {
+    Fermer
+    } @else {
+    + Ajouter un Festival
+    }
   </button>
 
   @if (showForm()) {
@@ -94,10 +98,10 @@
       </div>
 
       <div class="form-actions">
-        <button type="button" class="btn btn-secondary" (click)="OpenCloseForm()">
+        <button type="button" class="btn btn-cancel" (click)="OpenCloseForm()">
           Annuler
         </button>
-        <button type="submit" class="btn btn-primary" [disabled]="festivalForm.invalid">
+        <button type="submit" class="btn btn-submit" [disabled]="festivalForm.invalid">
           {{ isEditMode() ? 'Mettre à jour' : 'Créer le festival' }}
         </button>
       </div>

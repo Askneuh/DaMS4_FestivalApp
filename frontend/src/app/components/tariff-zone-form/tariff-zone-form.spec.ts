@@ -1,18 +1,18 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { TestService } from './test-service';
+import { TariffZoneForm } from './tariff-zone-form';
 
-describe('TestService', () => {
-  let component: TestService;
-  let fixture: ComponentFixture<TestService>;
+describe('TariffZoneForm', () => {
+  let component: TariffZoneForm;
+  let fixture: ComponentFixture<TariffZoneForm>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [TestService]
+      imports: [TariffZoneForm]
     })
     .compileComponents();
 
-    fixture = TestBed.createComponent(TestService);
+    fixture = TestBed.createComponent(TariffZoneForm);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });
