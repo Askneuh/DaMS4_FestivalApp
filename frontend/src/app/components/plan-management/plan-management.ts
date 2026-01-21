@@ -28,7 +28,16 @@ export class PlanManagement {
     return festival?.tariffZones || [];
   });
 
-  selectedTariffZone = signal<TariffZone | null>(null);
+  // Stocker seulement l'ID de la zone sélectionnée
+  private selectedTariffZoneId = signal<number | null>(null);
+  
+  // Computed qui retrouve toujours la zone à jour depuis le festival
+  selectedTariffZone = computed(() => {
+    const id = this.selectedTariffZoneId();
+    if (!id) return null;
+    return this.tariffZones().find(z => z.idTZ === id) || null;
+  });
+
   showForm = signal(false);
 
   planAreas = signal<PlanArea[]>([]);
@@ -90,19 +99,29 @@ export class PlanManagement {
       cityHall: Math.max(0, reserved.cityHall - placed.cityHall)
     };
   });
+  // Stocker le nom du dernier festival pour détecter un changement
+  private lastFestivalName = signal<string | null>(null);
 
   constructor() {
+    // Recharger les données du festival au démarrage pour avoir les dernières données
+    this.festivalService.loadCurrentFestival();
+
+    // Réinitialiser seulement si on change de festival (pas juste mise à jour des données)
     effect(() => {
       const festival = this.currentFestival();
-      if (festival) {
-        this.selectedTariffZone.set(null);
+      const currentName = festival?.name || null;
+      const lastName = this.lastFestivalName();
+      
+      if (currentName !== lastName) {
+        this.lastFestivalName.set(currentName);
+        this.selectedTariffZoneId.set(null);
         this.planAreas.set([]);
       }
     });
   }
 
   selectTariffZone(zone: TariffZone) {
-    this.selectedTariffZone.set(zone);
+    this.selectedTariffZoneId.set(zone.idTZ);
     this.showForm.set(false);
     this.selectedGameIds.set(new Set());
     this.loadPlanAreas();
