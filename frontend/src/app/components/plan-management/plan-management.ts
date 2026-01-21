@@ -293,6 +293,14 @@ export class PlanManagement {
 
   assignSelectedGames(planAreaId: number, festivalName: string) {
     const gameIds = Array.from(this.selectedGameIds());
+    // Sauvegarder la liste des jeux disponibles maintenant car elle sera peut-être modifiée après
+    const gamesSnapshot = [...this.availableGames()];
+
+    console.log('=== DEBUG assignSelectedGames ===');
+    console.log('planAreaId:', planAreaId);
+    console.log('festivalName:', festivalName);
+    console.log('gameIds sélectionnés:', gameIds);
+    console.log('availableGames:', gamesSnapshot);
 
     if (gameIds.length === 0) {
       this.finalizeSubmit();
@@ -300,9 +308,15 @@ export class PlanManagement {
     }
 
     const requests = gameIds.map(gameId => {
-      const game = this.availableGames().find(g => g.id === gameId);
+      const game = gamesSnapshot.find(g => g.id === gameId);
+      console.log(`Jeu ${gameId}:`, game);
 
-      if (!game || !game.idReservation) {
+      if (!game) {
+        console.warn(`Jeu ${gameId} non trouvé dans availableGames`);
+        return null;
+      }
+      if (!game.idReservation) {
+        console.warn(`Jeu ${gameId} n'a pas d'idReservation:`, game.idReservation);
         return null;
       }
 
@@ -312,6 +326,8 @@ export class PlanManagement {
         festivalName: festivalName
       });
     }).filter(r => r !== null);
+
+    console.log('Nombre de requêtes valides:', requests.length);
 
     if (requests.length > 0) {
       forkJoin(requests).subscribe({
@@ -323,7 +339,7 @@ export class PlanManagement {
         }
       });
     } else {
-      alert('Aucun jeu valide à assigner');
+      console.error('Aucune requête valide générée');
       this.finalizeSubmit();
     }
   }

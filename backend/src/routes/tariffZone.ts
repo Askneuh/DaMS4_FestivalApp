@@ -186,9 +186,9 @@ router.get('/:tzId/games', verifyToken, validateNumericParam('tzId'), async (req
             totalQuantity: row.total_quantity,
             assignedQuantity: parseInt(row.assigned_quantity),
             remainingQuantity: row.total_quantity - parseInt(row.assigned_quantity),
-            isGamePlaced: row.isgameplaced,
-            idReservation: row.idreservation,
-            festivalName: row.festivalname,
+            isGamePlaced: row.isgameplaced || row.isGamePlaced,
+            idReservation: row.idReservation || row.idreservation,
+            festivalName: row.festivalName || row.festivalname,
             editorName: row.editor_name,
             editorLogo: row.editor_logo,
             gameType: row.gametype_id ? {

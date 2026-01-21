@@ -478,7 +478,8 @@ async function validateGameAssignment(
         throw new Error("Zone du plan introuvable");
     }
 
-    if (planArea.rows[0].festivalname !== festivalName) {
+    const planAreaFestival = planArea.rows[0].festivalName || planArea.rows[0].festivalname;
+    if (planAreaFestival !== festivalName) {
         throw new Error("La zone du plan n'appartient pas au même festival que la réservation");
     }
 }
