@@ -78,7 +78,7 @@
           <!-- Zone Tarifaire -->
           <div class="form-group full-width">
             <label>Zone Tarifaire</label>
-            <select [value]="reservation()!.idTZ" (change)="updateField('idTZ', +$any($event.target).value)">
+            <select [ngModel]="reservation()!.idTZ" (ngModelChange)="updateField('idTZ', +$event)" name="idTZ">
               @for (zone of availableZones(); track zone.idTZ) {
               <option [value]="zone.idTZ">{{ zone.name }}</option>
               }

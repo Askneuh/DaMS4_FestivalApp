@@ -51,8 +51,10 @@ export class ReservationWorkflow {
 
   selectedZone = computed(() => {
     const res = this.reservation();
-    if (!res || !res.idTZ) return null;
-    return this.availableZones().find(z => z.idTZ === res.idTZ) || null;
+    const zones = this.availableZones();
+    if (!res || !res.idTZ || zones.length === 0) return null;
+    const found = zones.find(z => Number(z.idTZ) === Number(res.idTZ)) || null;
+    return found;
   });
 
   totalPrice = computed(() => {
@@ -81,8 +83,9 @@ export class ReservationWorkflow {
         this.reservation.set(data);
         if (data.festivalName) {
           this.loadTariffZones(data.festivalName);
+        } else {
+          this.loading.set(false);
         }
-        this.loading.set(false);
       },
       error: (err) => {
         console.error('Erreur chargement réservation:', err);
@@ -94,8 +97,14 @@ export class ReservationWorkflow {
 
   loadTariffZones(festivalName: string) {
     this.tariffZoneSvc.findByFestivalName(festivalName).subscribe({
-      next: (zones) => this.availableZones.set(zones),
-      error: (err) => console.error('Erreur chargement zones:', err)
+      next: (zones) => {
+        this.availableZones.set(zones);
+        this.loading.set(false); // Only stop loading after zones are here
+      },
+      error: (err) => {
+        console.error('Erreur chargement zones:', err);
+        this.loading.set(false);
+      }
     });
   }
 
