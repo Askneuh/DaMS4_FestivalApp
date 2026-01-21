@@ -1,5 +1,8 @@
 @if (festival()){
-<div class="festival-card">
+<div class="festival-card" [class.current]="festival()!.isCurrent">
+    @if (festival()!.isCurrent) {
+    <div class="current-badge">Festival en cours</div>
+    }
     <div class="festival-header">
         <h2>{{ festival()!.name }}</h2>
         <div class="header-stats">
@@ -42,21 +45,25 @@
         </div>
     </div>
     }
-    <!-- Bouton pour mettre a jour un festival. -->
+    <!-- Actions -->
+    @if (showEditDeleteButtons() || (showMakeCurrentButton() && !festival()!.isCurrent)) {
     <div class="card-actions">
+        @if (showEditDeleteButtons()) {
         <button class="btn btn-secondary" (click)="onEdit()">
             Modifier
         </button>
         <button class="btn btn-danger" (click)="onDelete()">
             Supprimer
         </button>
-        <!-- Affiche le bouton seulement si showMakeCurrentButton est true -->
-        @if (showMakeCurrentButton()) {
+        }
+        <!-- Affiche le bouton seulement si showMakeCurrentButton est true et que le festival n'est pas déjà courant -->
+        @if (showMakeCurrentButton() && !festival()!.isCurrent) {
         <button class="btn btn-primary" (click)="onMakeCurrent()">
-            Make Current
+            Définir comme courant
         </button>
         }
     </div>
+    }
 </div>
 } @else {
 <div class="festival-card empty">

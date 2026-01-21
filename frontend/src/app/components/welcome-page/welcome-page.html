@@ -1,22 +1,31 @@
 <div class="welcome-container">
-    <h1>Bienvenue sur l'application de gestion du festival</h1>
+    <div class="welcome-hero">
+        <div class="hero-content">
+            <h1>Gestion des Festivals de Jeux</h1>
+            <p class="hero-subtitle">Bienvenue sur votre plateforme de gestion des réservations et des éditeurs</p>
+        </div>
+    </div>
 
     @if (this.auth_svc.isLoggedIn()) {
-    <p>Utilisateur connecté : {{this.auth_svc.currentUser()?.login}}</p>
-    }
-    @else {
-    <p>Utilisateur non connecté</p>
+    <div class="user-welcome">
+        <span>Connecté en tant que <strong>{{this.auth_svc.currentUser()?.login}}</strong></span>
+    </div>
+    } @else {
+    <div class="user-welcome not-logged">
+        <span>Vous n'êtes pas connecté</span>
+    </div>
     }
 
     <div class="current-festival-section">
-        <h2>Festival Courant</h2>
+        <div class="section-header">
+            <h2>Festival en cours</h2>
+        </div>
         @if (currentFestival(); as festival) {
-            <!-- Ne pas passer showMakeCurrentButton, donc le bouton ne s'affichera pas -->
-            <app-festival-card-component [festival]="festival" />
+            <app-festival-card-component [festival]="festival" [showEditDeleteButtons]="false" />
         } @else {
             <div class="no-festival-message">
                 <p>Aucun festival courant défini</p>
-                <p class="hint">Veuillez sélectionner un festival dans la liste des festivals</p>
+                <p class="hint">Rendez-vous dans la liste des festivals pour en sélectionner un</p>
             </div>
         }
     </div>

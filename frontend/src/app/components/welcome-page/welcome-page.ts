@@ -7,7 +7,7 @@ import { FestivalCardComponent } from '../festival-card-component/festival-card-
 
 @Component({
   selector: 'app-welcome-page',
-  imports: [FestivalCardComponent],
+  imports: [FestivalCardComponent, RouterLink],
   templateUrl: './welcome-page.html',
   styleUrl: './welcome-page.css',
 })
