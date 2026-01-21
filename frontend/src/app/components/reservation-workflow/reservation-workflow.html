@@ -198,7 +198,7 @@
                   <span class="subtext">{{ game.author }}</span>
                 </div>
               </td>
-              <td>{{ game.gameType?.gameTypeLabel || '-' }}</td>
+              <td>{{ (game.gameType?.gameTypeLabel | titlecase) || '-' }}</td>
               <td>
                 <input type="number" min="1" [value]="game.quantity"
                   (change)="updateGameQuantity(game.id, +$any($event.target).value)" class="qty-input">

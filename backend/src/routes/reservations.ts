@@ -141,7 +141,7 @@ router.post('/update/:reservationId', verifyToken, requireOrganizer, validateNum
 
         // 2. Déterminer les valeurs cibles
         // Si idTZ change, on vérifie dans la NOUVELLE zone
-        const targetIdTZ = idTZ !== undefined ? idTZ : current.idtz;
+        const targetIdTZ = idTZ !== undefined ? idTZ : current.idTZ;
 
         // Si les tables sont fournies, on prend la nouvelle valeur, sinon on garde l'ancienne
         const targetSmall = nbSmallTables !== undefined ? nbSmallTables : current.nbSmallTables;
@@ -177,10 +177,10 @@ router.post('/update/:reservationId', verifyToken, requireOrganizer, validateNum
         // Si la zone a changé, mettre à jour les deux zones
         const updateClient = await pool.connect();
         try {
-            if (idTZ !== undefined && idTZ !== current.idtz) {
+            if (idTZ !== undefined && idTZ !== current.idTZ) {
                 // Ancienne zone
-                if (current.idtz) {
-                    await updateZoneRemainingTables(updateClient, current.idtz);
+                if (current.idTZ) {
+                    await updateZoneRemainingTables(updateClient, current.idTZ);
                 }
                 // Nouvelle zone
                 await updateZoneRemainingTables(updateClient, idTZ);
@@ -190,7 +190,7 @@ router.post('/update/:reservationId', verifyToken, requireOrganizer, validateNum
             }
 
             // Mettre à jour les tables restantes du festival
-            await updateFestivalRemainingTables(updateClient, current.festivalname);
+            await updateFestivalRemainingTables(updateClient, current.festivalName);
         } finally {
             updateClient.release();
         }
