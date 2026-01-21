@@ -12,34 +12,54 @@
 
     <!-- Section: Créer un utilisateur -->
     <section class="create-user-section">
-        <h2>Créer un Utilisateur</h2>
-        <form (submit)="onCreateUser($event)" class="user-form">
-            <div class="form-group">
-                <label for="login">Login:</label>
-                <input type="text" id="login" name="login" [(ngModel)]="newUser.login" required
-                    placeholder="Nom d'utilisateur" />
-            </div>
+        <button class="btn btn-toggle" (click)="OpenCloseForm()">
+            @if (showForm()) {
+            Fermer
+            } @else {
+            + Ajouter un utilisateur
+            }
+        </button>
 
-            <div class="form-group">
-                <label for="password">Mot de passe:</label>
-                <input type="password" id="password" name="password" [(ngModel)]="newUser.password" required
-                    placeholder="Mot de passe" />
-            </div>
-
-            <div class="form-group">
-                <label for="role">Rôle:</label>
-                <select id="role" name="role" [(ngModel)]="newUser.role">
-                    @for (role of availableRoles; track role.value) {
-                    <option [value]="role.value">{{ role.label }}</option>
+        @if (showForm()) {
+        <div class="form-wrapper">
+            <h2>Créer un Utilisateur</h2>
+            <form [formGroup]="userForm" (ngSubmit)="onSubmit()" class="user-form">
+                <div class="form-group">
+                    <label for="login">Login *</label>
+                    <input type="text" id="login" formControlName="login" placeholder="Nom d'utilisateur" />
+                    @if (userForm.get('login')?.invalid && userForm.get('login')?.touched) {
+                    <span class="error">Le login est requis (min. 3 caractères)</span>
                     }
-                </select>
-            </div>
+                </div>
 
-            <button type="submit" class="btn btn-primary">Créer l'utilisateur</button>
-        </form>
+                <div class="form-group">
+                    <label for="password">Mot de passe *</label>
+                    <input type="password" id="password" formControlName="password" placeholder="Mot de passe" />
+                    @if (userForm.get('password')?.invalid && userForm.get('password')?.touched) {
+                    <span class="error">Le mot de passe est requis (min. 6 caractères)</span>
+                    }
+                </div>
+
+                <div class="form-group">
+                    <label for="role">Rôle</label>
+                    <select id="role" formControlName="role">
+                        @for (role of availableRoles; track role.value) {
+                        <option [value]="role.value">{{ role.label }}</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-cancel" (click)="OpenCloseForm()">Annuler</button>
+                    <button type="submit" class="btn btn-submit" [disabled]="userForm.invalid">
+                        Créer l'utilisateur
+                    </button>
+                </div>
+            </form>
+        </div>
+        }
     </section>
 
-    <!-- Section: Liste des utilisateurs -->
     <section class="users-list-section">
         <h2>Liste des Utilisateurs</h2>
 
@@ -62,7 +82,7 @@
                     <td>{{ user.login }}</td>
                     <td>
                         @if (editingUserId() === user.id) {
-                        <select [(ngModel)]="editingRole" (change)="onRoleChange(user.id)" class="role-select">
+                        <select [formControl]="editingRoleControl" (change)="onRoleChange(user.id)" class="role-select">
                             @for (role of availableRoles; track role.value) {
                             <option [value]="role.value">{{ role.label }}</option>
                             }

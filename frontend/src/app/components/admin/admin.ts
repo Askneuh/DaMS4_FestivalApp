@@ -1,18 +1,17 @@
 import { Component, inject, signal } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { UserDto } from '../../interfaces/user-dto';
 import { UserService } from '../../services/user-service';
 
 @Component({
   selector: 'app-admin',
-  imports: [FormsModule],
+  imports: [ReactiveFormsModule],
   templateUrl: './admin.html',
   styleUrl: './admin.css',
 })
 export class Admin {
   public readonly userService = inject(UserService);
 
-  // Available roles
   availableRoles = [
     { value: 'visiteur', label: 'Visiteur' },
     { value: 'editeur_jeu', label: 'Éditeur de Jeu' },
@@ -20,18 +19,24 @@ export class Admin {
     { value: 'admin', label: 'Administrateur' }
   ];
 
-  // New user form data
-  newUser = {
-    login: '',
-    password: '',
-    role: 'visiteur'
-  };
+  showForm = signal(false);
+
+  userForm = new FormGroup({
+    login: new FormControl<string>('', {
+      nonNullable: true,
+      validators: [Validators.required, Validators.minLength(3)]
+    }),
+    password: new FormControl<string>('', {
+      nonNullable: true,
+      validators: [Validators.required, Validators.minLength(6)]
+    }),
+    role: new FormControl<string>('visiteur', { nonNullable: true })
+  });
 
   // Editing state
   editingUserId = signal<number | null>(null);
-  editingRole = '';
+  editingRoleControl = new FormControl('', { nonNullable: true });
 
-  // Feedback messages
   successMessage = signal<string>('');
   errorMessage = signal<string>('');
 
@@ -39,49 +44,58 @@ export class Admin {
     this.userService.loadAll();
   }
 
-  // Create a new user
-  onCreateUser(event: Event) {
-    event.preventDefault();
-
-    if (!this.newUser.login || !this.newUser.password) {
-      this.showError('Login et mot de passe requis');
-      return;
+  OpenCloseForm() {
+    this.showForm.update(v => !v);
+    if (!this.showForm()) {
+      this.resetForm();
     }
+  }
 
-    this.userService.createUser(
-      this.newUser.login,
-      this.newUser.password,
-      this.newUser.role
-    ).subscribe({
-      next: () => {
-        this.showSuccess(`Utilisateur "${this.newUser.login}" créé avec succès`);
-        // Reset form
-        this.newUser = { login: '', password: '', role: 'visiteur' };
-        // Reload users
-        this.userService.loadAll();
-      },
-      error: (err) => {
-        const message = err.error?.error || 'Erreur lors de la création de l\'utilisateur';
-        this.showError(message);
-      }
+  onSubmit() {
+    if (this.userForm.valid) {
+      const { login, password, role } = this.userForm.getRawValue();
+
+      this.userService.createUser(login, password, role).subscribe({
+        next: () => {
+          this.showSuccess(`Utilisateur "${login}" créé avec succès`);
+          this.resetForm();
+          this.showForm.set(false);
+          this.userService.loadAll();
+        },
+        error: (err) => {
+          const message = err.error?.error || 'Erreur lors de la création de l\'utilisateur';
+          this.showError(message);
+        }
+      });
+    }
+  }
+
+  resetForm() {
+    this.userForm.reset({
+      login: '',
+      password: '',
+      role: 'visiteur'
     });
   }
 
   // Start editing a user's role
   startEdit(userId: number, currentRole: string | String) {
     this.editingUserId.set(userId);
-    this.editingRole = currentRole.toString();
+    this.editingRoleControl.setValue(currentRole.toString());
   }
 
   // Cancel editing
   cancelEdit() {
     this.editingUserId.set(null);
-    this.editingRole = '';
+    this.editingRoleControl.setValue('');
   }
 
   // Handle role change
   onRoleChange(userId: number) {
-    this.userService.updateUserRole(userId, this.editingRole).subscribe({
+    const newRole = this.editingRoleControl.value;
+    if (!newRole) return;
+
+    this.userService.updateUserRole(userId, newRole).subscribe({
       next: () => {
         this.showSuccess('Rôle mis à jour avec succès');
         this.cancelEdit();

@@ -1,6 +1,10 @@
 <div class="form-container">
-  <button class="btn btn-add" (click)="OpenCloseForm()">
-    {{ showForm() ? 'Annuler' : '+ Ajouter un Festival' }}
+  <button class="btn btn-toggle" (click)="OpenCloseForm()">
+    @if (showForm()) {
+    Fermer
+    } @else {
+    + Ajouter un Festival
+    }
   </button>
 
   @if (showForm()) {
@@ -42,56 +46,8 @@
 
         <div formArrayName="tariffZones" class="zones-list">
           @for (zone of tariffZones.controls; track $index; let i = $index) {
-          <div [formGroupName]="i" class="zone-form">
-            <div class="zone-header">
-              <h4>Zone {{ i + 1 }}</h4>
-              <button type="button" class="btn-remove" (click)="removeTariffZone(i)">
-                ✕
-              </button>
-            </div>
-
-            <div class="zone-fields">
-              <div class="form-group">
-                <label>Nom de la zone *</label>
-                <input type="text" formControlName="name" placeholder="Ex: Zone A" />
-              </div>
-
-              <div class="form-group">
-                <label>Nombre de petites tables *</label>
-                <input type="number" formControlName="nbSmallTables" min="0" />
-              </div>
-
-              <div class="form-group">
-                <label>Nombre de grandes tables *</label>
-                <input type="number" formControlName="nbLargeTables" min="0" />
-              </div>
-
-              <div class="form-group">
-                <label>Nombre de tables de la mairie *</label>
-                <input type="number" formControlName="nbCityHallTables" min="0" />
-              </div>
-
-              <div class="form-group">
-                <label>Prix petite table (€) *</label>
-                <input type="number" formControlName="smallTablePrice" min="0" />
-              </div>
-
-              <div class="form-group">
-                <label>Prix grande table (€) *</label>
-                <input type="number" formControlName="largeTablePrice" min="0" />
-              </div>
-
-              <div class="form-group">
-                <label>Prix table mairie (€) *</label>
-                <input type="number" formControlName="cityHallTablePrice" min="0" />
-              </div>
-
-              <div class="form-group">
-                <label>Prix par m² (€) *</label>
-                <input type="number" formControlName="squareMeterPrice" min="0" />
-              </div>
-            </div>
-          </div>
+          <app-tariff-zone-form [zoneForm]="castToFormGroup(zone)" [index]="i" (remove)="removeTariffZone(i)">
+          </app-tariff-zone-form>
           } @empty {
           <p class="no-zones">Aucune zone tarifaire. Cliquez sur "Ajouter une zone" pour commencer.</p>
           }
@@ -99,10 +55,10 @@
       </div>
 
       <div class="form-actions">
-        <button type="button" class="btn btn-secondary" (click)="OpenCloseForm()">
+        <button type="button" class="btn btn-cancel" (click)="OpenCloseForm()">
           Annuler
         </button>
-        <button type="submit" class="btn btn-primary" [disabled]="festivalForm.invalid">
+        <button type="submit" class="btn btn-submit" [disabled]="festivalForm.invalid">
           {{ isEditMode() ? 'Mettre à jour' : 'Créer le festival' }}
         </button>
       </div>

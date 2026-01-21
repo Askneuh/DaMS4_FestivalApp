@@ -1,0 +1,48 @@
+<div class="modal-overlay" (click)="close.emit()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+            <h3>Ajouter des jeux</h3>
+            <button class="close-btn" (click)="close.emit()">&times;</button>
+        </div>
+
+        <div class="modal-body">
+            <div class="filters">
+                <input type="text" placeholder="Rechercher un jeu..." [ngModel]="searchTerm()"
+                    (ngModelChange)="searchTerm.set($event)" class="search-input">
+
+                <div class="source-toggle">
+                    <button [class.active]="source() === 'editor'" (click)="source.set('editor')">
+                        Jeux de l'éditeur
+                    </button>
+                    <button [class.active]="source() === 'distributors'" (click)="source.set('distributors')">
+                        Distributeurs
+                    </button>
+                </div>
+            </div>
+
+            @if (loading()) {
+            <div class="loading">Chargement des jeux...</div>
+            } @else {
+            <div class="games-list">
+                @for (game of filteredGames(); track game.id) {
+                <div class="game-item">
+                    <div class="game-info">
+                        <span class="game-name">{{ game.name }}</span>
+                        <span class="game-author">{{ game.author }}</span>
+                        <span class="game-editor">{{ getEditorName(game.idEditor) }}</span>
+                    </div>
+                    <div class="game-actions">
+                        <input type="number" [(ngModel)]="quantities[game.id]" min="1" class="qty-input">
+                        <button class="btn btn-primary btn-sm" (click)="addGame(game)">
+                            Ajouter
+                        </button>
+                    </div>
+                </div>
+                } @empty {
+                <div class="empty-list">Aucun jeu trouvé.</div>
+                }
+            </div>
+            }
+        </div>
+    </div>
+</div>

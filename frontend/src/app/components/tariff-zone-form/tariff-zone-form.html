@@ -1,0 +1,53 @@
+<div [formGroup]="zoneForm()" class="zone-form">
+    <div class="zone-header">
+        <h4>Zone {{ index() + 1 }}</h4>
+        <button type="button" class="btn-remove" (click)="onRemove()">
+            ✕
+        </button>
+    </div>
+
+    <div class="zone-fields">
+        <div class="form-group">
+            <label>Nom de la zone *</label>
+            <input type="text" formControlName="name" placeholder="Ex: Zone A" />
+            @if (zoneForm().get('name')?.invalid && zoneForm().get('name')?.touched) {
+            <span class="error">Le nom de la zone est requis</span>
+            }
+        </div>
+
+        <div class="form-group">
+            <label>Nombre de petites tables *</label>
+            <input type="number" formControlName="nbSmallTables" min="0" />
+        </div>
+
+        <div class="form-group">
+            <label>Nombre de grandes tables *</label>
+            <input type="number" formControlName="nbLargeTables" min="0" />
+        </div>
+
+        <div class="form-group">
+            <label>Nombre de tables de la mairie *</label>
+            <input type="number" formControlName="nbCityHallTables" min="0" />
+        </div>
+
+        <div class="form-group">
+            <label>Prix petite table (€) *</label>
+            <input type="number" formControlName="smallTablePrice" min="0" />
+        </div>
+
+        <div class="form-group">
+            <label>Prix grande table (€) *</label>
+            <input type="number" formControlName="largeTablePrice" min="0" />
+        </div>
+
+        <div class="form-group">
+            <label>Prix table mairie (€) *</label>
+            <input type="number" formControlName="cityHallTablePrice" min="0" />
+        </div>
+
+        <div class="form-group">
+            <label>Prix par m² (€) *</label>
+            <input type="number" formControlName="squareMeterPrice" min="0" />
+        </div>
+    </div>
+</div>
