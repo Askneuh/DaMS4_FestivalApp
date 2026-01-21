@@ -1,0 +1,32 @@
+<div class="welcome-container">
+    <div class="welcome-hero">
+        <div class="hero-content">
+            <h1>Gestion des Festivals de Jeux</h1>
+            <p class="hero-subtitle">Bienvenue sur votre plateforme de gestion des réservations et des éditeurs</p>
+        </div>
+    </div>
+
+    @if (this.auth_svc.isLoggedIn()) {
+    <div class="user-welcome">
+        <span>Connecté en tant que <strong>{{this.auth_svc.currentUser()?.login}}</strong></span>
+    </div>
+    } @else {
+    <div class="user-welcome not-logged">
+        <span>Vous n'êtes pas connecté</span>
+    </div>
+    }
+
+    <div class="current-festival-section">
+        <div class="section-header">
+            <h2>Festival en cours</h2>
+        </div>
+        @if (currentFestival(); as festival) {
+            <app-festival-card-component [festival]="festival" [showEditDeleteButtons]="false" />
+        } @else {
+            <div class="no-festival-message">
+                <p>Aucun festival courant défini</p>
+                <p class="hint">Rendez-vous dans la liste des festivals pour en sélectionner un</p>
+            </div>
+        }
+    </div>
+</div>

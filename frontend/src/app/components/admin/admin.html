@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<div class="admin-container">
+    <h1>Gestion des Utilisateurs</h1>
+
+    <!-- Messages de feedback -->
+    @if (successMessage()) {
+    <div class="alert alert-success">{{ successMessage() }}</div>
+    }
+    @if (errorMessage()) {
+    <div class="alert alert-error">{{ errorMessage() }}</div>
+    }
+
+    <!-- Section: Créer un utilisateur -->
+    <section class="create-user-section">
+        <button class="btn btn-toggle" (click)="OpenCloseForm()">
+            @if (showForm()) {
+            Fermer
+            } @else {
+            + Ajouter un utilisateur
+            }
+        </button>
+
+        @if (showForm()) {
+        <div class="form-wrapper">
+            <h2>Créer un Utilisateur</h2>
+            <form [formGroup]="userForm" (ngSubmit)="onSubmit()" class="user-form">
+                <div class="form-group">
+                    <label for="login">Login *</label>
+                    <input type="text" id="login" formControlName="login" placeholder="Nom d'utilisateur" />
+                    @if (userForm.get('login')?.invalid && userForm.get('login')?.touched) {
+                    <span class="error">Le login est requis (min. 3 caractères)</span>
+                    }
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Mot de passe *</label>
+                    <input type="password" id="password" formControlName="password" placeholder="Mot de passe" />
+                    @if (userForm.get('password')?.invalid && userForm.get('password')?.touched) {
+                    <span class="error">Le mot de passe est requis (min. 6 caractères)</span>
+                    }
+                </div>
+
+                <div class="form-group">
+                    <label for="role">Rôle</label>
+                    <select id="role" formControlName="role">
+                        @for (role of availableRoles; track role.value) {
+                        <option [value]="role.value">{{ role.label }}</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-cancel" (click)="OpenCloseForm()">Annuler</button>
+                    <button type="submit" class="btn btn-submit" [disabled]="userForm.invalid">
+                        Créer l'utilisateur
+                    </button>
+                </div>
+            </form>
+        </div>
+        }
+    </section>
+
+    <section class="users-list-section">
+        <h2>Liste des Utilisateurs</h2>
+
+        @if (userService.users().length === 0) {
+        <p class="no-users">Aucun utilisateur trouvé.</p>
+        } @else {
+        <table class="users-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Login</th>
+                    <th>Rôle</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @for (user of userService.users(); track user.id) {
+                <tr>
+                    <td>{{ user.id }}</td>
+                    <td>{{ user.login }}</td>
+                    <td>
+                        @if (editingUserId() === user.id) {
+                        <select [formControl]="editingRoleControl" (change)="onRoleChange(user.id)" class="role-select">
+                            @for (role of availableRoles; track role.value) {
+                            <option [value]="role.value">{{ role.label }}</option>
+                            }
+                        </select>
+                        } @else {
+                        <span class="role-badge" [attr.data-role]="user.role">
+                            {{ getRoleLabel(user.role) }}
+                        </span>
+                        }
+                    </td>
+                    <td>
+                        @if (editingUserId() === user.id) {
+                        <button (click)="cancelEdit()" class="btn btn-secondary btn-sm">
+                            Annuler
+                        </button>
+                        } @else {
+                        <button (click)="startEdit(user.id, user.role)" class="btn btn-primary btn-sm">
+                            Modifier
+                        </button>
+                        <button (click)="deleteUser(user.id, user.login)" class="btn btn-danger btn-sm">
+                            Supprimer
+                        </button>
+                        }
+                    </td>
+                </tr>
+                }
+            </tbody>
+        </table>
+        }
+    </section>
+</div>

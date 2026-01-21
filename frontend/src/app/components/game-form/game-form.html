@@ -1,0 +1,101 @@
+<div class="game-form-container">
+  <button class="btn btn-toggle" (click)="OpenCloseForm()">
+    @if (showForm()) {
+      Fermer
+    } @else {
+      + Ajouter un jeu
+    }
+  </button>
+
+  @if (showForm()) {
+    <div class="form-wrapper">
+      <h2>{{ isEditMode() ? 'Modifier le jeu' : 'Nouveau jeu' }}</h2>
+      
+      <form [formGroup]="gameForm" (ngSubmit)="onSubmit()" class="form">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="name">Nom du jeu *</label>
+            <input id="name" type="text" formControlName="name" placeholder="Ex: Catan">
+            @if (gameForm.get('name')?.invalid && gameForm.get('name')?.touched) {
+              <span class="error">Le nom est requis</span>
+            }
+          </div>
+          <div class="form-group">
+            <label for="author">Auteur *</label>
+            <input id="author" type="text" formControlName="author" placeholder="Ex: Klaus Teuber">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="nbMinPlayer">Joueurs min *</label>
+            <input id="nbMinPlayer" type="number" formControlName="nbMinPlayer" min="1">
+          </div>
+          <div class="form-group">
+            <label for="nbMaxPlayer">Joueurs max *</label>
+            <input id="nbMaxPlayer" type="number" formControlName="nbMaxPlayer" min="1">
+          </div>
+          <div class="form-group">
+            <label for="duration">Durée (min) *</label>
+            <input id="duration" type="number" formControlName="duration" min="1">
+          </div>
+          <div class="form-group">
+            <label for="minimumAge">Âge min *</label>
+            <input id="minimumAge" type="number" formControlName="minimumAge" min="0">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="idGameType">Type de jeu *</label>
+            <select id="idGameType" formControlName="idGameType">
+              <option [value]="1">Ambiance</option>
+              <option [value]="2">Cartes</option>
+              <option [value]="3">Stratégie</option>
+              <option [value]="4">Puzzle</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="edition">Année d'édition</label>
+            <input id="edition" type="number" formControlName="edition">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="theme">Thème</label>
+          <input id="theme" type="text" formControlName="theme" placeholder="Ex: Médiéval, Espace...">
+        </div>
+
+        <div class="form-group">
+          <label for="description">Description</label>
+          <textarea id="description" formControlName="description" rows="3" placeholder="Description du jeu..."></textarea>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="gameImage">URL de l'image</label>
+            <input id="gameImage" type="text" formControlName="gameImage" placeholder="https://...">
+          </div>
+          <div class="form-group">
+            <label for="rulesTutorial">URL tutoriel/règles</label>
+            <input id="rulesTutorial" type="text" formControlName="rulesTutorial" placeholder="https://youtube.com/...">
+          </div>
+        </div>
+
+        <div class="form-group checkbox-group">
+          <label>
+            <input type="checkbox" formControlName="prototype">
+            Prototype (jeu non publié)
+          </label>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="btn btn-cancel" (click)="OpenCloseForm()">Annuler</button>
+          <button type="submit" class="btn btn-submit" [disabled]="gameForm.invalid">
+            {{ isEditMode() ? 'Mettre à jour' : 'Créer' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  }
+</div>

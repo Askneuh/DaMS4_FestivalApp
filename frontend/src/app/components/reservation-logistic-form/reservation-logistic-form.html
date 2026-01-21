@@ -1,0 +1,81 @@
+<section class="logistique-section">
+    <div class="section-top">
+        <h2>Logistique</h2>
+        <div class="total-price-badge">
+            Total: <strong>{{ totalPrice() }} €</strong>
+        </div>
+    </div>
+
+    @if (error()) {
+    <div class="alert alert-danger">{{ error() }}</div>
+    }
+
+    <form (submit)="onSubmit(); $event.preventDefault()" class="logistique-form">
+        <div class="form-grid">
+            <!-- Zone Tarifaire -->
+            <div class="form-group full-width">
+                <label>Zone Tarifaire</label>
+                <select (change)="onZoneChange(+$any($event.target).value)" name="idTZ">
+                    <option value="" [selected]="!reservation().idTZ" disabled>-- Choisir une zone --</option>
+                    @for (zone of availableZones(); track zone.idTZ) {
+                    <option [value]="zone.idTZ" [selected]="Number(zone.idTZ) === Number(reservation().idTZ)">{{
+                        zone.name }}</option>
+                    }
+                </select>
+            </div>
+
+            <!-- Tables -->
+            <div class="form-group">
+                <label>Petites tables</label>
+                <input type="number" min="0"
+                    [max]="(selectedZone()?.remainingSmallTables ?? 0) + (originalReservation()?.idTZ === reservation().idTZ ? (originalReservation()?.nbSmallTables ?? 0) : 0)"
+                    [value]="reservation().nbSmallTables"
+                    (input)="updateField('nbSmallTables', +$any($event.target).value)">
+                <span class="available-hint">{{ remainingSmallRealTime() }} disponibles</span>
+            </div>
+
+            <div class="form-group">
+                <label>Grandes tables</label>
+                <input type="number" min="0"
+                    [max]="(selectedZone()?.remainingLargeTables ?? 0) + (originalReservation()?.idTZ === reservation().idTZ ? (originalReservation()?.nbLargeTables ?? 0) : 0)"
+                    [value]="reservation().nbLargeTables"
+                    (input)="updateField('nbLargeTables', +$any($event.target).value)">
+                <span class="available-hint">{{ remainingLargeRealTime() }} disponibles</span>
+            </div>
+
+            <div class="form-group">
+                <label>Tables mairie</label>
+                <input type="number" min="0"
+                    [max]="(selectedZone()?.remainingCityHallTables ?? 0) + (originalReservation()?.idTZ === reservation().idTZ ? (originalReservation()?.nbCityHallTables ?? 0) : 0)"
+                    [value]="reservation().nbCityHallTables"
+                    (input)="updateField('nbCityHallTables', +$any($event.target).value)">
+                <span class="available-hint">{{ remainingCityHallRealTime() }} disponibles</span>
+            </div>
+
+            <!-- Surface en m² -->
+            <div class="form-group">
+                <label>Surface (m²)</label>
+                <input type="number" min="4" [max]="maxM2Available()" [value]="reservation().m2 || 4"
+                    (input)="updateField('m2', +$any($event.target).value)">
+                <span class="available-hint">
+                    = {{ Math.ceil((reservation().m2 || 4) / 4) }} petites tables |
+                    Max: {{ maxM2Available() }}m² |
+                    Prix: {{ +(selectedZone()?.smallTablePrice || 0) / 4 }}€/m²
+                </span>
+            </div>
+
+            <!-- Remise -->
+            <div class="form-group">
+                <label>Remise (€)</label>
+                <input type="number" min="0" [value]="reservation().remise"
+                    (input)="updateField('remise', +$any($event.target).value)">
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary" [disabled]="saving()">
+                {{ saving() ? 'Chargement...' : 'Enregistrer Logistique' }}
+            </button>
+        </div>
+    </form>
+</section>

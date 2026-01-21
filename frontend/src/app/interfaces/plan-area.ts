@@ -1,12 +1,15 @@
 import { Editor } from "./editor"
-import { Game } from "./game"
+import { PlanAreaGame } from "./plan-area-game"
 
 export interface PlanArea {
     id: number
     name: string
-    nbTables: number
-    presentedGame: Game[]
+    nbSmallTables: number
+    nbLargeTables: number
+    nbCityHallTables: number
     festivalName: string
-    editors: Editor[] //Les editeurs présents sur place qui animent
+    idTZ: number
+    editors?: Editor[] //Les editeurs présents sur place qui animent
     //Pas la liste de tous les editeurs dont les jeux sont présentés.
+    presentedGames?: PlanAreaGame[]
 }

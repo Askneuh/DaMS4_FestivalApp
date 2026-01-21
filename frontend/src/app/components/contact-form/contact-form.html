@@ -1,0 +1,57 @@
+<div class="contact-form-container">
+  <button class="btn btn-toggle" (click)="OpenCloseForm()">
+    @if (showForm()) {
+      Fermer
+    } @else {
+      + Ajouter un contact
+    }
+  </button>
+
+  @if (showForm()) {
+    <div class="form-wrapper">
+      <h2>{{ isEditMode() ? 'Modifier le contact' : 'Nouveau contact' }}</h2>
+      
+      <form [formGroup]="contactForm" (ngSubmit)="onSubmit()" class="form">
+        <div class="form-group">
+          <label for="name">Nom *</label>
+          <input id="name" type="text" formControlName="name" placeholder="Ex: Jean Dupont">
+          @if (contactForm.get('name')?.invalid && contactForm.get('name')?.touched) {
+            <span class="error">Le nom est requis (min. 2 caractères)</span>
+          }
+        </div>
+
+        <div class="form-group">
+          <label for="email">Email *</label>
+          <input id="email" type="email" formControlName="email" placeholder="Ex: jean.dupont@exemple.fr">
+          @if (contactForm.get('email')?.invalid && contactForm.get('email')?.touched) {
+            <span class="error">Un email valide est requis</span>
+          }
+        </div>
+
+        <div class="form-group">
+          <label for="phone">Téléphone</label>
+          <input id="phone" type="tel" formControlName="phone" placeholder="Ex: 06 12 34 56 78">
+        </div>
+
+        <div class="form-group">
+          <label for="role">Rôle</label>
+          <input id="role" type="text" formControlName="role" placeholder="Ex: Responsable commercial">
+        </div>
+
+        <div class="form-group checkbox-group">
+          <label>
+            <input type="checkbox" formControlName="priority">
+            Contact prioritaire
+          </label>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="btn btn-cancel" (click)="OpenCloseForm()">Annuler</button>
+          <button type="submit" class="btn btn-submit" [disabled]="contactForm.invalid">
+            {{ isEditMode() ? 'Mettre à jour' : 'Créer' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  }
+</div>

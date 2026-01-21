@@ -1,0 +1,68 @@
+<div class="form-container">
+  <button class="btn btn-toggle" (click)="OpenCloseForm()">
+    @if (showForm()) {
+    Fermer
+    } @else {
+    + Ajouter un Festival
+    }
+  </button>
+
+  @if (showForm()) {
+  <div class="form-card">
+
+    <h2>{{ isEditMode() ? 'Modifier le Festival' : 'Nouveau Festival' }}</h2>
+
+    <form [formGroup]="festivalForm" (ngSubmit)="onSubmit()">
+
+      <div class="form-section">
+        <h3>Informations générales</h3>
+
+        <div class="form-group">
+          <label for="name">Nom du festival *</label>
+          <input id="name" type="text" formControlName="name" placeholder="Ex: Festival-Rose" />
+          @if (festivalForm.get('name')?.invalid && festivalForm.get('name')?.touched) {
+          <span class="error">Le nom est requis (min 3 caractères)</span>
+          }
+        </div>
+      </div>
+
+      <!-- Validation message for missing zones -->
+      @if (tariffZones.hasError('noZones') && tariffZones.touched) {
+      <div class="form-section error-section"
+        style="background-color: #ffebee; border: 1px solid #ffcdd2; color: #b71c1c; padding: 1rem; border-radius: 4px; margin-bottom: 1rem;">
+        <h4 style="margin-top: 0;">Zone tarifaire obligatoire</h4>
+        <div>Vous devez ajouter au moins une zone tarifaire.</div>
+      </div>
+      }
+
+      <!-- Zones tarifaires -->
+      <div class="form-section">
+        <div class="section-header">
+          <h3>Zones tarifaires</h3>
+          <button type="button" class="btn btn-secondary" (click)="addTariffZone()">
+            + Ajouter une zone
+          </button>
+        </div>
+
+        <div formArrayName="tariffZones" class="zones-list">
+          @for (zone of tariffZones.controls; track $index; let i = $index) {
+          <app-tariff-zone-form [zoneForm]="castToFormGroup(zone)" [index]="i" (remove)="removeTariffZone(i)">
+          </app-tariff-zone-form>
+          } @empty {
+          <p class="no-zones">Aucune zone tarifaire. Cliquez sur "Ajouter une zone" pour commencer.</p>
+          }
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button type="button" class="btn btn-cancel" (click)="OpenCloseForm()">
+          Annuler
+        </button>
+        <button type="submit" class="btn btn-submit" [disabled]="festivalForm.invalid">
+          {{ isEditMode() ? 'Mettre à jour' : 'Créer le festival' }}
+        </button>
+      </div>
+    </form>
+  </div>
+  }
+</div>

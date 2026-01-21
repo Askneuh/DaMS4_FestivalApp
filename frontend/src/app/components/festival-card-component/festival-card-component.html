@@ -1,31 +1,72 @@
 @if (festival()){
-    <div class="festival-card">
-        <div class="festival-header">
-            <h2>{{ festival()!.name }}</h2>
-            <span class="tables-count">{{ festival()!.nbTables}} tables</span>
+<div class="festival-card" [class.current]="festival()!.isCurrent">
+    @if (festival()!.isCurrent) {
+    <div class="current-badge">Festival en cours</div>
+    }
+    <div class="festival-header">
+        <h2>{{ festival()!.name }}</h2>
+        <div class="header-stats">
+            <span class="tables-count" title="Petites">P: {{ festival()!.remainingSmallTables }}/{{
+                festival()!.nbSmallTables }}</span>
+            <span class="tables-count" title="Grandes">G: {{ festival()!.remainingLargeTables }}/{{
+                festival()!.nbLargeTables }}</span>
+            <span class="tables-count" title="Mairie">M: {{ festival()!.remainingCityHallTables }}/{{
+                festival()!.nbCityHallTables }}</span>
         </div>
-         
-        @if (festival()!.tariffZones && festival()!.tariffZones.length > 0){
-            <div class="zones-section">
-                <h3>Zones tarifaires</h3>
-                <div class="zones-list">
-                    @for (zone of festival()!.tariffZones; track zone.id){
-                        <div class="zone-item">
-                            <div class="zone-name">{{ zone.name }}</div>
-                            <div class="zone-info">
-                                <span>{{ zone.nbTables }} tables</span>
-                                <span>{{ zone.tablePrice }}€/table</span>
-                                <span>{{ zone.squareMeterPrice }}€/m2</span>
-                            </div>
-                        </div>
-                    }
+    </div>
+
+    @if (festival()!.tariffZones && festival()!.tariffZones!.length > 0){
+    <div class="zones-section">
+        <h3>Zones tarifaires</h3>
+        <div class="zones-list">
+            @for (zone of festival()!.tariffZones; track zone.idTZ){
+            <div class="zone-item">
+                <div class="zone-name">{{ zone.name }}</div>
+                <div class="zone-details">
+                    <div class="detail-row">
+                        <span class="label">Petites ({{zone.remainingSmallTables}}/{{zone.nbSmallTables}}):</span>
+                        <span class="price">{{zone.smallTablePrice}}€</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="label">Grandes ({{zone.remainingLargeTables}}/{{zone.nbLargeTables}}):</span>
+                        <span class="price">{{zone.largeTablePrice}}€</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="label">Mairie ({{zone.remainingCityHallTables}}/{{zone.nbCityHallTables}}):</span>
+                        <span class="price">{{zone.cityHallTablePrice}}€</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="label">Prix m²:</span>
+                        <span class="price">{{ +zone.smallTablePrice / 4 }}€</span>
+                    </div>
                 </div>
             </div>
+            }
+        </div>
+    </div>
+    }
+    <!-- Actions -->
+    @if (showEditDeleteButtons() || (showMakeCurrentButton() && !festival()!.isCurrent)) {
+    <div class="card-actions">
+        @if (showEditDeleteButtons()) {
+        <button class="btn btn-secondary" (click)="onEdit()">
+            Modifier
+        </button>
+        <button class="btn btn-danger" (click)="onDelete()">
+            Supprimer
+        </button>
         }
-        <!-- A METTRE : BOUTONS MODIFIER ET SUPPRIMER -->
+        <!-- Affiche le bouton seulement si showMakeCurrentButton est true et que le festival n'est pas déjà courant -->
+        @if (showMakeCurrentButton() && !festival()!.isCurrent) {
+        <button class="btn btn-primary" (click)="onMakeCurrent()">
+            Définir comme courant
+        </button>
+        }
     </div>
+    }
+</div>
 } @else {
-    <div class="festival-card empty">
-        <p>Aucun festival disponible</p>
-    </div>
+<div class="festival-card empty">
+    <p>Aucun festival disponible</p>
+</div>
 }

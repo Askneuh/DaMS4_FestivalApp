@@ -10,10 +10,39 @@
   border-radius: 8px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   overflow: hidden;
+  position: relative;
+  transition: all 0.3s ease;
 }
 
 .festival-card:hover {
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Festival courant - Highlight doré */
+.festival-card.current {
+  border: 2px solid #f59e0b;
+  box-shadow: 0 0 20px rgba(245, 158, 11, 0.3);
+  background: linear-gradient(135deg, #fffbeb 0%, white 100%);
+}
+
+.festival-card.current:hover {
+  box-shadow: 0 0 25px rgba(245, 158, 11, 0.4);
+}
+
+/* Badge Festival en cours */
+.current-badge {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: white;
+  padding: 0.5rem 1rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-top-right-radius: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.1);
 }
 
 /* Header */
@@ -31,6 +60,12 @@
   font-size: 1.5rem;
   color: #1f2937;
   font-weight: 600;
+}
+
+.header-stats {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
 .tables-count {
@@ -78,17 +113,37 @@
   font-size: 1rem;
 }
 
-.zone-info {
+.zone-details {
   display: flex;
-  gap: 1rem;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
   font-size: 0.875rem;
-  color: #6b7280;
+  color: #4b5563;
 }
 
-.zone-info span {
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   padding: 0.25rem 0.5rem;
   background: white;
   border-radius: 4px;
+  border: 1px solid #f3f4f6;
+}
+
+.detail-row .label {
+  font-weight: 500;
+  color: #6b7280;
+}
+
+.detail-row .price {
+  font-weight: 600;
+  color: #1f2937;
+  background: #eef2ff;
+  padding: 0.125rem 0.5rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
 }
 
 /* Actions */
@@ -114,12 +169,12 @@
 }
 
 .btn-primary {
-  background: #6366f1;
+  background-color: #4caf50;
   color: white;
 }
 
 .btn-primary:hover {
-  background: #4f46e5;
+  background-color: #45a049;
 }
 
 .btn-secondary {
@@ -130,6 +185,18 @@
 
 .btn-secondary:hover {
   background: #f9fafb;
+}
+
+/* Bouton Supprimer */
+.btn-danger {
+  background: #ef4444;
+  color: white;
+  border: 1px solid #dc2626;
+}
+
+.btn-danger:hover {
+  background: #dc2626;
+  border-color: #b91c1c;
 }
 
 /* Empty State */
@@ -155,16 +222,16 @@
     align-items: flex-start;
     gap: 0.75rem;
   }
-  
+
   .zone-info {
     flex-direction: column;
     gap: 0.5rem;
   }
-  
+
   .card-actions {
     flex-direction: column;
   }
-  
+
   .btn {
     width: 100%;
   }

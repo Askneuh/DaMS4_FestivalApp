@@ -1,0 +1,43 @@
+<section class="organisation-section">
+    <h2>Organisation & Suivi</h2>
+    <div class="organisation-grid">
+        <div class="org-item">
+            <label>Animation</label>
+            <div class="radio-group">
+                <label>
+                    <input type="radio" [checked]="reservation().typeAnimateur === 0"
+                        (change)="updateField('typeAnimateur', 0)">
+                    Besoin de bénévoles
+                </label>
+                <label>
+                    <input type="radio" [checked]="reservation().typeAnimateur === 1"
+                        (change)="updateField('typeAnimateur', 1)">
+                    N'a pas besoin de bénévoles
+                </label>
+            </div>
+        </div>
+
+        <div class="org-item checkboxes">
+            <label class="checkbox-label">
+                <input type="checkbox" [checked]="reservation().listeDemandee"
+                    (change)="updateField('listeDemandee', $any($event.target).checked)">
+                Liste demandée
+            </label>
+            <label class="checkbox-label">
+                <input type="checkbox" [checked]="reservation().listeRecue"
+                    (change)="updateField('listeRecue', $any($event.target).checked)">
+                Liste reçue
+            </label>
+            <label class="checkbox-label">
+                <input type="checkbox" [checked]="reservation().jeuxRecus"
+                    (change)="updateField('jeuxRecus', $any($event.target).checked)">
+                Jeux reçus
+            </label>
+        </div>
+    </div>
+    <div class="form-actions mt-1">
+        <button (click)="onSubmit()" class="btn btn-primary" [disabled]="saving()">
+            {{ saving() ? 'Chargement...' : 'Enregistrer Organisation' }}
+        </button>
+    </div>
+</section>

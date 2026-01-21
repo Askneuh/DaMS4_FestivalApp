@@ -1,0 +1,74 @@
+<div class="workflow-container">
+  <div class="header">
+    <button class="btn btn-back" (click)="goBack()">← Retour</button>
+    <h1>Workflow de Réservation</h1>
+    <div class="header-actions">
+      @if (reservation(); as res) {
+      @if (res.status === 'Présent' || res.status === 'Discussion en cours' || res.status === 'Contact pris') {
+      <button class="btn btn-secondary" (click)="generateInvoice()">Générer Facture</button>
+      }
+      @if (res.status === 'Facturé') {
+      <button class="btn btn-success" (click)="markPaid()">Marquer Payée</button>
+      }
+      }
+    </div>
+  </div>
+
+  @if (loading()) {
+  <div class="loading">
+    <p>Chargement...</p>
+  </div>
+  } @else if (!reservation()) {
+  <div class="empty-state">
+    <p>Réservation introuvable.</p>
+    <button class="btn btn-primary" (click)="goBack()">Retour à la liste</button>
+  </div>
+  } @else {
+  <div class="workflow-content">
+    <!-- Section Éditeur -->
+    <section class="editor-section">
+      <h2>Éditeur</h2>
+      <div class="editor-info">
+        @if (editor()) {
+        <span class="editor-name">{{ editor()!.name }}</span>
+        @if (editor()!.exposant) {
+        <span class="badge exposant">Exposant</span>
+        }
+        @if (editor()!.distributeur) {
+        <span class="badge distributeur">Distributeur</span>
+        }
+        }
+      </div>
+    </section>
+
+    <!-- Section Statut -->
+    <app-reservation-status [currentStatus]="reservation()!.status" (statusChange)="onStatusChange($event)">
+    </app-reservation-status>
+
+    <!-- Section Historique Suivi -->
+    <section class="suivi-section">
+      <app-suivi-history [reservationId]="reservationId()!" [currentStatus]="reservation()!.status"
+        [history]="suiviHistory()" (suiviAdded)="loadSuiviHistory(reservationId()!)">
+      </app-suivi-history>
+    </section>
+
+    <!-- Section Logistique -->
+    <app-reservation-logistic-form [reservation]="reservation()!" [originalReservation]="originalReservation()"
+      [availableZones]="availableZones()" [saving]="savingLogistics()" [error]="errorMessage()"
+      (update)="onUpdateReservation($event)" (saveRequested)="onSaveReservation()">
+    </app-reservation-logistic-form>
+
+    <!-- Section Organisation -->
+    <app-reservation-organisation-form [reservation]="reservation()!" [saving]="savingLogistics()"
+      (update)="onUpdateReservation($event)" (saveRequested)="onSaveReservation()">
+    </app-reservation-organisation-form>
+
+    <!-- Section Jeux -->
+    <app-reservation-game-form [games]="reservationGames()" [editorId]="reservation()!.idEditor"
+      (gameAdded)="onAddGameToReservation($event)" (gameRemoved)="onRemoveGameFromReservation($event)"
+      (quantityChanged)="onUpdateGameQuantity($event.gameId, $event.quantity)"
+      (placementToggled)="onToggleGamePlaced($event)">
+    </app-reservation-game-form>
+  </div>
+  }
+</div>
