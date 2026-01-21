@@ -1,0 +1,46 @@
+.zone-form {
+    padding: 1.5rem;
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+}
+
+.zone-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.zone-header h4 {
+    margin: 0;
+    color: #1f2937;
+    font-size: 1.125rem;
+}
+
+.btn-remove {
+    padding: 0.25rem 0.5rem;
+    background: #ef4444;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1.25rem;
+    line-height: 1;
+}
+
+.btn-remove:hover {
+    background: #dc2626;
+}
+
+.zone-fields {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+}
+
+@media (max-width: 768px) {
+    .zone-fields {
+        grid-template-columns: 1fr;
+    }
+}
