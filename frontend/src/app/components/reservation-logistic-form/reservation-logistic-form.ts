@@ -43,45 +43,49 @@ export class ReservationLogisticForm {
     const zone = this.selectedZone();
     const res = this.reservation();
     const orig = this.originalReservation();
-    if (!zone || !res || !orig) return 0;
+    if (!zone || !res) return zone?.remainingSmallTables ?? 0;
 
     const m2Tables = Math.ceil((res.m2 || 0) / 4);
-    const origM2Tables = Math.ceil((orig.m2 || 0) / 4);
 
-    if (res.idTZ === orig.idTZ) {
-      const delta = (res.nbSmallTables + m2Tables) - (orig.nbSmallTables + origM2Tables);
-      return Math.max(0, zone.remainingSmallTables - delta);
-    } else {
+    // Si pas d'original ou zone originale différente/nulle, on calcule depuis les tables restantes de la zone
+    if (!orig || !orig.idTZ || res.idTZ !== orig.idTZ) {
       return Math.max(0, zone.remainingSmallTables - res.nbSmallTables - m2Tables);
     }
+
+    // Même zone : on ajoute les tables de l'original qui sont "rendues"
+    const origM2Tables = Math.ceil((orig.m2 || 0) / 4);
+    const delta = (res.nbSmallTables + m2Tables) - (orig.nbSmallTables + origM2Tables);
+    return Math.max(0, zone.remainingSmallTables - delta);
   });
 
   remainingLargeRealTime = computed(() => {
     const zone = this.selectedZone();
     const res = this.reservation();
     const orig = this.originalReservation();
-    if (!zone || !res || !orig) return 0;
+    if (!zone || !res) return zone?.remainingLargeTables ?? 0;
 
-    if (res.idTZ === orig.idTZ) {
-      const delta = res.nbLargeTables - orig.nbLargeTables;
-      return Math.max(0, zone.remainingLargeTables - delta);
-    } else {
+    // Si pas d'original ou zone originale différente/nulle
+    if (!orig || !orig.idTZ || res.idTZ !== orig.idTZ) {
       return Math.max(0, zone.remainingLargeTables - res.nbLargeTables);
     }
+
+    const delta = res.nbLargeTables - orig.nbLargeTables;
+    return Math.max(0, zone.remainingLargeTables - delta);
   });
 
   remainingCityHallRealTime = computed(() => {
     const zone = this.selectedZone();
     const res = this.reservation();
     const orig = this.originalReservation();
-    if (!zone || !res || !orig) return 0;
+    if (!zone || !res) return zone?.remainingCityHallTables ?? 0;
 
-    if (res.idTZ === orig.idTZ) {
-      const delta = res.nbCityHallTables - orig.nbCityHallTables;
-      return Math.max(0, zone.remainingCityHallTables - delta);
-    } else {
+    // Si pas d'original ou zone originale différente/nulle
+    if (!orig || !orig.idTZ || res.idTZ !== orig.idTZ) {
       return Math.max(0, zone.remainingCityHallTables - res.nbCityHallTables);
     }
+
+    const delta = res.nbCityHallTables - orig.nbCityHallTables;
+    return Math.max(0, zone.remainingCityHallTables - delta);
   });
 
   maxM2Available = computed(() => {

@@ -16,6 +16,7 @@
             <div class="form-group full-width">
                 <label>Zone Tarifaire</label>
                 <select (change)="onZoneChange(+$any($event.target).value)" name="idTZ">
+                    <option value="" [selected]="!reservation().idTZ" disabled>-- Choisir une zone --</option>
                     @for (zone of availableZones(); track zone.idTZ) {
                     <option [value]="zone.idTZ" [selected]="Number(zone.idTZ) === Number(reservation().idTZ)">{{
                         zone.name }}</option>
