@@ -4,48 +4,47 @@ import { Component, effect, inject, input, output, signal } from '@angular/core'
 //FormGroup: Représente un groupe de champs de formulaire
 //ReactiveFormsModule: Module nécessaire pour les formulaires réactifs
 //Validators: Pour ajouter des règles de validation
-import { AbstractControl, FormArray, FormBuilder, FormGroup, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
+import { AbstractControl, FormArray, FormControl, FormGroup, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { FestivalService } from '../../services/festival-service';
 import { TariffZoneService } from '../../services/tariff-zone-service';
 import { Festival } from '../../interfaces/festival';
 import { CommonModule } from '@angular/common';
-import { ValidationService } from '../../services/validation.service';
+import { ValidationService } from '../../services/validation-service';
+import { TariffZoneForm } from '../tariff-zone-form/tariff-zone-form';
 
 @Component({
   selector: 'app-festival-form',
-  imports: [ReactiveFormsModule, CommonModule],
+  imports: [ReactiveFormsModule, CommonModule, TariffZoneForm],
   templateUrl: './festival-form.html',
   styleUrl: './festival-form.css',
 })
 export class FestivalFormComponent {
-  //fb: Service pour construire nos formulaires facilement
-  readonly fb = inject(FormBuilder);
   readonly festivalService = inject(FestivalService);
   readonly tariffZoneService = inject(TariffZoneService);
   readonly validationService = inject(ValidationService);
   festivalToEdit = input<Festival | null>(null);
   formClosed = output<void>();
 
-  //Signal qui contrôle si le formulaire est visible ou caché.
-  //Réactif: quand sa valeur change, l'interface se met à jour automatiquement
   showForm = signal(false);
 
-  // Déclarer sans initialiser (sera initialisé dans le constructor)
-  festivalForm!: FormGroup;
+  // Custom Validator pour vérifier qu'au moins une zone existe
+  atLeastOneZoneValidator = (control: AbstractControl): ValidationErrors | null => {
+    const zones = control as FormArray;
+    if (zones.length === 0) {
+      return { noZones: true };
+    }
+    return null;
+  }
+
+  festivalForm = new FormGroup({
+    name: new FormControl<string>('', {
+      nonNullable: true,
+      validators: [Validators.required, Validators.minLength(3)]
+    }),
+    tariffZones: new FormArray<FormGroup>([], this.atLeastOneZoneValidator)
+  });
 
   constructor() {
-    // Initialiser le formulaire APRÈS les injections de dépendances
-    this.festivalForm = this.fb.group({
-      name: ['', [Validators.required, Validators.minLength(3)]],
-      nbSmallTables: [0, [Validators.required, Validators.min(0)]],
-      nbLargeTables: [0, [Validators.required, Validators.min(0)]],
-      nbCityHallTables: [0, [Validators.required, Validators.min(0)]],
-      tariffZones: this.fb.array([])
-    }, {
-      validators: this.tableAllocationValidator
-    });
-
-    // Effect: Pré-remplit le formulaire quand on reçoit un festival à éditer
     effect(() => {
       const festival = this.festivalToEdit();
       if (festival) {
@@ -55,51 +54,40 @@ export class FestivalFormComponent {
     });
   }
 
-  //Simplification appeler this.tariffZones() au lieu de l'expression complique.
   get tariffZones(): FormArray {
-    return this.festivalForm.get('tariffZones') as FormArray;
+    return this.festivalForm.controls.tariffZones;
   }
 
-  // Charge les données d'un festival dans le formulaire
+  private createZoneForm(zone?: any): FormGroup {
+    return new FormGroup({
+      idTZ: new FormControl<number>(zone?.idTZ ?? 0, { nonNullable: true }),
+      name: new FormControl<string>(zone?.name ?? '', { nonNullable: true, validators: [Validators.required] }),
+      nbSmallTables: new FormControl<number>(zone?.nbSmallTables ?? 0, { nonNullable: true, validators: [Validators.required, Validators.min(0)] }),
+      nbLargeTables: new FormControl<number>(zone?.nbLargeTables ?? 0, { nonNullable: true, validators: [Validators.required, Validators.min(0)] }),
+      nbCityHallTables: new FormControl<number>(zone?.nbCityHallTables ?? 0, { nonNullable: true, validators: [Validators.required, Validators.min(0)] }),
+      smallTablePrice: new FormControl<number>(zone?.smallTablePrice ?? 0, { nonNullable: true, validators: [Validators.required, Validators.min(0)] }),
+      largeTablePrice: new FormControl<number>(zone?.largeTablePrice ?? 0, { nonNullable: true, validators: [Validators.required, Validators.min(0)] }),
+      cityHallTablePrice: new FormControl<number>(zone?.cityHallTablePrice ?? 0, { nonNullable: true, validators: [Validators.required, Validators.min(0)] }),
+      squareMeterPrice: new FormControl<number>(zone?.squareMeterPrice ?? 0, { nonNullable: true, validators: [Validators.required, Validators.min(0)] }),
+      festivalName: new FormControl<string>(zone?.festivalName ?? '', { nonNullable: true })
+    });
+  }
+
   loadFestivalData(festival: Festival) {
-    console.log('Festival reçu:', festival);
-    console.log('Zones tarifaires:', festival.tariffZones);
-    // Vider d'abord les zones existantes
     this.tariffZones.clear();
 
-    // Remplir les champs principaux
     this.festivalForm.patchValue({
-      name: festival.name,
-      nbSmallTables: festival.nbSmallTables,
-      nbLargeTables: festival.nbLargeTables,
-      nbCityHallTables: festival.nbCityHallTables
+      name: festival.name
     });
 
-    // Ajouter chaque zone tarifaire
-    // On utilise le service pour charger les zones à jour au cas où
     this.tariffZoneService.findByFestivalName(festival.name).subscribe(zones => {
-      // Nettoyer encore au cas ou
       this.tariffZones.clear();
       zones.forEach(zone => {
-        const zoneForm = this.fb.group({
-          idTZ: [zone.idTZ],
-          name: [zone.name, Validators.required],
-          nbSmallTables: [zone.nbSmallTables, [Validators.required, Validators.min(0)]],
-          nbLargeTables: [zone.nbLargeTables, [Validators.required, Validators.min(0)]],
-          nbCityHallTables: [zone.nbCityHallTables, [Validators.required, Validators.min(0)]],
-          smallTablePrice: [zone.smallTablePrice, [Validators.required, Validators.min(0)]],
-          largeTablePrice: [zone.largeTablePrice, [Validators.required, Validators.min(0)]],
-          cityHallTablePrice: [zone.cityHallTablePrice, [Validators.required, Validators.min(0)]],
-          squareMeterPrice: [zone.squareMeterPrice, [Validators.required, Validators.min(0)]],
-          festivalName: [zone.festivalName]
-        });
-        this.tariffZones.push(zoneForm);
+        this.tariffZones.push(this.createZoneForm(zone));
       });
     });
   }
 
-
-  //Cette méthode sert à afficher/masquer le formulaire et à le nettoyer quand on le ferme.
   OpenCloseForm() {
     this.showForm.update(v => !v);
     if (!this.showForm()) {
@@ -108,20 +96,7 @@ export class FestivalFormComponent {
   }
 
   addTariffZone() {
-    //1:Crée un nouveau FormGroup pour une zone tarifaire
-    const zoneForm = this.fb.group({
-      idTZ: [0], // ID sera généré par la base de données
-      name: ['', Validators.required],
-      nbSmallTables: [0, [Validators.required, Validators.min(0)]],
-      nbLargeTables: [0, [Validators.required, Validators.min(0)]],
-      nbCityHallTables: [0, [Validators.required, Validators.min(0)]],
-      smallTablePrice: [0, [Validators.required, Validators.min(0)]],
-      largeTablePrice: [0, [Validators.required, Validators.min(0)]],
-      cityHallTablePrice: [0, [Validators.required, Validators.min(0)]],
-      squareMeterPrice: [0, [Validators.required, Validators.min(0)]],
-      festivalName: ['']
-    });
-    this.tariffZones.push(zoneForm);//Ajoute ce formulaire au FormArray avec push()
+    this.tariffZones.push(this.createZoneForm());
   }
 
   removeTariffZone(index: number) {
@@ -174,11 +149,7 @@ export class FestivalFormComponent {
   }
 
   resetForm() {
-    this.festivalForm.reset({
-      nbSmallTables: 0,
-      nbLargeTables: 0,
-      nbCityHallTables: 0
-    });
+    this.festivalForm.reset();
     this.tariffZones.clear();
   }
 
@@ -187,18 +158,7 @@ export class FestivalFormComponent {
     return this.festivalToEdit() !== null;
   }
 
-  // Custom Validator pour vérifier l'allocation des tables
-  // Arrow function pour garder le contexte 'this'
-  tableAllocationValidator = (group: AbstractControl): ValidationErrors | null => {
-    const tariffZones = group.get('tariffZones') as FormArray;
-    if (!tariffZones) return null;
-
-    // Use service method instead of duplicating business logic
-    return this.validationService.validateTableAllocation({
-      nbSmallTables: group.get('nbSmallTables')?.value || 0,
-      nbLargeTables: group.get('nbLargeTables')?.value || 0,
-      nbCityHallTables: group.get('nbCityHallTables')?.value || 0,
-      tariffZones: tariffZones.value
-    });
+  castToFormGroup(control: AbstractControl): FormGroup {
+    return control as FormGroup;
   }
 }

@@ -115,7 +115,8 @@ CREATE TABLE IF NOT EXISTS "reservation" (
     "listeRecue" BOOLEAN,
     "jeuxRecus" BOOLEAN,
     "festivalName" TEXT REFERENCES "festival"("name") ON DELETE CASCADE NOT NULL,
-    "idTZ" INTEGER REFERENCES "tariffZone"("idTZ") ON DELETE CASCADE NOT NULL
+    "idTZ" INTEGER REFERENCES "tariffZone"("idTZ") ON DELETE CASCADE NOT NULL,
+    "m2" INTEGER DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS "planArea" (

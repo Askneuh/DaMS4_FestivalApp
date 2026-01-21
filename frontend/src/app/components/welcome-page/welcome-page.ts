@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, effect, inject } from '@angular/core';
 import { AuthService } from '../../shared/auth/auth-services';
 import { Router, RouterLink, RouterOutlet } from '@angular/router';
 import { FestivalService } from '../../services/festival-service';
@@ -18,6 +18,14 @@ export class WelcomePage {
 
   private festivalService = inject(FestivalService)
   readonly currentFestival = this.festivalService.currentFestival
+
+  constructor() {
+    effect(() => {
+      if (this.auth_svc.isLoggedIn()) {
+        this.festivalService.loadCurrentFestival();
+      }
+    });
+  }
 
   logout() {
     this.auth_svc.logout();

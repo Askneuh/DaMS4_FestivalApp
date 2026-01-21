@@ -106,35 +106,47 @@ export class FestivalService {
 
   /**
    * Prépare les données du formulaire pour la sauvegarde en base de données
-   * Transforme formValue → Festival avec calcul des remainingTables
+   * Transforme formValue → Festival avec calcul des totaux depuis les zones
    * @param formValue - Valeurs brutes du formulaire
    * @returns Festival prêt à être sauvegardé
    */
   prepareFestivalForSave(formValue: any): Festival {
+    const zones = (formValue.tariffZones || []).map((zone: any) => ({
+      idTZ: zone.idTZ || 0,
+      name: zone.name,
+      nbSmallTables: zone.nbSmallTables || 0,
+      nbLargeTables: zone.nbLargeTables || 0,
+      nbCityHallTables: zone.nbCityHallTables || 0,
+      remainingSmallTables: zone.nbSmallTables || 0,
+      remainingLargeTables: zone.nbLargeTables || 0,
+      remainingCityHallTables: zone.nbCityHallTables || 0,
+      smallTablePrice: zone.smallTablePrice || 0,
+      largeTablePrice: zone.largeTablePrice || 0,
+      cityHallTablePrice: zone.cityHallTablePrice || 0,
+      squareMeterPrice: zone.squareMeterPrice || 0,
+      festivalName: formValue.name
+    }));
+
+    // Compute totals from zones
+    let totalSmall = 0;
+    let totalLarge = 0;
+    let totalCityHall = 0;
+    for (const z of zones) {
+      totalSmall += z.nbSmallTables;
+      totalLarge += z.nbLargeTables;
+      totalCityHall += z.nbCityHallTables;
+    }
+
     const festival: Festival = {
       name: formValue.name,
-      nbSmallTables: formValue.nbSmallTables,
-      nbLargeTables: formValue.nbLargeTables,
-      nbCityHallTables: formValue.nbCityHallTables,
-      remainingSmallTables: formValue.nbSmallTables,
-      remainingLargeTables: formValue.nbLargeTables,
-      remainingCityHallTables: formValue.nbCityHallTables,
+      nbSmallTables: totalSmall,
+      nbLargeTables: totalLarge,
+      nbCityHallTables: totalCityHall,
+      remainingSmallTables: totalSmall,
+      remainingLargeTables: totalLarge,
+      remainingCityHallTables: totalCityHall,
       isCurrent: false,
-      tariffZones: (formValue.tariffZones || []).map((zone: any) => ({
-        idTZ: zone.idTZ || 0,
-        name: zone.name,
-        nbSmallTables: zone.nbSmallTables,
-        nbLargeTables: zone.nbLargeTables,
-        nbCityHallTables: zone.nbCityHallTables,
-        remainingSmallTables: zone.nbSmallTables,
-        remainingLargeTables: zone.nbLargeTables,
-        remainingCityHallTables: zone.nbCityHallTables,
-        smallTablePrice: zone.smallTablePrice,
-        largeTablePrice: zone.largeTablePrice,
-        cityHallTablePrice: zone.cityHallTablePrice,
-        squareMeterPrice: zone.squareMeterPrice,
-        festivalName: formValue.name
-      }))
+      tariffZones: zones
     };
 
     return festival;

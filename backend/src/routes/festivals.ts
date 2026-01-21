@@ -130,8 +130,7 @@ router.get('/:festivalName', verifyToken, async (req, res) => {
 });
 //Route pour la création d'un festival
 router.post('/', verifyToken, requireOrganizer, validateStringLengths({ name: 255 }), normalizeBooleans(['isCurrent']), async (req, res) => {
-    const { name, nbSmallTables, nbLargeTables, nbCityHallTables, begin_date, end_date } = req.body;
-    const creation_date = getCurrentDate();
+    const { name, begin_date, end_date } = req.body;
     const tariffZones = req.body.tariffZones;
 
     const client = await pool.connect();
@@ -140,97 +139,80 @@ router.post('/', verifyToken, requireOrganizer, validateStringLengths({ name: 25
         return res.status(400).json({ error: "Nom du festival obligatoire pour la création" })
     }
 
-    else {
-        try {
-            await client.query('BEGIN');
-            const smallTables = nbSmallTables || 0;
-            const largeTables = nbLargeTables || 0;
-            const cityHallTables = nbCityHallTables || 0;
+    // At least one zone is mandatory
+    if (!tariffZones || !Array.isArray(tariffZones) || tariffZones.length === 0) {
+        return res.status(400).json({ error: "Au moins une zone tarifaire est obligatoire." });
+    }
 
-            // Validation des allocations de tables
-            if (tariffZones && Array.isArray(tariffZones)) {
-                let allocatedSmall = 0;
-                let allocatedLarge = 0;
-                let allocatedCityHall = 0;
+    try {
+        await client.query('BEGIN');
 
-                for (const zone of tariffZones) {
-                    allocatedSmall += zone.nbSmallTables || 0;
-                    allocatedLarge += zone.nbLargeTables || 0;
-                    allocatedCityHall += zone.nbCityHallTables || 0;
-                }
+        // Compute totals from zones
+        let totalSmall = 0;
+        let totalLarge = 0;
+        let totalCityHall = 0;
 
-                if (allocatedSmall > smallTables) {
-                    await client.query('ROLLBACK');
-                    return res.status(400).json({ error: `Le nombre de petites tables allouées (${allocatedSmall}) dépasse le total disponible (${smallTables}).` });
-                }
-                if (allocatedLarge > largeTables) {
-                    await client.query('ROLLBACK');
-                    return res.status(400).json({ error: `Le nombre de grandes tables allouées (${allocatedLarge}) dépasse le total disponible (${largeTables}).` });
-                }
-                if (allocatedCityHall > cityHallTables) {
-                    await client.query('ROLLBACK');
-                    return res.status(400).json({ error: `Le nombre de tables de mairie allouées (${allocatedCityHall}) dépasse le total disponible (${cityHallTables}).` });
-                }
-            }
+        for (const zone of tariffZones) {
+            totalSmall += zone.nbSmallTables || 0;
+            totalLarge += zone.nbLargeTables || 0;
+            totalCityHall += zone.nbCityHallTables || 0;
+        }
 
-            // Le nouveau festival devient toujours le festival courant
-            const isCurrent = true;
+        // Le nouveau festival devient toujours le festival courant
+        const isCurrent = true;
 
-            // Désactiver tous les autres festivals courants
+        // Désactiver tous les autres festivals courants
+        await client.query(
+            'UPDATE "festival" SET "isCurrent" = FALSE WHERE "isCurrent" = TRUE'
+        );
+
+        const festivalRes = await client.query(
+            'INSERT INTO "festival" ("name", "nbSmallTables", "nbLargeTables", "nbCityHallTables", "remainingSmallTables", "remainingLargeTables", "remainingCityHallTables", "creation_date", "begin_date", "end_date", "isCurrent") VALUES ($1, $2, $3, $4, $5, $6, $7, CURRENT_DATE, $8, $9, $10) RETURNING *',
+            [name, totalSmall, totalLarge, totalCityHall, totalSmall, totalLarge, totalCityHall, begin_date || null, end_date || null, isCurrent]
+        );
+
+        // Insert zones
+        for (const zone of tariffZones) {
             await client.query(
-                'UPDATE "festival" SET "isCurrent" = FALSE WHERE "isCurrent" = TRUE'
+                'INSERT INTO "tariffZone" ("name", "nbSmallTables", "nbLargeTables", "nbCityHallTables", "remainingSmallTables", "remainingLargeTables", "remainingCityHallTables", "smallTablePrice", "largeTablePrice", "cityHallTablePrice", "squareMeterPrice", "festivalName") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)',
+                [
+                    zone.name,
+                    zone.nbSmallTables || 0,
+                    zone.nbLargeTables || 0,
+                    zone.nbCityHallTables || 0,
+                    zone.nbSmallTables || 0,
+                    zone.nbLargeTables || 0,
+                    zone.nbCityHallTables || 0,
+                    zone.smallTablePrice || 0,
+                    zone.largeTablePrice || 0,
+                    zone.cityHallTablePrice || 0,
+                    zone.squareMeterPrice || 0,
+                    name
+                ]
             );
-
-            const festivalRes = await client.query(
-                'INSERT INTO "festival" ("name", "nbSmallTables", "nbLargeTables", "nbCityHallTables", "remainingSmallTables", "remainingLargeTables", "remainingCityHallTables", "creation_date", "begin_date", "end_date", "isCurrent") VALUES ($1, $2, $3, $4, $5, $6, $7, CURRENT_DATE, $8, $9, $10) RETURNING *',
-                [name, smallTables, largeTables, cityHallTables, smallTables, largeTables, cityHallTables, begin_date || null, end_date || null, isCurrent]
-            );
-
-            // Gestion des zones tarifaires
-            if (tariffZones && Array.isArray(tariffZones)) {
-                for (const zone of tariffZones) {
-                    await client.query(
-                        'INSERT INTO "tariffZone" ("name", "nbSmallTables", "nbLargeTables", "nbCityHallTables", "remainingSmallTables", "remainingLargeTables", "remainingCityHallTables", "smallTablePrice", "largeTablePrice", "cityHallTablePrice", "squareMeterPrice", "festivalName") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)',
-                        [
-                            zone.name,
-                            zone.nbSmallTables || 0,
-                            zone.nbLargeTables || 0,
-                            zone.nbCityHallTables || 0,
-                            zone.remainingSmallTables || zone.nbSmallTables || 0,
-                            zone.remainingLargeTables || zone.nbLargeTables || 0,
-                            zone.remainingCityHallTables || zone.nbCityHallTables || 0,
-                            zone.smallTablePrice || 0,
-                            zone.largeTablePrice || 0,
-                            zone.cityHallTablePrice || 0,
-                            zone.squareMeterPrice || 0,
-                            name
-                        ]
-                    );
-                }
-            }
-
-            await client.query('COMMIT');
-            return res.status(201).json(festivalRes.rows[0]);
         }
-        catch (err: any) {
-            await client.query('ROLLBACK');
-            //Catch les erreurs d'unicité, ici de la clé primaire 
-            if (err.code === '23505') {
-                return res.status(409).json({ error: 'Nom du festival déjà existant' })
-            } else {
-                console.error(err);
-                return res.status(500).json({ error: 'Erreur serveur' })
-            }
+
+        await client.query('COMMIT');
+        return res.status(201).json(festivalRes.rows[0]);
+    }
+    catch (err: any) {
+        await client.query('ROLLBACK');
+        //Catch les erreurs d'unicité, ici de la clé primaire 
+        if (err.code === '23505') {
+            return res.status(409).json({ error: 'Nom du festival déjà existant' })
+        } else {
+            console.error(err);
+            return res.status(500).json({ error: 'Erreur serveur' })
         }
-        finally {
-            client.release();
-        }
+    }
+    finally {
+        client.release();
     }
 })
 
 router.post('/update/:festivalName', verifyToken, requireOrganizer, validateStringLengths({ festivalName: 255 }), normalizeBooleans(['isCurrent']), async (req, res) => {
     const festivalNameParam = req.params.festivalName;
-    const { nbSmallTables, nbLargeTables, nbCityHallTables, remainingSmallTables, remainingLargeTables, remainingCityHallTables, begin_date, end_date } = req.body;
+    const { begin_date, end_date } = req.body;
     const tariffZones = req.body.tariffZones;
     const client = await pool.connect();
 
@@ -246,7 +228,7 @@ router.post('/update/:festivalName', verifyToken, requireOrganizer, validateStri
             );
         }
 
-        // Fetch current festival data to handle partial updates and validation
+        // Fetch current festival data
         const { rows: currentFestivalRows } = await client.query(
             'SELECT * FROM "festival" WHERE "name" = $1',
             [festivalNameParam]
@@ -257,73 +239,18 @@ router.post('/update/:festivalName', verifyToken, requireOrganizer, validateStri
             return res.status(404).json({ error: "Festival non trouvé" });
         }
 
-        const currentFestival = currentFestivalRows[0];
-        const newNbSmallTables = nbSmallTables !== undefined ? nbSmallTables : currentFestival.nbSmallTables;
-        const newNbLargeTables = nbLargeTables !== undefined ? nbLargeTables : currentFestival.nbLargeTables;
-        const newNbCityHallTables = nbCityHallTables !== undefined ? nbCityHallTables : currentFestival.nbCityHallTables;
-
-        // Validation des allocations de tables
-        if (tariffZones && Array.isArray(tariffZones)) {
-            let allocatedSmall = 0;
-            let allocatedLarge = 0;
-            let allocatedCityHall = 0;
-
-            for (const zone of tariffZones) {
-                allocatedSmall += zone.nbSmallTables || 0;
-                allocatedLarge += zone.nbLargeTables || 0;
-                allocatedCityHall += zone.nbCityHallTables || 0;
-            }
-
-            if (allocatedSmall > newNbSmallTables) {
-                await client.query('ROLLBACK');
-                return res.status(400).json({ error: `Le nombre de petites tables allouées (${allocatedSmall}) dépasse le total disponible (${newNbSmallTables}).` });
-            }
-            if (allocatedLarge > newNbLargeTables) {
-                await client.query('ROLLBACK');
-                return res.status(400).json({ error: `Le nombre de grandes tables allouées (${allocatedLarge}) dépasse le total disponible (${newNbLargeTables}).` });
-            }
-            if (allocatedCityHall > newNbCityHallTables) {
-                await client.query('ROLLBACK');
-                return res.status(400).json({ error: `Le nombre de tables de mairie allouées (${allocatedCityHall}) dépasse le total disponible (${newNbCityHallTables}).` });
-            }
-        }
-
-        const updateFestivalQuery = `
-            UPDATE "festival" 
-            SET "nbSmallTables" = $1, 
-                "nbLargeTables" = $2,
-                "nbCityHallTables" = $3,
-                "remainingSmallTables" = COALESCE($4, "remainingSmallTables"),
-                "remainingLargeTables" = COALESCE($5, "remainingLargeTables"),
-                "remainingCityHallTables" = COALESCE($6, "remainingCityHallTables"),
-                "begin_date" = $7, 
-                "end_date" = $8,
-                "isCurrent" = COALESCE($9, "isCurrent")
-            WHERE "name" = $10 
-            RETURNING *`;
-        // Use explicitly calculated new totals instead of relying on COALESCE in SQL for the totals, to ensure consistency with validation
-        const { rowCount, rows } = await client.query(updateFestivalQuery, [newNbSmallTables, newNbLargeTables, newNbCityHallTables, remainingSmallTables, remainingLargeTables, remainingCityHallTables, begin_date, end_date, isCurrent, festivalNameParam]);
-
-        if (rowCount === 0) {
-            await client.query('ROLLBACK');
-            return res.status(404).json({ error: "Festival non trouvé" });
-        }
-
-        // Gestion des zones tarifaires (Update ou Insert)
+        // Update or insert zones first
         if (tariffZones && Array.isArray(tariffZones)) {
             for (const zone of tariffZones) {
                 if (zone.idTZ && zone.idTZ > 0) {
-                    // Update
+                    // Update - DO NOT overwrite remainingSmallTables etc. to preserve reservations
                     await client.query(
-                        'UPDATE "tariffZone" SET "name" = $1, "nbSmallTables" = $2, "nbLargeTables" = $3, "nbCityHallTables" = $4, "remainingSmallTables" = $5, "remainingLargeTables" = $6, "remainingCityHallTables" = $7, "smallTablePrice" = $8, "largeTablePrice" = $9, "cityHallTablePrice" = $10, "squareMeterPrice" = $11 WHERE "idTZ" = $12',
+                        'UPDATE "tariffZone" SET "name" = $1, "nbSmallTables" = $2, "nbLargeTables" = $3, "nbCityHallTables" = $4, "smallTablePrice" = $5, "largeTablePrice" = $6, "cityHallTablePrice" = $7, "squareMeterPrice" = $8 WHERE "idTZ" = $9',
                         [
                             zone.name,
                             zone.nbSmallTables,
                             zone.nbLargeTables,
                             zone.nbCityHallTables,
-                            zone.remainingSmallTables,
-                            zone.remainingLargeTables,
-                            zone.remainingCityHallTables,
                             zone.smallTablePrice,
                             zone.largeTablePrice,
                             zone.cityHallTablePrice,
@@ -340,31 +267,68 @@ router.post('/update/:festivalName', verifyToken, requireOrganizer, validateStri
                             zone.nbSmallTables || 0,
                             zone.nbLargeTables || 0,
                             zone.nbCityHallTables || 0,
-                            zone.remainingSmallTables || zone.nbSmallTables || 0,
-                            zone.remainingLargeTables || zone.nbLargeTables || 0,
-                            zone.remainingCityHallTables || zone.nbCityHallTables || 0,
+                            zone.nbSmallTables || 0,
+                            zone.nbLargeTables || 0,
+                            zone.nbCityHallTables || 0,
                             zone.smallTablePrice || 0,
                             zone.largeTablePrice || 0,
                             zone.cityHallTablePrice || 0,
                             zone.squareMeterPrice || 0,
-                            festivalNameParam // On lie à ce festival
+                            festivalNameParam
                         ]
                     );
                 }
             }
         }
 
-        const { rows: tzRows } = await client.query(
+        // Recalculate festival totals from all zones
+        const { rows: allZones } = await client.query(
             'SELECT * FROM "tariffZone" WHERE "festivalName" = $1',
             [festivalNameParam]
         );
+
+        let totalSmall = 0;
+        let totalLarge = 0;
+        let totalCityHall = 0;
+        let remainingSmall = 0;
+        let remainingLarge = 0;
+        let remainingCityHall = 0;
+
+        for (const z of allZones) {
+            totalSmall += z.nbSmallTables || 0;
+            totalLarge += z.nbLargeTables || 0;
+            totalCityHall += z.nbCityHallTables || 0;
+            remainingSmall += z.remainingSmallTables || 0;
+            remainingLarge += z.remainingLargeTables || 0;
+            remainingCityHall += z.remainingCityHallTables || 0;
+        }
+
+        const updateFestivalQuery = `
+            UPDATE "festival" 
+            SET "nbSmallTables" = $1, 
+                "nbLargeTables" = $2,
+                "nbCityHallTables" = $3,
+                "remainingSmallTables" = $4,
+                "remainingLargeTables" = $5,
+                "remainingCityHallTables" = $6,
+                "begin_date" = COALESCE($7, "begin_date"), 
+                "end_date" = COALESCE($8, "end_date"),
+                "isCurrent" = COALESCE($9, "isCurrent")
+            WHERE "name" = $10 
+            RETURNING *`;
+        const { rowCount, rows } = await client.query(updateFestivalQuery, [totalSmall, totalLarge, totalCityHall, remainingSmall, remainingLarge, remainingCityHall, begin_date, end_date, isCurrent, festivalNameParam]);
+
+        if (rowCount === 0) {
+            await client.query('ROLLBACK');
+            return res.status(404).json({ error: "Festival non trouvé" });
+        }
 
         await client.query('COMMIT');
 
         // Retourner le festival avec ses zones à jour
         const festivalWithZones = {
             ...rows[0],
-            tariffZones: tzRows
+            tariffZones: allZones
         };
 
         res.status(200).json(festivalWithZones);

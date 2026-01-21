@@ -9,6 +9,7 @@ export interface ReservationDAO {
     nbSmallTables: number;
     nbLargeTables: number;
     nbCityHallTables: number;
+    m2: number;
     remise: number;
     typeAnimateur: number; // 0 = a besoin de bénévoles, 1 = n'a pas besoin de bénévoles
     listeDemandee: boolean;

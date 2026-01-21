@@ -12,7 +12,7 @@ import { TariffZone } from '../../interfaces/tariff-zone';
 import { ReservationGame } from '../../interfaces/reservation-game';
 import { GameService } from '../../services/game-service';
 import { ReservationGameSelector } from '../reservation-game-selector/reservation-game-selector';
-import { ReservationStatusService } from '../../services/reservation-status.service';
+import { ReservationStatusService } from '../../services/reservation-status-service';
 import { Game } from '../../interfaces/game';
 
 @Component({
@@ -23,6 +23,7 @@ import { Game } from '../../interfaces/game';
   styleUrl: './reservation-workflow.css',
 })
 export class ReservationWorkflow {
+  Math = Math; // Expose Math for template
   readonly route = inject(ActivatedRoute);
   readonly router = inject(Router);
   readonly reservationSvc = inject(ReservationService);
@@ -33,6 +34,7 @@ export class ReservationWorkflow {
 
   reservationId = signal<number | null>(null);
   reservation = signal<ReservationDAO | null>(null);
+  originalReservation = signal<ReservationDAO | null>(null);
   suiviHistory = signal<SuiviReservation[]>([]);
   reservationGames = signal<ReservationGame[]>([]);
   availableZones = signal<TariffZone[]>([]);
@@ -51,8 +53,10 @@ export class ReservationWorkflow {
 
   selectedZone = computed(() => {
     const res = this.reservation();
-    if (!res || !res.idTZ) return null;
-    return this.availableZones().find(z => z.idTZ === res.idTZ) || null;
+    const zones = this.availableZones();
+    if (!res || !res.idTZ || zones.length === 0) return null;
+    const found = zones.find(z => Number(z.idTZ) === Number(res.idTZ)) || null;
+    return found;
   });
 
   totalPrice = computed(() => {
@@ -61,6 +65,72 @@ export class ReservationWorkflow {
     if (!res || !zone) return 0;
 
     return this.reservationSvc.calculateTotalPrice(res, zone);
+  });
+
+  remainingSmallRealTime = computed(() => {
+    const zone = this.selectedZone();
+    const res = this.reservation();
+    const orig = this.originalReservation();
+    if (!zone || !res || !orig) return 0;
+
+    // Calculate small tables used by m² (4m² = 1 small table, rounded up)
+    const m2Tables = Math.ceil((res.m2 || 0) / 4);
+    const origM2Tables = Math.ceil((orig.m2 || 0) / 4);
+
+    if (res.idTZ === orig.idTZ) {
+      const delta = (res.nbSmallTables + m2Tables) - (orig.nbSmallTables + origM2Tables);
+      return Math.max(0, zone.remainingSmallTables - delta);
+    } else {
+      // Zone changed: the selected zone's remaining count doesn't know about this reservation yet
+      return Math.max(0, zone.remainingSmallTables - res.nbSmallTables - m2Tables);
+    }
+  });
+
+  remainingLargeRealTime = computed(() => {
+    const zone = this.selectedZone();
+    const res = this.reservation();
+    const orig = this.originalReservation();
+    if (!zone || !res || !orig) return 0;
+
+    if (res.idTZ === orig.idTZ) {
+      const delta = res.nbLargeTables - orig.nbLargeTables;
+      return Math.max(0, zone.remainingLargeTables - delta);
+    } else {
+      return Math.max(0, zone.remainingLargeTables - res.nbLargeTables);
+    }
+  });
+
+  remainingCityHallRealTime = computed(() => {
+    const zone = this.selectedZone();
+    const res = this.reservation();
+    const orig = this.originalReservation();
+    if (!zone || !res || !orig) return 0;
+
+    if (res.idTZ === orig.idTZ) {
+      const delta = res.nbCityHallTables - orig.nbCityHallTables;
+      return Math.max(0, zone.remainingCityHallTables - delta);
+    } else {
+      return Math.max(0, zone.remainingCityHallTables - res.nbCityHallTables);
+    }
+  });
+
+  // Max m² available = (remaining small tables + tables from current m²) * 4
+  maxM2Available = computed(() => {
+    const zone = this.selectedZone();
+    const res = this.reservation();
+    const orig = this.originalReservation();
+    if (!zone || !res) return 4;
+
+    // Get base remaining (without m² effect)
+    let baseRemaining = zone.remainingSmallTables;
+    if (orig && res.idTZ === orig.idTZ) {
+      // Add back the tables we originally used (both from nbSmallTables and m²)
+      baseRemaining += orig.nbSmallTables + Math.ceil((orig.m2 || 0) / 4);
+    }
+    // Subtract currently selected small tables
+    baseRemaining -= res.nbSmallTables;
+    
+    return Math.max(4, baseRemaining * 4);
   });
 
   constructor() {
@@ -79,10 +149,12 @@ export class ReservationWorkflow {
     this.reservationSvc.getReservationById(id).subscribe({
       next: (data) => {
         this.reservation.set(data);
+        this.originalReservation.set(JSON.parse(JSON.stringify(data))); // Deep copy
         if (data.festivalName) {
           this.loadTariffZones(data.festivalName);
+        } else {
+          this.loading.set(false);
         }
-        this.loading.set(false);
       },
       error: (err) => {
         console.error('Erreur chargement réservation:', err);
@@ -94,8 +166,16 @@ export class ReservationWorkflow {
 
   loadTariffZones(festivalName: string) {
     this.tariffZoneSvc.findByFestivalName(festivalName).subscribe({
-      next: (zones) => this.availableZones.set(zones),
-      error: (err) => console.error('Erreur chargement zones:', err)
+      next: (zones) => {
+        console.log('[DEBUG] Zones loaded:', zones);
+        console.log('[DEBUG] First zone smallTablePrice:', zones[0]?.smallTablePrice);
+        this.availableZones.set(zones);
+        this.loading.set(false); // Only stop loading after zones are here
+      },
+      error: (err: any) => {
+        console.error('Erreur chargement zones:', err);
+        this.loading.set(false);
+      }
     });
   }
 
@@ -140,6 +220,10 @@ export class ReservationWorkflow {
     this.reservationSvc.updateReservation(res.idReservation, res as any).subscribe({
       next: () => {
         this.savingLogistics.set(false);
+        this.originalReservation.set(JSON.parse(JSON.stringify(res))); // Update referentiel after save
+        if (res.festivalName) {
+          this.loadTariffZones(res.festivalName);
+        }
         alert("Logistique mise à jour avec succès !");
       },
       error: (err) => {
@@ -151,7 +235,29 @@ export class ReservationWorkflow {
   }
 
   updateField(field: keyof ReservationDAO, value: any) {
+    // Clamp m² between 4 and max
+    if (field === 'm2') {
+      const max = this.maxM2Available();
+      value = Math.max(4, Math.min(value, max));
+    }
     this.reservation.update(r => r ? { ...r, [field]: value } : null);
+  }
+
+  onZoneChange(newIdTZ: number) {
+    this.reservation.update(r => {
+      if (!r) return null;
+      // Reset tables if zone actually changes
+      if (Number(r.idTZ) !== Number(newIdTZ)) {
+        return {
+          ...r,
+          idTZ: newIdTZ,
+          nbSmallTables: 0,
+          nbLargeTables: 0,
+          nbCityHallTables: 0
+        };
+      }
+      return { ...r, idTZ: newIdTZ };
+    });
   }
 
   addGameToReservation(event: { game: Game; quantity: number }) {
