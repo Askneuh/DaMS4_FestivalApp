@@ -144,9 +144,9 @@ router.post('/update/:reservationId', verifyToken, requireOrganizer, validateNum
         const targetIdTZ = idTZ !== undefined ? idTZ : current.idtz;
 
         // Si les tables sont fournies, on prend la nouvelle valeur, sinon on garde l'ancienne
-        const targetSmall = nbSmallTables !== undefined ? nbSmallTables : current.nbsmalltables;
-        const targetLarge = nbLargeTables !== undefined ? nbLargeTables : current.nblargetables;
-        const targetCityHall = nbCityHallTables !== undefined ? nbCityHallTables : current.nbcityhalltables;
+        const targetSmall = nbSmallTables !== undefined ? nbSmallTables : current.nbSmallTables;
+        const targetLarge = nbLargeTables !== undefined ? nbLargeTables : current.nbLargeTables;
+        const targetCityHall = nbCityHallTables !== undefined ? nbCityHallTables : current.nbCityHallTables;
 
         // 3. Valider la capacité
         if (targetIdTZ) {
@@ -516,9 +516,9 @@ async function updateZoneRemainingTables(client: any, idTZ: number) {
     const used = usedRows[0];
 
     // 3. Calculer les tables restantes
-    const remainingSmall = zone.nbsmalltables - parseInt(used.used_small);
-    const remainingLarge = zone.nblargetables - parseInt(used.used_large);
-    const remainingCityHall = zone.nbcityhalltables - parseInt(used.used_city_hall);
+    const remainingSmall = zone.nbSmallTables - parseInt(used.used_small);
+    const remainingLarge = zone.nbLargeTables - parseInt(used.used_large);
+    const remainingCityHall = zone.nbCityHallTables - parseInt(used.used_city_hall);
 
     // 4. Mettre à jour la zone tarifaire
     const updateQuery = `
@@ -566,9 +566,9 @@ async function updateFestivalRemainingTables(client: any, festivalName: string) 
     const used = usedRows[0];
 
     // 3. Calculer les tables restantes
-    const remainingSmall = festival.nbsmalltables - parseInt(used.used_small);
-    const remainingLarge = festival.nblargetables - parseInt(used.used_large);
-    const remainingCityHall = festival.nbcityhalltables - parseInt(used.used_city_hall);
+    const remainingSmall = festival.nbSmallTables - parseInt(used.used_small);
+    const remainingLarge = festival.nbLargeTables - parseInt(used.used_large);
+    const remainingCityHall = festival.nbCityHallTables - parseInt(used.used_city_hall);
 
     // 4. Mettre à jour le festival
     const updateQuery = `
