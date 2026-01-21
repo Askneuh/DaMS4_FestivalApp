@@ -521,6 +521,7 @@ async function updateZoneRemainingTables(client: any, idTZ: number) {
     const remainingCityHall = zone.nbCityHallTables - parseInt(used.used_city_hall);
 
     // 4. Mettre à jour la zone tarifaire
+    console.log(`[DEBUG] Updating Zone ${idTZ}: Total Small=${zone.nbSmallTables}, Used=${used.used_small}, Remaining=${remainingSmall}`);
     const updateQuery = `
         UPDATE "tariffZone"
         SET 
@@ -571,6 +572,7 @@ async function updateFestivalRemainingTables(client: any, festivalName: string) 
     const remainingCityHall = festival.nbCityHallTables - parseInt(used.used_city_hall);
 
     // 4. Mettre à jour le festival
+    console.log(`[DEBUG] Updating Festival ${festivalName}: Total Small=${festival.nbSmallTables}, Used=${used.used_small}, Remaining=${remainingSmall}`);
     const updateQuery = `
         UPDATE "festival"
         SET 

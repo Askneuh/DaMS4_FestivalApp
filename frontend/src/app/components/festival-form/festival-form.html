@@ -20,57 +20,14 @@
           <span class="error">Le nom est requis (min 3 caractères)</span>
           }
         </div>
-
-        <div class="form-group">
-          <label for="nbSmallTables">Nombre de petites tables *</label>
-          <input id="nbSmallTables" type="number" formControlName="nbSmallTables" min="0" />
-          @if (festivalForm.get('nbSmallTables')?.invalid && festivalForm.get('nbSmallTables')?.touched) {
-          <span class="error">Le nombre de petites tables doit être supérieur ou égal à 0</span>
-          }
-        </div>
-
-        <div class="form-group">
-          <label for="nbLargeTables">Nombre de grandes tables *</label>
-          <input id="nbLargeTables" type="number" formControlName="nbLargeTables" min="0" />
-          @if (festivalForm.get('nbLargeTables')?.invalid && festivalForm.get('nbLargeTables')?.touched) {
-          <span class="error">Le nombre de grandes tables doit être supérieur ou égal à 0</span>
-          }
-        </div>
-
-        <div class="form-group">
-          <label for="nbCityHallTables">Nombre de tables de la mairie *</label>
-          <input id="nbCityHallTables" type="number" formControlName="nbCityHallTables" min="0" />
-          @if (festivalForm.get('nbCityHallTables')?.invalid && festivalForm.get('nbCityHallTables')?.touched) {
-          <span class="error">Le nombre de tables de la mairie doit être supérieur ou égal à 0</span>
-          }
-        </div>
       </div>
 
-      <!-- Validation Errors for Table Allocation -->
-      @if (festivalForm.hasError('smallTablesExceeded') || festivalForm.hasError('largeTablesExceeded') ||
-      festivalForm.hasError('cityHallTablesExceeded')) {
+      <!-- Validation message for missing zones -->
+      @if (tariffZones.hasError('noZones') && tariffZones.touched) {
       <div class="form-section error-section"
         style="background-color: #ffebee; border: 1px solid #ffcdd2; color: #b71c1c; padding: 1rem; border-radius: 4px; margin-bottom: 1rem;">
-        <h4 style="margin-top: 0;">Erreur d'allocation</h4>
-        @if (festivalForm.hasError('smallTablesExceeded')) {
-        <div>
-          Attention : Le nombre de petites tables allouées ({{ festivalForm.errors?.['smallTablesExceeded'].allocated
-          }}) dépasse le total disponible ({{ festivalForm.errors?.['smallTablesExceeded'].total }}).
-        </div>
-        }
-        @if (festivalForm.hasError('largeTablesExceeded')) {
-        <div>
-          Attention : Le nombre de grandes tables allouées ({{ festivalForm.errors?.['largeTablesExceeded'].allocated
-          }}) dépasse le total disponible ({{ festivalForm.errors?.['largeTablesExceeded'].total }}).
-        </div>
-        }
-        @if (festivalForm.hasError('cityHallTablesExceeded')) {
-        <div>
-          Attention : Le nombre de tables de mairie allouées ({{
-          festivalForm.errors?.['cityHallTablesExceeded'].allocated }}) dépasse le total disponible ({{
-          festivalForm.errors?.['cityHallTablesExceeded'].total }}).
-        </div>
-        }
+        <h4 style="margin-top: 0;">Zone tarifaire obligatoire</h4>
+        <div>Vous devez ajouter au moins une zone tarifaire.</div>
       </div>
       }
 

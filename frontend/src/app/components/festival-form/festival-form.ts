@@ -37,12 +37,7 @@ export class FestivalFormComponent {
     // Initialiser le formulaire APRÈS les injections de dépendances
     this.festivalForm = this.fb.group({
       name: ['', [Validators.required, Validators.minLength(3)]],
-      nbSmallTables: [0, [Validators.required, Validators.min(0)]],
-      nbLargeTables: [0, [Validators.required, Validators.min(0)]],
-      nbCityHallTables: [0, [Validators.required, Validators.min(0)]],
-      tariffZones: this.fb.array([])
-    }, {
-      validators: this.tableAllocationValidator
+      tariffZones: this.fb.array([], this.atLeastOneZoneValidator)
     });
 
     // Effect: Pré-remplit le formulaire quand on reçoit un festival à éditer
@@ -69,10 +64,7 @@ export class FestivalFormComponent {
 
     // Remplir les champs principaux
     this.festivalForm.patchValue({
-      name: festival.name,
-      nbSmallTables: festival.nbSmallTables,
-      nbLargeTables: festival.nbLargeTables,
-      nbCityHallTables: festival.nbCityHallTables
+      name: festival.name
     });
 
     // Ajouter chaque zone tarifaire
@@ -174,11 +166,7 @@ export class FestivalFormComponent {
   }
 
   resetForm() {
-    this.festivalForm.reset({
-      nbSmallTables: 0,
-      nbLargeTables: 0,
-      nbCityHallTables: 0
-    });
+    this.festivalForm.reset();
     this.tariffZones.clear();
   }
 
@@ -187,18 +175,12 @@ export class FestivalFormComponent {
     return this.festivalToEdit() !== null;
   }
 
-  // Custom Validator pour vérifier l'allocation des tables
-  // Arrow function pour garder le contexte 'this'
-  tableAllocationValidator = (group: AbstractControl): ValidationErrors | null => {
-    const tariffZones = group.get('tariffZones') as FormArray;
-    if (!tariffZones) return null;
-
-    // Use service method instead of duplicating business logic
-    return this.validationService.validateTableAllocation({
-      nbSmallTables: group.get('nbSmallTables')?.value || 0,
-      nbLargeTables: group.get('nbLargeTables')?.value || 0,
-      nbCityHallTables: group.get('nbCityHallTables')?.value || 0,
-      tariffZones: tariffZones.value
-    });
+  // Custom Validator pour vérifier qu'au moins une zone existe
+  atLeastOneZoneValidator = (control: AbstractControl): ValidationErrors | null => {
+    const zones = control as FormArray;
+    if (zones.length === 0) {
+      return { noZones: true };
+    }
+    return null;
   }
 }

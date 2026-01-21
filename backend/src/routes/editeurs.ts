@@ -37,7 +37,7 @@ router.get('/current-festival/withReservationStatus', verifyToken, async (req, r
         );
 
         if (festivalRows.length === 0) {
-            return res.status(404).json({ error: 'Aucun festival courant défini' });
+            return res.status(200).json([]); // Return empty list instead of 404 to avoid frontend crash
         }
 
         const festivalName = festivalRows[0].name;

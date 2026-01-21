@@ -33,6 +33,7 @@ export class ReservationWorkflow {
 
   reservationId = signal<number | null>(null);
   reservation = signal<ReservationDAO | null>(null);
+  originalReservation = signal<ReservationDAO | null>(null);
   suiviHistory = signal<SuiviReservation[]>([]);
   reservationGames = signal<ReservationGame[]>([]);
   availableZones = signal<TariffZone[]>([]);
@@ -65,6 +66,49 @@ export class ReservationWorkflow {
     return this.reservationSvc.calculateTotalPrice(res, zone);
   });
 
+  remainingSmallRealTime = computed(() => {
+    const zone = this.selectedZone();
+    const res = this.reservation();
+    const orig = this.originalReservation();
+    if (!zone || !res || !orig) return 0;
+
+    if (res.idTZ === orig.idTZ) {
+      const delta = res.nbSmallTables - orig.nbSmallTables;
+      return Math.max(0, zone.remainingSmallTables - delta);
+    } else {
+      // Zone changed: the selected zone's remaining count doesn't know about this reservation yet
+      return Math.max(0, zone.remainingSmallTables - res.nbSmallTables);
+    }
+  });
+
+  remainingLargeRealTime = computed(() => {
+    const zone = this.selectedZone();
+    const res = this.reservation();
+    const orig = this.originalReservation();
+    if (!zone || !res || !orig) return 0;
+
+    if (res.idTZ === orig.idTZ) {
+      const delta = res.nbLargeTables - orig.nbLargeTables;
+      return Math.max(0, zone.remainingLargeTables - delta);
+    } else {
+      return Math.max(0, zone.remainingLargeTables - res.nbLargeTables);
+    }
+  });
+
+  remainingCityHallRealTime = computed(() => {
+    const zone = this.selectedZone();
+    const res = this.reservation();
+    const orig = this.originalReservation();
+    if (!zone || !res || !orig) return 0;
+
+    if (res.idTZ === orig.idTZ) {
+      const delta = res.nbCityHallTables - orig.nbCityHallTables;
+      return Math.max(0, zone.remainingCityHallTables - delta);
+    } else {
+      return Math.max(0, zone.remainingCityHallTables - res.nbCityHallTables);
+    }
+  });
+
   constructor() {
     const id = Number(this.route.snapshot.paramMap.get('id'));
     if (id) {
@@ -81,6 +125,7 @@ export class ReservationWorkflow {
     this.reservationSvc.getReservationById(id).subscribe({
       next: (data) => {
         this.reservation.set(data);
+        this.originalReservation.set(JSON.parse(JSON.stringify(data))); // Deep copy
         if (data.festivalName) {
           this.loadTariffZones(data.festivalName);
         } else {
@@ -149,6 +194,10 @@ export class ReservationWorkflow {
     this.reservationSvc.updateReservation(res.idReservation, res as any).subscribe({
       next: () => {
         this.savingLogistics.set(false);
+        this.originalReservation.set(JSON.parse(JSON.stringify(res))); // Update referentiel after save
+        if (res.festivalName) {
+          this.loadTariffZones(res.festivalName);
+        }
         alert("Logistique mise à jour avec succès !");
       },
       error: (err) => {
@@ -161,6 +210,23 @@ export class ReservationWorkflow {
 
   updateField(field: keyof ReservationDAO, value: any) {
     this.reservation.update(r => r ? { ...r, [field]: value } : null);
+  }
+
+  onZoneChange(newIdTZ: number) {
+    this.reservation.update(r => {
+      if (!r) return null;
+      // Reset tables if zone actually changes
+      if (Number(r.idTZ) !== Number(newIdTZ)) {
+        return {
+          ...r,
+          idTZ: newIdTZ,
+          nbSmallTables: 0,
+          nbLargeTables: 0,
+          nbCityHallTables: 0
+        };
+      }
+      return { ...r, idTZ: newIdTZ };
+    });
   }
 
   addGameToReservation(event: { game: Game; quantity: number }) {
