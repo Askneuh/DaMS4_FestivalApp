@@ -1,9 +1,9 @@
 <div class="plan-management-container">
-  <h1>Gestion de la Zone du Plan du Festival</h1>
+  <h1>Gestion des Zones du Plan</h1>
   
   @if (currentFestival(); as festival) {
     <div class="festival-info">
-      <h2>Festival Courant : {{ festival.name }}</h2>
+      <h2>Festival : {{ festival.name }}</h2>
     </div>
     
     <!-- Liste des zones tarifaires -->
@@ -18,10 +18,15 @@
               (click)="selectTariffZone(zone)"
             >
               <h4>{{ zone.name }}</h4>
-              <div class="zone-details">
-                <p>Petites tables : {{ zone.remainingSmallTables }}/{{ zone.nbSmallTables }}</p>
-                <p>Grandes tables : {{ zone.remainingLargeTables }}/{{ zone.nbLargeTables }}</p>
-                <p>Tables mairie : {{ zone.remainingCityHallTables }}/{{ zone.nbCityHallTables }}</p>
+              <div class="zone-stats">
+                <div class="stat-group">
+                  <span class="stat-label">Réservées</span>
+                  <div class="stat-values">
+                    <span title="Petites tables réservées">P: {{ zone.nbSmallTables - zone.remainingSmallTables }}/{{ zone.nbSmallTables }}</span>
+                    <span title="Grandes tables réservées">G: {{ zone.nbLargeTables - zone.remainingLargeTables }}/{{ zone.nbLargeTables }}</span>
+                    <span title="Tables mairie réservées">M: {{ zone.nbCityHallTables - zone.remainingCityHallTables }}/{{ zone.nbCityHallTables }}</span>
+                  </div>
+                </div>
               </div>
             </div>
           }
@@ -31,50 +36,74 @@
       }
     </div>
     
-    <!-- Section pour ajouter une zone de plan -->
+    <!-- Section pour gérer les zones du plan -->
     @if (selectedTariffZone(); as zone) {
       <div class="plan-area-section">
         <div class="section-header">
-          <h3>Zones de Plan pour : {{ zone.name }}</h3>
+          <h3>Zones du Plan pour : {{ zone.name }}</h3>
           <button class="btn btn-primary" (click)="toggleForm()">
-            {{ showForm() ? 'Annuler' : '+ Ajouter une Zone de Plan' }}
+            {{ showForm() ? 'Annuler' : '+ Ajouter une Zone du Plan' }}
           </button>
+        </div>
+
+        <!-- Statistiques des tables -->
+        <div class="tables-stats">
+          <div class="stat-box">
+            <span class="stat-title">Tables réservées par les éditeurs</span>
+            <div class="stat-row">
+              <span>Petites: {{ reservedTables().small }}</span>
+              <span>Grandes: {{ reservedTables().large }}</span>
+              <span>Mairie: {{ reservedTables().cityHall }}</span>
+            </div>
+          </div>
+          <div class="stat-box">
+            <span class="stat-title">Tables déjà placées</span>
+            <div class="stat-row">
+              <span>Petites: {{ placedTables().small }}</span>
+              <span>Grandes: {{ placedTables().large }}</span>
+              <span>Mairie: {{ placedTables().cityHall }}</span>
+            </div>
+          </div>
+          <div class="stat-box highlight">
+            <span class="stat-title">Disponibles pour placement</span>
+            <div class="stat-row">
+              <span>Petites: {{ availableForPlacement().small }}</span>
+              <span>Grandes: {{ availableForPlacement().large }}</span>
+              <span>Mairie: {{ availableForPlacement().cityHall }}</span>
+            </div>
+          </div>
         </div>
         
         <!-- Liste des zones de plan existantes -->
         @if (planAreas().length > 0) {
           <div class="plan-areas-list">
-            <h4>📋 Zones de plan existantes</h4>
+            <h4>Zones du plan existantes</h4>
             <div class="plan-areas-grid">
               @for (area of planAreas(); track area.id) {
                 <div class="plan-area-card">
                   <div class="plan-area-header">
                     <h5>{{ area.name }}</h5>
-                    <span class="plan-area-badge">ID: {{ area.id }}</span>
                   </div>
                   
                   <div class="plan-area-details">
                     <div class="detail-item">
-                      <span class="icon">🪑</span>
                       <span class="label">Petites:</span>
                       <span class="value">{{ area.nbSmallTables }}</span>
                     </div>
                     <div class="detail-item">
-                      <span class="icon">🛋️</span>
                       <span class="label">Grandes:</span>
                       <span class="value">{{ area.nbLargeTables }}</span>
                     </div>
                     <div class="detail-item">
-                      <span class="icon">🏛️</span>
                       <span class="label">Mairie:</span>
                       <span class="value">{{ area.nbCityHallTables }}</span>
                     </div>
                   </div>
 
-                  <!-- 🎮 LISTE DES JEUX ASSIGNÉS -->
+                  <!-- Liste des jeux assignés -->
                   @if (area.presentedGames && area.presentedGames.length > 0) {
                     <div class="assigned-games-section">
-                      <h6>🎮 Jeux assignés ({{ area.presentedGames.length }})</h6>
+                      <h6>Jeux assignés ({{ area.presentedGames.length }})</h6>
                       <div class="games-chips">
                         @for (game of area.presentedGames; track game.id) {
                           <span class="game-chip" [title]="game.name">
@@ -85,7 +114,6 @@
                     </div>
                   } @else {
                     <div class="no-games-assigned">
-                      <span class="icon">📭</span>
                       <span>Aucun jeu assigné</span>
                     </div>
                   }
@@ -93,10 +121,10 @@
                   <!-- Boutons d'action -->
                   <div class="plan-area-actions">
                     <button class="btn-action btn-edit" (click)="editPlanArea(area)" title="Modifier">
-                      ✏️ Modifier
+                      Modifier
                     </button>
                     <button class="btn-action btn-delete" (click)="deletePlanArea(area)" title="Supprimer">
-                      🗑️ Supprimer
+                      Supprimer
                     </button>
                   </div>
                 </div>
@@ -105,17 +133,17 @@
           </div>
         } @else {
           <div class="no-plan-areas">
-            <p>📭 Aucune zone de plan créée pour cette zone tarifaire</p>
+            <p>Aucune zone du plan créée pour cette zone tarifaire</p>
           </div>
         }
         
         <!-- Formulaire d'ajout/modification -->
         @if (showForm()) {
           <div class="form-card">
-            <h3>{{ editingPlanArea() ? '✏️ Modifier' : '➕ Créer' }} une Zone de Plan</h3>
+            <h3>{{ editingPlanArea() ? 'Modifier' : 'Créer' }} une Zone du Plan</h3>
             <form [formGroup]="planAreaForm" (ngSubmit)="onSubmit()">
               <div class="form-group">
-                <label for="name">Nom de la zone de plan *</label>
+                <label for="name">Nom de la zone *</label>
                 <input 
                   id="name" 
                   type="text" 
@@ -128,38 +156,38 @@
               </div>
 
               <div class="form-group">
-                <label>Petites tables (max: {{ zone.remainingSmallTables }})</label>
+                <label>Petites tables (disponibles: {{ availableForPlacement().small }})</label>
                 <input 
                   type="number" 
                   formControlName="nbSmallTables" 
                   min="0" 
-                  [max]="zone.remainingSmallTables + (editingPlanArea()?.nbSmallTables || 0)"
+                  [max]="availableForPlacement().small + (editingPlanArea()?.nbSmallTables || 0)"
                 />
               </div>
 
               <div class="form-group">
-                <label>Grandes tables (max: {{ zone.remainingLargeTables }})</label>
+                <label>Grandes tables (disponibles: {{ availableForPlacement().large }})</label>
                 <input 
                   type="number" 
                   formControlName="nbLargeTables" 
                   min="0" 
-                  [max]="zone.remainingLargeTables + (editingPlanArea()?.nbLargeTables || 0)"
+                  [max]="availableForPlacement().large + (editingPlanArea()?.nbLargeTables || 0)"
                 />
               </div>
 
               <div class="form-group">
-                <label>Tables mairie (max: {{ zone.remainingCityHallTables }})</label>
+                <label>Tables mairie (disponibles: {{ availableForPlacement().cityHall }})</label>
                 <input 
                   type="number" 
                   formControlName="nbCityHallTables"
                   min="0" 
-                  [max]="zone.remainingCityHallTables + (editingPlanArea()?.nbCityHallTables || 0)"
+                  [max]="availableForPlacement().cityHall + (editingPlanArea()?.nbCityHallTables || 0)"
                 />
               </div>
 
-              <!-- 🎮 SECTION DE SÉLECTION DES JEUX -->
+              <!-- Section de sélection des jeux -->
               <div class="form-group">
-                <label>🎮 Jeux à assigner à cette zone de plan</label>
+                <label>Jeux à assigner à cette zone du plan</label>
                 
                 @if (availableGames().length > 0) {
                   <div class="games-list">
@@ -178,7 +206,7 @@
                   </div>
                   <p class="selection-info">{{ selectedGameIds().size }} jeu(x) sélectionné(s)</p>
                 } @else {
-                  <p class="no-games">📭 Aucun jeu disponible dans cette zone tarifaire</p>
+                  <p class="no-games">Aucun jeu disponible dans cette zone tarifaire</p>
                 }
               </div>
 
@@ -187,7 +215,7 @@
                   Annuler
                 </button>
                 <button type="submit" class="btn btn-primary" [disabled]="planAreaForm.invalid">
-                  {{ editingPlanArea() ? '💾 Mettre à jour' : '✨ Créer' }}
+                  {{ editingPlanArea() ? 'Mettre à jour' : 'Créer' }}
                 </button>
               </div>
             </form>
