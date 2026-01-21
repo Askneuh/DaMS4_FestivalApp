@@ -363,6 +363,45 @@ router.get('/', verifyToken, async (req, res) => {
     }
 });
 
+router.get('/:festivalName/games', verifyToken, async (req, res) => {
+    const festivalName = req.params.festivalName;
+    try {
+        const query = `
+            SELECT 
+                g.id,
+                g.name,
+                g.author,
+                e.name as "editorName",
+                gt."gameTypeLabel",
+                rg."quantity" as "reservedQuantity",
+                rg."isGamePlaced",
+                COALESCE(
+                    json_agg(DISTINCT jsonb_build_object(
+                        'id', pa.id,
+                        'name', pa.name
+                    )) FILTER (WHERE pa.id IS NOT NULL),
+                    '[]'::json
+                ) as "planAreas"
+            FROM "reservation" r
+            JOIN "reservation_game" rg ON r."idReservation" = rg."idReservation"
+            JOIN "game" g ON rg."idGame" = g.id
+            LEFT JOIN "editor" e ON g."idEditor" = e.id
+            LEFT JOIN "gameType" gt ON g."idGameType" = gt.id
+            LEFT JOIN "game_planArea" gpa ON g.id = gpa."idGame" AND gpa."idReservation" = r."idReservation"
+            LEFT JOIN "planArea" pa ON gpa."idPA" = pa.id
+            WHERE r."festivalName" = $1
+            GROUP BY g.id, g.name, g.author, e.name, gt."gameTypeLabel", rg."quantity", rg."isGamePlaced"
+            ORDER BY g.name
+        `;
+
+        const { rows } = await pool.query(query, [festivalName]);
+        res.json(rows);
+    } catch (err: any) {
+        console.error(err);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
 //Route pour supprimer un festival par son nom
 router.delete('/:festivalName', verifyToken, requireAdmin, async (req, res) => {
     const festivalName = req.params.festivalName;

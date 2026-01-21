@@ -317,6 +317,13 @@ router.post('/:planAreaId/assign-game', verifyToken, requireAdmin, validateNumer
                 'UPDATE "game_planArea" SET "quantity" = "quantity" + $1 WHERE "idGame" = $2 AND "idPA" = $3 AND "idReservation" = $4',
                 [qty, idGame, planAreaId, idReservation]
             );
+            
+            // Marquer comme placé dans la réservation
+            await pool.query(
+                'UPDATE "reservation_game" SET "isGamePlaced" = true WHERE "idReservation" = $1 AND "idGame" = $2',
+                [idReservation, idGame]
+            );
+
             return res.status(200).json({ message: 'Quantité de jeu mise à jour' });
         } else {
             // Insérer nouvelle entrée
@@ -324,6 +331,13 @@ router.post('/:planAreaId/assign-game', verifyToken, requireAdmin, validateNumer
                 'INSERT INTO "game_planArea" ("idGame", "idPA", "idReservation", "quantity") VALUES ($1, $2, $3, $4)',
                 [idGame, planAreaId, idReservation, qty]
             );
+
+            // Marquer comme placé dans la réservation
+            await pool.query(
+                'UPDATE "reservation_game" SET "isGamePlaced" = true WHERE "idReservation" = $1 AND "idGame" = $2',
+                [idReservation, idGame]
+            );
+
             return res.status(201).json({ message: 'Jeu assigné à la zone du plan' });
         }
     } catch (err: any) {
@@ -366,6 +380,20 @@ router.delete('/:planAreaId/games/:gameId', verifyToken, requireAdmin, validateN
             await pool.query(
                 'UPDATE "game_planArea" SET "quantity" = "quantity" - $1 WHERE "idGame" = $2 AND "idPA" = $3 AND "idReservation" = $4',
                 [quantity, gameId, planAreaId, reservationId]
+            );
+        }
+
+        // Vérifier s'il reste des exemplaires placés pour ce jeu et cette réservation (toutes zones confondues)
+        const checkRemaining = await pool.query(
+            'SELECT COUNT(*) as count FROM "game_planArea" WHERE "idGame" = $1 AND "idReservation" = $2',
+            [gameId, reservationId]
+        );
+
+        if (parseInt(checkRemaining.rows[0].count) === 0) {
+            // Plus aucun exemplaire placé, on remet le flag à false
+            await pool.query(
+                'UPDATE "reservation_game" SET "isGamePlaced" = false WHERE "idReservation" = $1 AND "idGame" = $2',
+                [reservationId, gameId]
             );
         }
 

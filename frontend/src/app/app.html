@@ -8,6 +8,7 @@
     <a routerLink="reservations" routerLinkActive="active">Réservations</a>
     }
     <a routerLink="plan-management" routerLinkActive="active">Zone du Plan</a>
+    <a routerLink="festival-games" routerLinkActive="active">Jeux du Festival</a>
     @if (authSvc.isLoggedIn() && authSvc.currentUser()?.role == 'admin') {
     <a routerLink="admin" routerLinkActive="active">Admin</a>
     }

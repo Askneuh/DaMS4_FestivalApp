@@ -4,6 +4,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { environment } from '../../environment/environment';
+import { FestivalGameRow } from '../interfaces/festival-game-row';
 
 @Injectable({
   providedIn: 'root'
@@ -26,6 +27,10 @@ export class FestivalService {
 
   findByName(name: string): Observable<Festival> {
     return this.http.get<Festival>(`${this.apiUrl}/festivals/${name}`, { withCredentials: true })
+  }
+
+  getFestivalGames(festivalName: string): Observable<FestivalGameRow[]> {
+    return this.http.get<FestivalGameRow[]>(`${this.apiUrl}/festivals/${festivalName}/games`, { withCredentials: true });
   }
 
 

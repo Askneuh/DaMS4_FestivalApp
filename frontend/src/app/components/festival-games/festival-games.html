@@ -1,0 +1,43 @@
+<div class="festival-games-container">
+    <div class="header">
+        <h2>Jeux du Festival</h2>
+        <p class="subtitle" *ngIf="games().length > 0">{{ games().length }} jeux référencés</p>
+    </div>
+
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th (click)="sort('name')">Nom {{ getSortIcon('name') }}</th>
+                    <th (click)="sort('author')">Auteur {{ getSortIcon('author') }}</th>
+                    <th (click)="sort('editorName')">Éditeur {{ getSortIcon('editorName') }}</th>
+                    <th (click)="sort('gameTypeLabel')">Type {{ getSortIcon('gameTypeLabel') }}</th>
+                    <th (click)="sort('reservedQuantity')" class="text-center">Quantité {{ getSortIcon('reservedQuantity') }}</th>
+                    <th (click)="sort('zoneName')">Zone(s) {{ getSortIcon('zoneName') }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr *ngFor="let game of sortedGames()">
+                    <td>{{ game.name }}</td>
+                    <td>{{ game.author }}</td>
+                    <td>{{ game.editorName }}</td>
+                    <td><span class="type-badge">{{ game.gameTypeLabel }}</span></td>
+                    <td class="text-center">{{ game.reservedQuantity }}</td>
+                    <td>
+                        <div class="zones-list">
+                            <span *ngFor="let zone of game.planAreas" class="zone-chip">
+                                {{ zone.name }}
+                            </span>
+                            <span *ngIf="game.planAreas.length === 0" class="no-zone">Non placé</span>
+                        </div>
+                    </td>
+                </tr>
+                <tr *ngIf="games().length === 0">
+                    <td colspan="6" class="empty-state">
+                        Aucun jeu trouvé pour ce festival.
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
