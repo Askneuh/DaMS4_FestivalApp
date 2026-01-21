@@ -1,0 +1,10 @@
+<section class="status-section">
+    <h2>Statut actuel</h2>
+    <div class="status-selector">
+        <select (change)="onStatusChange($event)">
+            @for (status of availableStatuses; track status) {
+            <option [value]="status" [selected]="status === currentStatus()">{{ status }}</option>
+            }
+        </select>
+    </div>
+</section>

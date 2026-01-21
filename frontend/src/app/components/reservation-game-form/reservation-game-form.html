@@ -1,0 +1,61 @@
+<section class="games-section">
+    <div class="section-top">
+        <h2>Jeux dans la réservation</h2>
+        <button class="btn btn-secondary btn-sm" (click)="showGameSelector.set(true)">
+            + Ajouter des jeux
+        </button>
+    </div>
+
+    <div class="games-table-container">
+        <table class="games-table">
+            <thead>
+                <tr>
+                    <th>Jeu</th>
+                    <th>Type</th>
+                    <th>Quantité</th>
+                    <th>Placé ?</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @for (game of games(); track game.id) {
+                <tr>
+                    <td>
+                        <div class="game-cell">
+                            <strong>{{ game.name }}</strong>
+                            <span class="subtext">{{ game.author }}</span>
+                        </div>
+                    </td>
+                    <td>{{ (game.gameType?.gameTypeLabel | titlecase) || '-' }}</td>
+                    <td>
+                        <input type="number" min="1" [value]="game.quantity"
+                            (change)="onQuantityChange(game.id, $event)" class="qty-input">
+                    </td>
+                    <td>
+                        <div (click)="onTogglePlaced(game)" class="placement-toggle">
+                            @if (game.isGamePlaced) {
+                            <span class="badge success">Oui</span>
+                            } @else {
+                            <span class="badge warning">Non</span>
+                            }
+                        </div>
+                    </td>
+                    <td>
+                        <button class="btn btn-danger btn-sm" (click)="onRemoveGame(game.id)">Retirer</button>
+                    </td>
+                </tr>
+                } @empty {
+                <tr>
+                    <td colspan="5" class="empty-row">Aucun jeu dans cette réservation.</td>
+                </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</section>
+
+@if (showGameSelector()) {
+<app-reservation-game-selector [editorId]="editorId()" (close)="showGameSelector.set(false)"
+    (gameSelected)="onAddGame($event)">
+</app-reservation-game-selector>
+}
